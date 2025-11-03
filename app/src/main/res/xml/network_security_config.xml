@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Permit cleartext (HTTP) only to the emulator host used for local development -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Android emulator localhost mapping -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>
