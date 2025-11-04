@@ -9,9 +9,10 @@ import { ERROR_MESSAGES } from '../types/errorMessages';
 export async function getProducts(req: Request, res: Response): Promise<void> {
   try {
     const owner = req.user as User;
-    const page: number = req.query.page ? Number(req.query.page) : 1;
-    const per_page: number = req.query.per_page ? Number(req.query.per_page) : 10;
-    const sort_by = req.query.sort_by ? String(req.query.sort_by) : "name";
+  const page: number = req.query.page ? Number(req.query.page) : 1;
+  const per_page: number = req.query.per_page ? Number(req.query.per_page) : 10;
+  const sortQuery = typeof req.query.sort_by === "string" ? req.query.sort_by : undefined;
+  const sort_by = getSortByValue(sortQuery);
     const order: "ASC" | "DESC" = req.query.order
         ? String(req.query.order).toUpperCase() as "ASC" | "DESC"
         : "DESC";
@@ -34,6 +35,16 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
     replySuccess(res, result);
   } catch (err) {
     replyWithError(res, err);
+  }
+}
+
+function getSortByValue(sortQuery: string | undefined): "name" | "created_at" | "updated_at" {
+  switch (sortQuery) {
+    case "created_at":
+    case "updated_at":
+      return sortQuery;
+    default:
+      return "name";
   }
 }
 

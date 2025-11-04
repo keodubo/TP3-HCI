@@ -32,25 +32,23 @@ const router = Router();
  *           schema:
  *             type: object
  *             properties:
- *               product:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
+ *               product_id:
+ *                 type: integer
  *               quantity:
  *                 type: number
  *               unit:
  *                 type: string
- *                 description: Free text (pack, dozen, kilogram, liter, etc.)
+ *                 nullable: true
+ *               expiration_date:
+ *                 type: string
+ *                 format: date-time
+ *                 nullable: true
  *               metadata:
  *                 type: object
  *                 nullable: true
- *             example:
- *               product:
- *                 id: 1
- *               quantity: 2
- *               unit: l
- *               metadata: {}
+ *             required:
+ *               - product_id
+ *               - quantity
  *     responses:
  *       201:
  *         description: Pantry item successfully created
@@ -103,7 +101,7 @@ router.post("/:id/items", authenticateJWT, addPantryItem);
  *         name: sort_by
  *         schema:
  *           type: string
- *           enum: [name, quantity, unit, productName]
+ *           enum: [created_at, updated_at, product_name, quantity]
  *         description: Sort field
  *       - in: query
  *         name: order
@@ -157,28 +155,20 @@ router.post("/:id/items", authenticateJWT, addPantryItem);
  *                       description: Whether there is a previous page
  *             example:
  *               data:
- *                 - id: 1
+ *                 - id: "1"
+ *                   product_id: "1"
+ *                   product_name: "Milk"
+ *                   category_id: "5"
+ *                   pantry_id: "3"
  *                   quantity: 2
  *                   unit: "kg"
  *                   metadata: {}
- *                   createdAt: "2025-01-15 10:30:00"
- *                   updatedAt: "2025-01-15 10:30:00"
- *                   product:
- *                     id: 1
- *                     name: "Milk"
- *                     metadata: {}
- *                     createdAt: "2025-01-15 10:30:00"
- *                     updatedAt: "2025-01-15 10:30:00"
- *                     category:
- *                       id: 1
- *                       name: "Dairy"
- *               pagination:
- *                 total: 1
- *                 page: 1
- *                 per_page: 10
- *                 total_pages: 1
- *                 has_next: false
- *                 has_prev: false
+ *                   expiration_date: null
+ *                   created_at: "2025-01-15T10:30:00Z"
+ *                   updated_at: "2025-01-15T10:30:00Z"
+ *               total: 1
+ *               page: 1
+ *               per_page: 10
  *       400:
  *         $ref: '#/responses/BadRequest'
  *       401:
@@ -220,11 +210,17 @@ router.get("/:id/items", authenticateJWT, getPantryItems);
  *           schema:
  *             type: object
  *             properties:
+ *               product_id:
+ *                 type: integer
  *               quantity:
  *                 type: number
  *               unit:
  *                 type: string
- *                 description: Free text (pack, dozen, kilogram, liter, etc.)
+ *                 nullable: true
+ *               expiration_date:
+ *                 type: string
+ *                 format: date-time
+ *                 nullable: true
  *               metadata:
  *                 type: object
  *                 nullable: true

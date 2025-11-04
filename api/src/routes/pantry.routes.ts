@@ -32,6 +32,13 @@ const router = Router();
  *               name:
  *                 type: string
  *                 example: Fridge
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *               shared_user_ids:
+ *                 type: array
+ *                 items:
+ *                   type: integer
  *               metadata:
  *                 type: object
  *                 nullable: true
@@ -87,9 +94,14 @@ router.post("/", authenticateJWT, createPantry);
  *         name: sort_by
  *         schema:
  *           type: string
- *           enum: [createdAt, updatedAt, name]
- *           default: createdAt
+ *           enum: [created_at, updated_at, name]
+ *           default: created_at
  *         description: Sort field
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Case-insensitive search over pantry name
  *       - in: query
  *         name: order
  *         schema:
@@ -216,7 +228,13 @@ router.get("/:id", authenticateJWT, getPantryById);
  *             properties:
  *               name:
  *                 type: string
- *                 example: Cupboard
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *               shared_user_ids:
+ *                 type: array
+ *                 items:
+ *                   type: integer
  *               metadata:
  *                 type: object
  *                 nullable: true
@@ -345,9 +363,18 @@ router.post("/:id/share", authenticateJWT, sharePantry);
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/definitions/GetUser'
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/definitions/UserSummary'
+ *                 total:
+ *                   type: integer
+ *                 page:
+ *                   type: integer
+ *                 per_page:
+ *                   type: integer
  *       400:
  *         $ref: '#/responses/BadRequest'
  *       401:

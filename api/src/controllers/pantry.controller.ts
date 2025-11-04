@@ -15,8 +15,17 @@ export async function createPantry(req: Request, res: Response): Promise<void> {
             throw new BadRequestError(validationBody.message);
         }
 
-        const pantryData: RegisterPantryData = req.body as RegisterPantryData;
-        pantryData.owner = req.user as User;
+        const sharedIds = Array.isArray(req.body.shared_user_ids)
+            ? req.body.shared_user_ids.map((id: string | number) => Number(id)).filter(id => !Number.isNaN(id))
+            : [];
+
+        const pantryData: RegisterPantryData = {
+            name: req.body.name,
+            description: req.body.description ?? null,
+            metadata: req.body.metadata ?? null,
+            sharedUserIds: sharedIds,
+            owner: req.user as User,
+        };
 
         const pantry = await PantryService.createPantryService(pantryData, pantryData.owner);
         replyCreated(res, pantry);
@@ -33,13 +42,22 @@ export async function getPantries(req: Request, res: Response): Promise<void> {
             if (req.query.owner === "true") owner = true;
             else if (req.query.owner === "false") owner = false;
         }
-        const allowedSortBy = ["createdAt", "updatedAt", "name"];
-        const sortBy = req.query.sort_by ? String(req.query.sort_by) : "createdAt";
-        const sort_by = allowedSortBy.includes(sortBy) ? sortBy as "createdAt" | "updatedAt" | "name" : "createdAt";
+        const allowedSortBy = ["created_at", "updated_at", "name"];
+        const sortBy = req.query.sort_by ? String(req.query.sort_by) : "created_at";
+        const sort_by = allowedSortBy.includes(sortBy) ? sortBy as "created_at" | "updated_at" | "name" : "created_at";
         const order = req.query.order && ["ASC", "DESC"].includes(String(req.query.order).toUpperCase()) ? String(req.query.order).toUpperCase() as "ASC" | "DESC" : "ASC";
         const page = req.query.page ? Math.max(1, Number(req.query.page)) : 1;
         const per_page = req.query.per_page ? Math.max(1, Number(req.query.per_page)) : 10;
-        const result = await PantryService.getPantriesService(user, owner, sort_by, order, page, per_page);
+        const search = req.query.search ? String(req.query.search) : undefined;
+        const result = await PantryService.getPantriesService({
+            user,
+            owner,
+            search,
+            sort_by,
+            order,
+            page,
+            per_page,
+        });
         replySuccess(res, result);
     } catch (err) {
         replyWithError(res, err);
@@ -74,9 +92,19 @@ export async function updatePantry(req: Request, res: Response): Promise<void> {
         if (!bodyValidation.isValid) {
             throw new BadRequestError(bodyValidation.message);
         }
-        
-        const { name, metadata } = req.body;
-        const pantry = await PantryService.updatePantryService(pantryId, name, metadata, user);
+
+        const sharedIds = Array.isArray(req.body.shared_user_ids)
+            ? req.body.shared_user_ids.map((id: string | number) => Number(id)).filter(id => !Number.isNaN(id))
+            : undefined;
+
+        const updateData = {
+            name: req.body.name,
+            description: req.body.description ?? null,
+            metadata: req.body.metadata ?? null,
+            sharedUserIds: sharedIds,
+        };
+
+        const pantry = await PantryService.updatePantryService(pantryId, updateData, user);
         replySuccess(res, pantry);
     } catch (err) {
         replyWithError(res, err);
@@ -107,17 +135,21 @@ export async function sharePantry(req: Request, res: Response): Promise<void> {
         }
         const pantryId = Number(req.params.id);
         
-        const { email } = req.body;
-        if (!email) throw new BadRequestError(ERROR_MESSAGES.VALIDATION.REQUIRED("email"));
-        
-        const emailValidation = isValidEmail(email);
-        if (!emailValidation.isValid) {
-            throw new BadRequestError(emailValidation.message);
+        const recipients: string[] = Array.isArray(req.body.recipients) ? req.body.recipients : [];
+        if (recipients.length === 0) {
+            throw new BadRequestError(ERROR_MESSAGES.VALIDATION.REQUIRED("recipients"));
         }
-        
+
+        for (const email of recipients) {
+            const validation = isValidEmail(String(email));
+            if (!validation.isValid) {
+                throw new BadRequestError(validation.message);
+            }
+        }
+
         const mailer: Mailer = req.app.locals.mailer;
-        const sharedUser = await PantryService.sharePantryService(pantryId, user, email, mailer);
-        replySuccess(res, sharedUser);
+        const sharedPantry = await PantryService.sharePantryService(pantryId, user, recipients, mailer);
+        replySuccess(res, sharedPantry);
     } catch (err) {
         replyWithError(res, err);
     }
