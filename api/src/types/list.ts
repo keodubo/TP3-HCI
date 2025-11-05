@@ -3,9 +3,8 @@ import { ERROR_MESSAGES } from './errorMessages';
 
 export type RegisterListData = {
     name: string;
-    description?: string | null;
-    recurring?: boolean;
-    sharedUserIds?: number[];
+    description: string;
+    recurring: boolean;
     metadata?: Record<string, any>;
     owner?: User;
 };
@@ -13,41 +12,46 @@ export type RegisterListData = {
 export interface ListFilterOptions {
     user: User;
     owner?: boolean; 
-    search?: string;
+    name?: string;
     recurring?: boolean;
     page?: number;
     per_page?: number;
-    sort_by?: "name" | "created_at" | "updated_at" | "last_purchased_at";
+    sort_by?: "name" | "owner" | "createdAt" | "updatedAt" | "lastPurchasedAt";
     order?: "ASC" | "DESC";
 }
 
 export interface ListUpdateData {
     name?: string;
-    description?: string | null;
+    description?: string;
     recurring?: boolean;
     metadata?: Record<string, any>;
-    sharedUserIds?: number[];
 }
 
 export function isValidListData(body: any): { isValid: boolean; message?: string } {
-    if (!body || typeof body !== "object") {
+    if (!body) {
         return { isValid: false, message: ERROR_MESSAGES.VALIDATION.REQUIRED("body") };
     }
-    if (!body.name || typeof body.name !== "string") {
+    if (!body.name) {
         return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("name") };
     }
-    if ('description' in body && body.description !== null && typeof body.description !== "string") {
+    if (typeof body.name !== "string") {
+        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("name") };
+    }
+    
+    if (!('description' in body) || body.description === undefined || body.description === null) {
+        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("description") };
+    }
+    if (typeof body.description !== "string") {
         return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("description") };
     }
-
-    if ('is_recurring' in body && typeof body.is_recurring !== "boolean") {
-        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("is_recurring") };
+    
+    if (!('recurring' in body) || body.recurring === undefined || body.recurring === null) {
+        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("recurring") };
     }
-
-    if ('shared_user_ids' in body && !Array.isArray(body.shared_user_ids)) {
-        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("shared_user_ids") };
+    if (typeof body.recurring !== "boolean") {
+        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("recurring") };
     }
-
+    
     if (body.metadata && typeof body.metadata !== "object") {
         return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("metadata") };
     }
@@ -66,3 +70,4 @@ export function isValidListId(params: any): { isValid: boolean; message?: string
     
     return { isValid: true };
 }
+

@@ -3,43 +3,35 @@ import { ERROR_MESSAGES } from './errorMessages';
 
 export type RegisterPantryData = {
   name: string;
-  description?: string | null;
-  sharedUserIds?: number[];
   metadata?: Record<string, any>;
   owner: User;
 }
 
 export interface PantryFilterOptions {
-  user: User;
-  owner?: boolean;
-  search?: string;
+  owner: User;
+  name?: string;
   page?: number;
   per_page?: number;
-  sort_by?: "name" | "created_at" | "updated_at";
+  sort_by?: "name" | "createdAt" | "updatedAt";
   order?: "ASC" | "DESC";
 }
 
 export interface PantryUpdateData {
   name?: string;
-  description?: string | null;
-  sharedUserIds?: number[];
   metadata?: Record<string, any>;
 }
 
 export function isValidPantryData(body: any): { isValid: boolean; message?: string } {
-  if (!body || typeof body !== "object") {
+  if (!body) {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.REQUIRED("body") };
   }
-  if (!body.name || typeof body.name !== "string") {
+  if (!body.name) {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("name") };
   }
-  if (body.description !== undefined && body.description !== null && typeof body.description !== "string") {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("description") };
+  if (typeof body.name !== "string") {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("name") };
   }
-  if (body.shared_user_ids !== undefined && !Array.isArray(body.shared_user_ids)) {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("shared_user_ids") };
-  }
-  if (body.metadata !== undefined && body.metadata !== null && typeof body.metadata !== "object") {
+  if (body.metadata && typeof body.metadata !== "object") {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("metadata") };
   }
   return { isValid: true };

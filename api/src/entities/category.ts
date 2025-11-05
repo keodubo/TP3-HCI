@@ -4,18 +4,13 @@ import { User } from "./user";
 import { Product } from "./product";
 
 @Entity()
-@Unique(['name', 'owner'])
 export class Category extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ nullable: false })
+  @Column({nullable: false})
   @Length(1, 50)
   name: string;
-
-  @Column({ type: "text", nullable: true })
-  @IsOptional()
-  description: string | null;
 
   @Column({ type: "simple-json", nullable: true })
   @IsOptional()
@@ -39,12 +34,11 @@ export class Category extends BaseEntity {
 
   getFormattedCategory(): any {
      return {
-       id: String(this.id),
+       id: this.id,
        name: this.name,
-       description: this.description ?? null,
        metadata: this.metadata ?? null,
-       created_at: this.createdAt?.toISOString() ?? null,
-       updated_at: this.updatedAt?.toISOString() ?? null,
+       createdAt: this.createdAt.toISOString().substring(0, 19).replace('T', ' '),
+       updatedAt: this.updatedAt.toISOString().substring(0, 19).replace('T', ' '),
      }
    }
 }

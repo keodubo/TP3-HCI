@@ -9,7 +9,7 @@ import {
   GetProductsData,
   ProductUpdateData, RegisterProductData
 } from "../types/product";
-import { PaginatedResponse, createPaginationResponse } from '../types/pagination';
+import { PaginatedResponse, createPaginationMeta } from '../types/pagination';
 
 /**
 * Retrieves user's products.
@@ -30,24 +30,22 @@ export async function getProductsService(productData: GetProductsData): Promise<
     const whereOptions = generateProductsFilteringOptions(productData);
 
     const orderDirection = productData.order && String(productData.order).toUpperCase() === "ASC" ? "ASC" : "DESC";
-    let order: any = { name: orderDirection };
+    let order: any = {};
     if (productData.sort_by) {
-      switch (productData.sort_by) {
-        case "created_at":
-          order = { createdAt: orderDirection };
-          break;
-        case "updated_at":
-          order = { updatedAt: orderDirection };
-          break;
-        case "name":
-        default:
-          order = { name: orderDirection };
-          break;
+      if (productData.sort_by === "categoryName") {
+        order = { category: { name: orderDirection } };
+      } else if (productData.sort_by === "name") {
+        order = { name: orderDirection };
+      } else if (productData.sort_by === "createdAt") {
+        order = { createdAt: orderDirection };
+      } else if (productData.sort_by === "updatedAt") {
+        order = { updatedAt: orderDirection };
+      } else {
+        order = { name: orderDirection };
       }
+    } else {
+      order = { name: orderDirection };
     }
-
-    const perPage = productData.per_page && productData.per_page > 0 ? productData.per_page : 10;
-    const page = productData.page && productData.page > 0 ? productData.page : 1;
 
     const total = await Product.count({ where: whereOptions });
 
@@ -55,18 +53,16 @@ export async function getProductsService(productData: GetProductsData): Promise<
       where: whereOptions,
       relations: ["owner", "category"],
       order,
-      take: perPage,
-      skip: (page - 1) * perPage,
+      take: productData.per_page,
+      skip: (productData.page - 1) * (productData.per_page || 10),
     });
 
     const formattedProducts = products.map((p) => p.getFormattedProduct());
-
-    return createPaginationResponse(
-      formattedProducts,
-      total,
-      page,
-      perPage
-    );
+    
+    return {
+      data: formattedProducts,
+      pagination: createPaginationMeta(total, productData.page, productData.per_page)
+    };
   } catch (err: unknown) {
     handleCaughtError(err);
   }
@@ -106,31 +102,34 @@ export async function createProductService(data: RegisterProductData): Promise<P
   await queryRunner.connect();
   await queryRunner.startTransaction();
   try {
+    const existingProduct = await queryRunner.manager.findOne(Product, {
+      where: { 
+        name: data.name, 
+        owner: { id: data.owner.id },
+        deletedAt: null 
+      }
+    });
+    
+    if (existingProduct) {
+      throw new ConflictError(ERROR_MESSAGES.CONFLICT.PRODUCT_EXISTS);
+    }
+
     let category = null;
-    if (data.categoryId !== undefined && data.categoryId !== null) {
-      category = await queryRunner.manager.findOne(Category, { where: { id: data.categoryId, deletedAt: null } });
+    if(data.category?.id) {
+      category = await queryRunner.manager.findOne(Category, { where: { id: data.category.id } });
       if (!category) throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.CATEGORY);
     }
     const product = new Product();
     product.name = data.name;
-    product.description = data.description ?? null;
     product.category = category;
-    product.unit = data.unit ?? null;
-    product.defaultQuantity = data.defaultQuantity !== undefined ? data.defaultQuantity : 1;
-    product.isFavorite = false;
-    product.metadata = data.metadata ?? null;
+    product.metadata = data.metadata || {};
     product.owner = data.owner;
     await queryRunner.manager.save(product);
     await queryRunner.commitTransaction();
-    const savedProduct = await Product.findOne({ where: { id: product.id }, relations: ["category"] });
-    return (savedProduct ?? product).getFormattedProduct();
+    return product.getFormattedProduct();
   } catch (err: any) {
     if (queryRunner.isTransactionActive) {
       await queryRunner.rollbackTransaction();
-    }
-    
-    if (err.code === 'SQLITE_CONSTRAINT' || err.code === 'SQLITE_CONSTRAINT_UNIQUE' || err.code === '23505') {
-      throw new ConflictError(ERROR_MESSAGES.CONFLICT.PRODUCT_EXISTS);
     }
     
     handleCaughtError(err);
@@ -159,45 +158,40 @@ export async function updateProductService(id: number, owner: User, data: Produc
     if (!product) throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.PRODUCT);
     
     if (data.name !== undefined) {
+      const existingProduct = await queryRunner.manager.findOne(Product, {
+        where: { 
+          name: data.name, 
+          owner: { id: owner.id },
+          deletedAt: null 
+        }
+      });
+      
+      if (existingProduct && existingProduct.id !== id) {
+        throw new ConflictError(ERROR_MESSAGES.CONFLICT.PRODUCT_EXISTS);
+      }
+      
       product.name = data.name;
     }
-
-    if (data.description !== undefined) {
-      product.description = data.description;
-    }
-
-    if (data.categoryId !== undefined) {
-      if (data.categoryId === null) {
+    
+    if (data.category !== undefined) {
+      if (data.category === null) {
         product.category = null;
-      } else {
-        const category = await queryRunner.manager.findOne(Category, { where: { id: data.categoryId, deletedAt: null } });
+      } else if (data.category.id) {
+        const category = await queryRunner.manager.findOne(Category, { where: { id: data.category.id } });
         if (!category) throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.CATEGORY);
         product.category = category;
       }
     }
-
-    if (data.unit !== undefined) {
-      product.unit = data.unit;
-    }
-
-    if (data.defaultQuantity !== undefined) {
-      product.defaultQuantity = data.defaultQuantity;
-    }
-
+    
     if (data.metadata !== undefined) {
       product.metadata = data.metadata;
     }
     await queryRunner.manager.save(product);
     await queryRunner.commitTransaction();
-    const savedProduct = await Product.findOne({ where: { id: product.id }, relations: ["category"] });
-    return (savedProduct ?? product).getFormattedProduct();
+    return product.getFormattedProduct();
   } catch (err: any) {
     if (queryRunner.isTransactionActive) {
       await queryRunner.rollbackTransaction();
-    }
-    
-    if (err.code === 'SQLITE_CONSTRAINT' || err.code === 'SQLITE_CONSTRAINT_UNIQUE' || err.code === '23505') {
-      throw new ConflictError(ERROR_MESSAGES.CONFLICT.PRODUCT_EXISTS);
     }
     
     handleCaughtError(err);

@@ -32,13 +32,6 @@ const router = Router();
  *               name:
  *                 type: string
  *                 example: Fridge
- *               description:
- *                 type: string
- *                 nullable: true
- *               shared_user_ids:
- *                 type: array
- *                 items:
- *                   type: integer
  *               metadata:
  *                 type: object
  *                 nullable: true
@@ -94,14 +87,9 @@ router.post("/", authenticateJWT, createPantry);
  *         name: sort_by
  *         schema:
  *           type: string
- *           enum: [created_at, updated_at, name]
- *           default: created_at
+ *           enum: [createdAt, updatedAt, name]
+ *           default: createdAt
  *         description: Sort field
- *       - in: query
- *         name: search
- *         schema:
- *           type: string
- *         description: Case-insensitive search over pantry name
  *       - in: query
  *         name: order
  *         schema:
@@ -228,13 +216,7 @@ router.get("/:id", authenticateJWT, getPantryById);
  *             properties:
  *               name:
  *                 type: string
- *               description:
- *                 type: string
- *                 nullable: true
- *               shared_user_ids:
- *                 type: array
- *                 items:
- *                   type: integer
+ *                 example: Cupboard
  *               metadata:
  *                 type: object
  *                 nullable: true
@@ -363,18 +345,9 @@ router.post("/:id/share", authenticateJWT, sharePantry);
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/definitions/UserSummary'
- *                 total:
- *                   type: integer
- *                 page:
- *                   type: integer
- *                 per_page:
- *                   type: integer
+ *               type: array
+ *               items:
+ *                 $ref: '#/definitions/GetUser'
  *       400:
  *         $ref: '#/responses/BadRequest'
  *       401:

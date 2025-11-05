@@ -5,6 +5,7 @@ export function removeUserPrivateValues(user: User | null | undefined): void {
   const u: any = user as any;
   delete u.password;
   delete u.deletedAt;
+  delete u.isVerified;
 }
 
 export function removeUserForListShared(user: User | null | undefined): void {
@@ -23,3 +24,4 @@ export function getSanitizedUserObject(user: User): Partial<User> {
   const { password, deletedAt, ...rest } = (user as any);
   return rest;
 }
+

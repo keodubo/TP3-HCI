@@ -19,24 +19,23 @@ import {ListItem} from "./listItem";
 import {Purchase} from "./purchase";
 
 @Entity()
-@Unique("unique_list_name_per_owner", ["name", "owner"])
 export class List extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ nullable: false })
+  @Column({nullable: false})
   @Length(1, 50)
   name: string;
 
-  @Column({ nullable: true })
-  @Length(0, 200)
-  description: string | null;
+  @Column({nullable: false})
+  @Length(1, 200)
+  description: string;
 
-  @Column({ type: "simple-json", nullable: true })
+  @Column({type: "simple-json", nullable: true})
   @IsOptional()
   metadata: Record<string, any>;
 
-  @Column({ nullable: false, default: false })
+  @Column({nullable: false, default: false})
   recurring: boolean;
 
   @ManyToOne(() => User, user => user.lists)
@@ -56,7 +55,7 @@ export class List extends BaseEntity {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({type: "date", nullable: true})
+  @Column({type: "datetime", nullable: true})
   @IsOptional()
   lastPurchasedAt: Date;
 
@@ -69,47 +68,27 @@ export class List extends BaseEntity {
 
   formatDate(date: any): string | null {
     if (!date) return null;
-    if (date instanceof Date) return date.toISOString();
+    if (date instanceof Date) return date.toISOString().substring(0, 19).replace('T', ' ');
     if (typeof date === "string") {
       const d = new Date(date);
-      if (!isNaN(d.getTime())) return d.toISOString();
+      if (!isNaN(d.getTime())) return d.toISOString().substring(0, 19).replace('T', ' ');
+      return date.substring(0, 19).replace('T', ' ');
     }
     return null;
   }
 
   getFormattedList(): any {
-    const owner = this.owner?.getSummary() ?? null;
-    const sharedUsers = this.sharedWith
-      ? this.sharedWith.map(user => {
-          if (typeof user.getSummary === 'function') {
-            return user.getSummary();
-          }
-          const formatted = (user as any).getFormattedUser ? (user as any).getFormattedUser() : {
-            id: String(user.id),
-            email: user.email,
-            display_name: (user as any).displayName ?? null,
-            avatar: (user as any).photoUrl ?? null,
-          };
-          return formatted;
-        })
-      : [];
-
-    const items = this.items ? this.items.map(item => item.getFormattedListItem()) : [];
-
     return {
-      id: String(this.id),
+      id: this.id,
       name: this.name,
-      description: this.description ?? null,
-      owner_id: owner ? owner.id : null,
-      owner,
-      shared_users: sharedUsers,
-      metadata: this.metadata ?? null,
-      is_recurring: this.recurring,
+      description: this.description,
       recurring: this.recurring,
-      created_at: this.formatDate(this.createdAt),
-      updated_at: this.formatDate(this.updatedAt),
-      last_purchased_at: this.formatDate(this.lastPurchasedAt),
-      items,
+      metadata: this.metadata ?? null,
+      owner: this.owner?.getFormattedUser() ?? null,
+      sharedWith: this.sharedWith ? this.sharedWith.map(user => (user.getFormattedUser())) : [],
+      lastPurchasedAt: this.formatDate(this.lastPurchasedAt),
+      createdAt: this.formatDate(this.createdAt),
+      updatedAt: this.formatDate(this.updatedAt),
     }
   }
 }

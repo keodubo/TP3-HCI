@@ -2,13 +2,13 @@ import AppDataSource from "../db";
 import { Pantry } from "../entities/pantry";
 import { User } from "../entities/user";
 import {NotFoundError, handleCaughtError, BadRequestError, ConflictError, ForbiddenError} from "../types/errors";
+import {removeUserForListShared} from "../utils/users";
 import {Product} from "../entities/product";
 import {PantryItem} from "../entities/pantryItem";
 import { ERROR_MESSAGES } from '../types/errorMessages';
-import { In, QueryFailedError } from 'typeorm';
+import { QueryFailedError } from 'typeorm';
 import { Mailer, EmailType } from './email.service';
-import { PaginatedResponse, createPaginationResponse } from '../types/pagination';
-import { PantryFilterOptions, PantryUpdateData, RegisterPantryData } from '../types/pantry';
+import { PaginatedResponse, createPaginationMeta } from '../types/pagination';
 
 /**
  * Creates a new pantry for the given user.
@@ -19,36 +19,32 @@ import { PantryFilterOptions, PantryUpdateData, RegisterPantryData } from '../ty
  * @returns {Promise<Pantry>} The created pantry (formatted)
  * @throws {Error} If any error occurs during the process
  */
-export async function createPantryService(data: RegisterPantryData, user: User): Promise<any> {
+export async function createPantryService(data: { name: string, metadata?: any }, user: User): Promise<Pantry> {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-        const pantry = new Pantry();
-        pantry.name = data.name;
-        pantry.description = data.description ?? null;
-        pantry.metadata = data.metadata ?? null;
-        pantry.owner = user;
-
-        if (data.sharedUserIds && data.sharedUserIds.length > 0) {
-            const sharedUsers = await queryRunner.manager.find(User, {
-                where: data.sharedUserIds.map(id => ({ id })),
-            });
-            pantry.sharedWith = sharedUsers.filter(shared => shared.id !== user.id);
-        }
-        await queryRunner.manager.save(pantry);
-        await queryRunner.commitTransaction();
-        const refreshed = await Pantry.findOne({
-            where: { id: pantry.id },
-            relations: ["owner", "sharedWith", "items", "items.product", "items.product.category"]
+        const existingPantry = await queryRunner.manager.findOne(Pantry, {
+            where: { 
+                name: data.name, 
+                owner: { id: user.id },
+                deletedAt: null 
+            }
         });
-        return (refreshed ?? pantry).getFormattedPantry();
-    } catch (err) {
-        if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
         
-        if (err instanceof QueryFailedError && err.driverError?.message?.includes('UNIQUE constraint failed: pantry.name, pantry.ownerId')) {
+        if (existingPantry) {
             throw new ConflictError(ERROR_MESSAGES.CONFLICT.PANTRY_EXISTS);
         }
+
+        const pantry = new Pantry();
+        pantry.name = data.name;
+        pantry.metadata = data.metadata ?? null;
+        pantry.owner = user;
+        await queryRunner.manager.save(pantry);
+        await queryRunner.commitTransaction();
+        return pantry.getFormattedPantry();
+    } catch (err) {
+        if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
         
         handleCaughtError(err);
     } finally {
@@ -68,52 +64,93 @@ export async function createPantryService(data: RegisterPantryData, user: User):
  * @returns {Promise<Pantry[]>} Array of formatted pantries
  * @throws {Error} If any error occurs during the process
  */
-export async function getPantriesService(options: PantryFilterOptions): Promise<PaginatedResponse<any>> {
-    const perPage = options.per_page && options.per_page > 0 ? options.per_page : 10;
-    const page = options.page && options.page > 0 ? options.page : 1;
-
-    const queryBuilder = Pantry.createQueryBuilder("pantry")
-        .leftJoinAndSelect("pantry.owner", "owner")
-        .leftJoinAndSelect("pantry.sharedWith", "sharedWith")
-        .leftJoinAndSelect("pantry.items", "items")
-        .leftJoinAndSelect("items.product", "itemProduct")
-        .leftJoinAndSelect("itemProduct.category", "itemCategory")
-        .where("pantry.deletedAt IS NULL");
-
-    if (options.owner === true) {
-        queryBuilder.andWhere("owner.id = :userId", { userId: options.user.id });
-    } else if (options.owner === false) {
-        queryBuilder.andWhere("sharedWith.id = :userId", { userId: options.user.id });
-    } else {
-        queryBuilder.andWhere("owner.id = :userId OR sharedWith.id = :userId", { userId: options.user.id });
+export async function getPantriesService(user: User, owner?: boolean, sort_by: "createdAt" | "updatedAt" | "name" = "createdAt", order: "ASC" | "DESC" = "ASC", page: number = 1, per_page: number = 10): Promise<PaginatedResponse<any>> {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+        let pantries: Pantry[] = [];
+        let total = 0;
+        const skip = (page - 1) * per_page;
+        const take = per_page;
+        
+        if (owner === undefined) {
+            total = await queryRunner.manager
+                .createQueryBuilder(Pantry, "pantry")
+                .leftJoin("pantry.owner", "owner")
+                .leftJoin("pantry.sharedWith", "sharedWith")
+                .where("pantry.deletedAt IS NULL")
+                .andWhere(
+                    "owner.id = :userId OR sharedWith.id = :userId",
+                    { userId: user.id }
+                )
+                .getCount();
+                
+            pantries = await queryRunner.manager
+                .createQueryBuilder(Pantry, "pantry")
+                .leftJoinAndSelect("pantry.owner", "owner")
+                .leftJoinAndSelect("pantry.sharedWith", "sharedWith")
+                .where("pantry.deletedAt IS NULL")
+                .andWhere(
+                    "owner.id = :userId OR sharedWith.id = :userId",
+                    { userId: user.id }
+                )
+                .orderBy(`pantry.${sort_by}`, order)
+                .skip(skip)
+                .take(take)
+                .getMany();
+        } else if (owner === true) {
+            total = await queryRunner.manager.count(Pantry, {
+                where: { owner: { id: user.id }, deletedAt: null }
+            });
+            
+            pantries = await queryRunner.manager.find(Pantry, {
+                where: { owner: { id: user.id }, deletedAt: null },
+                relations: ["owner", "sharedWith"],
+                order: { [sort_by]: order },
+                skip,
+                take
+            });
+        } else {
+            total = await queryRunner.manager
+                .createQueryBuilder(Pantry, "pantry")
+                .leftJoin("pantry.owner", "owner")
+                .leftJoin("pantry.sharedWith", "sharedWith")
+                .where("pantry.deletedAt IS NULL")
+                .andWhere(
+                    "sharedWith.id = :userId AND owner.id != :userId",
+                    { userId: user.id }
+                )
+                .getCount();
+                
+            pantries = await queryRunner.manager
+                .createQueryBuilder(Pantry, "pantry")
+                .leftJoinAndSelect("pantry.owner", "owner")
+                .leftJoinAndSelect("pantry.sharedWith", "sharedWith")
+                .where("pantry.deletedAt IS NULL")
+                .andWhere(
+                    "sharedWith.id = :userId AND owner.id != :userId",
+                    { userId: user.id }
+                )
+                .orderBy(`pantry.${sort_by}`, order)
+                .skip(skip)
+                .take(take)
+                .getMany();
+        }
+        await queryRunner.commitTransaction();
+        
+        const formattedPantries = pantries.map(p => p.getFormattedPantry());
+        
+        return {
+            data: formattedPantries,
+            pagination: createPaginationMeta(total, page, per_page)
+        };
+    } catch (err) {
+        if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
+        handleCaughtError(err);
+    } finally {
+        await queryRunner.release();
     }
-
-    if (options.search) {
-        queryBuilder.andWhere("LOWER(pantry.name) LIKE :search", { search: `%${options.search.toLowerCase()}%` });
-    }
-
-    const orderDirection = options.order ?? "ASC";
-    let orderField: string;
-    switch (options.sort_by) {
-        case "updated_at":
-            orderField = "pantry.updatedAt";
-            break;
-        case "name":
-            orderField = "pantry.name";
-            break;
-        case "created_at":
-        default:
-            orderField = "pantry.createdAt";
-            break;
-    }
-
-    queryBuilder.orderBy(orderField, orderDirection);
-    queryBuilder.take(perPage).skip((page - 1) * perPage);
-
-    const [pantries, total] = await queryBuilder.getManyAndCount();
-    const formattedPantries = pantries.map(p => p.getFormattedPantry());
-
-    return createPaginationResponse(formattedPantries, total, page, perPage);
 }
 
 /**
@@ -124,27 +161,26 @@ export async function getPantriesService(options: PantryFilterOptions): Promise<
  * @returns {Promise<Pantry>} The formatted pantry
  * @throws {NotFoundError} If the pantry is not found or does not belong to the user
  */
-export async function getPantryByIdService(pantryId: number, user: User): Promise<any> {
-    const pantry = await Pantry.findOne({
-        where: { id: pantryId, deletedAt: null },
-        relations: [
-            "owner",
-            "sharedWith",
-            "items",
-            "items.product",
-            "items.product.category"
-        ]
-    });
-    if (!pantry) {
-        throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.PANTRY);
+export async function getPantryByIdService(pantryId: number, user: User): Promise<Pantry> {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+        const pantry = await queryRunner.manager.findOne(Pantry, {
+            where: { id: pantryId, deletedAt: null },
+            relations: ["owner", "sharedWith", "items", "items.product"]
+        });
+        if (!pantry || (pantry.owner.id !== user.id && !pantry.sharedWith.some(u => u.id === user.id))) {
+            throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.PANTRY);
+        }
+        await queryRunner.commitTransaction();
+        return pantry.getFormattedPantry();
+    } catch (err) {
+        if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
+        handleCaughtError(err);
+    } finally {
+        await queryRunner.release();
     }
-    const canAccess =
-        pantry.owner.id === user.id ||
-        (pantry.sharedWith && pantry.sharedWith.some(u => u.id === user.id));
-    if (!canAccess) {
-        throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.PANTRY);
-    }
-    return pantry.getFormattedPantry();
 }
 
 /**
@@ -157,7 +193,7 @@ export async function getPantryByIdService(pantryId: number, user: User): Promis
  * @returns {Promise<Pantry>} The updated pantry (formatted)
  * @throws {NotFoundError} If the pantry is not found or does not belong to the user
  */
-export async function updatePantryService(pantryId: number, data: PantryUpdateData, user?: User): Promise<any> {
+export async function updatePantryService(pantryId: number, name: string, metadata?: any, user?: User): Promise<Pantry> {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -171,26 +207,25 @@ export async function updatePantryService(pantryId: number, data: PantryUpdateDa
             throw new ForbiddenError(ERROR_MESSAGES.AUTHORIZATION.INSUFFICIENT_PERMISSIONS);
         }
         
-        if (data.name !== undefined) pantry.name = data.name;
-        if (data.description !== undefined) pantry.description = data.description;
-        if (data.metadata !== undefined) pantry.metadata = data.metadata;
-
-        if (data.sharedUserIds !== undefined) {
-            const sharedUsers = await queryRunner.manager.find(User, {
-                where: (data.sharedUserIds || []).map(id => ({ id })),
-            });
-            pantry.sharedWith = sharedUsers.filter(shared => shared.id !== pantry.owner.id);
+        const existingPantry = await queryRunner.manager.findOne(Pantry, {
+            where: { 
+                name: name, 
+                owner: { id: pantry.owner.id },
+                deletedAt: null 
+            }
+        });
+        
+        if (existingPantry && existingPantry.id !== pantryId) {
+            throw new ConflictError(ERROR_MESSAGES.CONFLICT.PANTRY_EXISTS);
         }
-
+        
+        pantry.name = name;
+        if (metadata !== undefined) pantry.metadata = metadata;
+        
         await queryRunner.manager.save(pantry);
         await queryRunner.commitTransaction();
-
-        const refreshed = await Pantry.findOne({
-            where: { id: pantry.id },
-            relations: ["owner", "sharedWith", "items", "items.product", "items.product.category"]
-        });
-
-        return (refreshed ?? pantry).getFormattedPantry();
+        
+        return pantry.getFormattedPantry();
     } catch (err) {
         if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
         
@@ -255,68 +290,37 @@ export async function deletePantryService(pantryId: number, user: User): Promise
  * @returns {Promise<User>} The user the pantry was shared with
  * @throws {NotFoundError} If the pantry or user is not found, or if sharing with the owner
  */
-export async function sharePantryService(pantryId: number, user: User, recipients: string[], mailer?: Mailer): Promise<any> {
+export async function sharePantryService(pantryId: number, user: User, email: string, mailer?: Mailer): Promise<User> {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-        const pantry = await queryRunner.manager.findOne(Pantry, {
-            where: { id: pantryId, deletedAt: null },
-            relations: ["sharedWith", "owner", "items", "items.product", "items.product.category"]
-        });
+        const pantry = await queryRunner.manager.findOne(Pantry, { where: { id: pantryId, deletedAt: null }, relations: ["sharedWith", "owner"] });
         if (!pantry || (pantry.owner.id !== user.id && !pantry.sharedWith.some(u => u.id === user.id))) {
             throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.PANTRY);
         }
-        const normalizedEmails = recipients
-            .map(email => email?.trim().toLowerCase())
-            .filter((email): email is string => !!email);
-
-        if (normalizedEmails.length === 0) {
-            throw new BadRequestError(ERROR_MESSAGES.VALIDATION.REQUIRED("recipients"));
-        }
-
-        const existingShared = new Map(pantry.sharedWith?.map(u => [u.id, u]) || []);
-        const newUsers: User[] = [];
-
-        for (const email of normalizedEmails) {
-            const toUser = await queryRunner.manager.findOne(User, { where: { email, deletedAt: null } });
-            if (!toUser) throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.USER);
-            if (toUser.id === user.id) throw new BadRequestError(ERROR_MESSAGES.BUSINESS_RULE.CANNOT_SHARE_WITH_YOURSELF);
-            if (existingShared.has(toUser.id)) continue;
-            existingShared.set(toUser.id, toUser);
-            newUsers.push(toUser);
-        }
-
-        if (newUsers.length === 0) {
-            await queryRunner.commitTransaction();
-            return pantry.getFormattedPantry();
-        }
-
-        pantry.sharedWith = Array.from(existingShared.values());
+        const toUser = await queryRunner.manager.findOne(User, { where: { email, deletedAt: null } });
+        if (!toUser) throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.USER);
+        if (toUser.id === user.id) throw new BadRequestError(ERROR_MESSAGES.BUSINESS_RULE.CANNOT_SHARE_WITH_YOURSELF);
+        if (pantry.sharedWith && pantry.sharedWith.some(u => u.id === toUser.id)) throw new ConflictError(ERROR_MESSAGES.CONFLICT.ALREADY_SHARED);
+        pantry.sharedWith = [...(pantry.sharedWith || []), toUser];
         await queryRunner.manager.save(pantry);
         await queryRunner.commitTransaction();
-
+        
         if (mailer) {
-            for (const toUser of newUsers) {
-                try {
-                    await mailer.sendEmail(
-                        EmailType.PANTRY_SHARED,
-                        toUser.displayName,
-                        pantry.name,
-                        user.displayName
-                    );
-                } catch (emailError) {
-                    console.error('Failed to send pantry shared notification email:', emailError);
-                }
+            try {
+                await mailer.sendEmail(
+                    EmailType.PANTRY_SHARED,
+                    toUser.name,
+                    pantry.name,
+                    user.name
+                );
+            } catch (emailError) {
+                console.error('Failed to send pantry shared notification email:', emailError);
             }
         }
-
-        const refreshed = await Pantry.findOne({
-            where: { id: pantry.id },
-            relations: ["owner", "sharedWith", "items", "items.product", "items.product.category"]
-        });
-
-        return (refreshed ?? pantry).getFormattedPantry();
+        
+        return toUser.getFormattedUser()
     } catch (err) {
         if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
         handleCaughtError(err);
@@ -334,18 +338,24 @@ export async function sharePantryService(pantryId: number, user: User, recipient
  * @returns {Promise<User[]>} Array of shared users
  * @throws {NotFoundError} If the pantry is not found or does not belong to the user
  */
-export async function getSharedUsersService(pantryId: number, user: User): Promise<PaginatedResponse<any>> {
-    const pantry = await Pantry.findOne({
-        where: { id: pantryId, deletedAt: null },
-        relations: ["owner", "sharedWith"]
-    });
-
-    if (!pantry || pantry.owner.id !== user.id) {
-        throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.PANTRY);
+export async function getSharedUsersService(pantryId: number, user: User): Promise<User[]> {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+        const pantry = await queryRunner.manager.findOne(Pantry, { where: { id: pantryId, owner: { id: user.id }, deletedAt: null }, relations: ["sharedWith"] });
+        if (!pantry) throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.PANTRY);
+        await queryRunner.commitTransaction();
+        const sharedUsers = pantry.sharedWith.map((user) => {
+            return user.getFormattedUser()
+        });
+        return sharedUsers;
+    } catch (err) {
+        if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
+        handleCaughtError(err);
+    } finally {
+        await queryRunner.release();
     }
-
-    const summaries = (pantry.sharedWith || []).map(sharedUser => sharedUser.getSummary());
-    return createPaginationResponse(summaries, summaries.length, 1, summaries.length || 1);
 }
 
 /**

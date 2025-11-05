@@ -14,12 +14,8 @@ export async function registerCategory(req: Request, res: Response): Promise<voi
       throw new BadRequestError(validation.message);
     }
 
-    const categoryData: RegisterCategoryData = {
-      name: req.body.name,
-      description: req.body.description ?? null,
-      metadata: req.body.metadata,
-      owner: req.user as User,
-    };
+    const categoryData: RegisterCategoryData = req.body as RegisterCategoryData;
+    categoryData.owner = req.user as User;
 
     replyCreated(res, await CategoryService.createNewCategoryService(categoryData));
   } catch (err) {
@@ -81,13 +77,8 @@ export async function updateCategory(req: Request, res: Response): Promise<void>
       throw new BadRequestError(bodyValidation.message);
     }
 
-    const { name, description, metadata } = req.body;
-    replySuccess(res, await CategoryService.updateCategoryService(
-      parseInt(req.params.id),
-      name,
-      description ?? null,
-      metadata
-    ));
+    const { name, metadata } = req.body;
+    replySuccess(res, await CategoryService.updateCategoryService(parseInt(req.params.id), name, metadata));
   } catch (err) {
     replyWithError(res, err);
   }

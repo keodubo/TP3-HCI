@@ -36,20 +36,17 @@ export class Purchase extends BaseEntity {
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ type: "datetime", nullable: true })
-  restoredAt: Date | null;
-
   @DeleteDateColumn()
   deletedAt: Date;
 
   getFormattedPurchase(): any {
     return {
-      id: String(this.id),
-      list_id: this.list ? String(this.list.id) : String(this.listId),
-      list: this.list ? this.list.getFormattedList() : null,
-      purchased_at: this.createdAt?.toISOString() ?? null,
-      restored_at: this.restoredAt ? this.restoredAt.toISOString() : null,
+      id: this.id,
       metadata: this.metadata ?? null,
+      owner: this.owner ? this.owner.getFormattedUser() : null,
+      list: this.list ? this.list.getFormattedList() : null,
+      items: this.items ? this.items.map(i => i.getFormattedListItem()) : [],
+      createdAt: this.createdAt?.toISOString().substring(0, 19).replace('T', ' '),
     };
   }
 }

@@ -19,18 +19,13 @@ import {Product} from "./product";
 import {removeUserForListShared} from "../utils/users";
 
 @Entity()
-@Unique(["name", "owner"])
 export class Pantry extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ nullable: false })
+  @Column({nullable: false})
   @Length(1, 50)
   name: string;
-
-  @Column({ type: "text", nullable: true })
-  @IsOptional()
-  description: string | null;
 
   @Column({ type: "simple-json", nullable: true })
   @IsOptional()
@@ -60,29 +55,14 @@ export class Pantry extends BaseEntity {
   deletedAt: Date;
 
   getFormattedPantry(): any {
-    const owner = this.owner?.getFormattedUser() ?? null;
-    const sharedUsers = this.sharedWith?.map((user) => {
-      const formatted = user.getFormattedUser();
-      return {
-        id: formatted.id,
-        email: formatted.email,
-        display_name: formatted.display_name,
-        avatar: formatted.photo_url,
-      };
-    }) ?? [];
-    const items = this.items ? this.items.map((item) => item.getFormattedListItem ? item.getFormattedListItem() : item) : [];
-
     return {
-      id: String(this.id),
+      id: this.id,
       name: this.name,
-      description: this.description ?? null,
       metadata: this.metadata ?? null,
-      owner_id: owner ? owner.id : null,
-      owner,
-      shared_users: sharedUsers,
-      created_at: this.createdAt?.toISOString() ?? null,
-      updated_at: this.updatedAt?.toISOString() ?? null,
-      items,
+      createdAt: this.createdAt?.toISOString().substring(0, 19).replace('T', ' '),
+      updatedAt: this.updatedAt?.toISOString().substring(0, 19).replace('T', ' '),
+      owner: this.owner?.getFormattedUser() ?? null,
+      sharedWith: this.sharedWith?.map((user) => user.getFormattedUser()) ?? [],
     };
   }
 

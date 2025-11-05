@@ -4,7 +4,6 @@ import { ERROR_MESSAGES } from './errorMessages';
 
 export type RegisterCategoryData = {
   name: string;
-  description?: string | null;
   owner: User;
   metadata?: Record<string, any>;
 }
@@ -19,20 +18,12 @@ export type GetCategoryData = {
 }
 
 export function isValidCategoryData(data: any): { isValid: boolean; message?: string } {
-  if (!data || typeof data !== 'object') {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.REQUIRED("body") };
-  }
-
-  if (!('name' in data) || typeof data.name !== 'string' || data.name.trim().length <= 0) {
+  if (!('name' in data) || data.name.length <= 0) {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("name") };
   }
 
-  if ('description' in data && data.description !== null && typeof data.description !== 'string') {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("description") };
-  }
-
-  if ('metadata' in data && data.metadata !== undefined && typeof data.metadata !== 'object') {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("metadata") };
+  if (typeof data.name !== 'string') {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("name") };
   }
 
   return { isValid: true };

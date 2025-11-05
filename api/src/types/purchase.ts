@@ -4,9 +4,11 @@ import { ERROR_MESSAGES } from './errorMessages';
 export interface GetPurchasesData {
   user: User;
   list_id?: number;
+  date_from?: string;
+  date_to?: string;
   page?: number;
   per_page?: number;
-  sort_by?: "created_at" | "restored_at" | "list_name" | "id";
+  sort_by?: "date" | "createdAt" | "updatedAt" | "list" | "id";
   order?: "ASC" | "DESC";
 }
 

@@ -20,18 +20,8 @@ export async function registerList(req: Request, res: Response): Promise<void> {
         const validation = isValidListData(req.body);
         if (!validation.isValid) throw new BadRequestError(validation.message);
 
-        const sharedIds = Array.isArray(req.body.shared_user_ids)
-            ? req.body.shared_user_ids.map((id: string | number) => Number(id)).filter((id: number) => !isNaN(id))
-            : [];
-
-        const listData: RegisterListData = {
-            name: req.body.name,
-            description: req.body.description ?? null,
-            recurring: req.body.is_recurring ?? false,
-            metadata: req.body.metadata,
-            sharedUserIds: sharedIds,
-            owner: req.user as User,
-        };
+        const listData: RegisterListData = req.body as RegisterListData;
+        listData.owner = req.user as User;
 
         const newList = await ListService.createListService(listData);
         replyCreated(res, newList);
@@ -45,11 +35,11 @@ export async function getLists(req: Request, res: Response): Promise<void> {
         const filterOptions: ListFilterOptions = {
             user: req.user as User,
             owner: req.query.owner !== undefined ? req.query.owner === "true" : undefined,
-            search: req.query.search ? String(req.query.search) : undefined,
+            name: req.query.name ? String(req.query.name) : undefined,
             recurring: req.query.recurring !== undefined ? req.query.recurring === "true" : undefined,
             page: req.query.page ? Number(req.query.page) : 1,
             per_page: req.query.per_page ? Number(req.query.per_page) : 10,
-            sort_by: req.query.sort_by ? String(req.query.sort_by) as "name" | "created_at" | "updated_at" | "last_purchased_at" : "name",
+            sort_by: req.query.sort_by ? String(req.query.sort_by) as "name" | "owner" | "createdAt" | "updatedAt" | "lastPurchasedAt" : "name",
             order: req.query.order ? String(req.query.order).toUpperCase() as "ASC" | "DESC" : "ASC"
         };
 
@@ -77,15 +67,7 @@ export async function updateList(req: Request, res: Response): Promise<void> {
         const validation = isValidListId(req.params);
         if (!validation.isValid) throw new BadRequestError(validation.message);
 
-        const listData: ListUpdateData = {
-            name: req.body.name,
-            description: req.body.description ?? null,
-            recurring: req.body.is_recurring,
-            metadata: req.body.metadata,
-            sharedUserIds: Array.isArray(req.body.shared_user_ids)
-                ? req.body.shared_user_ids.map((id: string | number) => Number(id)).filter((id: number) => !isNaN(id))
-                : undefined,
-        };
+        const listData: ListUpdateData = req.body as ListUpdateData;
         const updatedList = await ListService.updateListService(parseInt(req.params.id), listData, req.user as User);
         replySuccess(res, updatedList);
     } catch (err) {
@@ -136,11 +118,7 @@ export async function moveToPantry(req: Request, res: Response): Promise<void> {
         const validation = isValidListId(req.params);
         if (!validation.isValid) throw new BadRequestError(validation.message);
         const user = req.user as User;
-        const pantryId = Number(req.body?.pantry_id);
-        if (!pantryId || Number.isNaN(pantryId)) {
-            throw new BadRequestError(ERROR_MESSAGES.VALIDATION.MISSING_FIELD("pantry_id"));
-        }
-        const result = await ListService.moveToPantryService(Number(req.params.id), user, pantryId, req.body?.notes);
+        const result = await ListService.moveToPantryService(Number(req.params.id), user);
         replySuccess(res, result);
     } catch (err) {
         replyWithError(res, err);
@@ -151,22 +129,18 @@ export async function shareShoppingList(req: Request, res: Response): Promise<vo
     try {
         const validation = isValidListId(req.params);
         if (!validation.isValid) throw new BadRequestError(validation.message);
-
-        const recipients: string[] = Array.isArray(req.body.recipients) ? req.body.recipients : [];
-        if (recipients.length === 0) {
-            throw new BadRequestError(ERROR_MESSAGES.VALIDATION.REQUIRED("recipients"));
+        
+        const toUserEmail: string = req.body.email;
+        if (!toUserEmail) throw new BadRequestError(ERROR_MESSAGES.VALIDATION.REQUIRED("email"));
+        
+        const emailValidation = isValidEmail(toUserEmail);
+        if (!emailValidation.isValid) {
+            throw new BadRequestError(emailValidation.message);
         }
-
-        for (const email of recipients) {
-            const emailValidation = isValidEmail(String(email));
-            if (!emailValidation.isValid) {
-                throw new BadRequestError(emailValidation.message);
-            }
-        }
-
+        
         const fromUser = req.user as User;
         const mailer: Mailer = req.app.locals.mailer;
-        const result = await ListService.shareListService(Number(req.params.id), fromUser, recipients, mailer);
+        const result = await ListService.shareListService(Number(req.params.id), fromUser, toUserEmail, mailer);
         replySuccess(res, result);
     } catch (err) {
         replyWithError(res, err);

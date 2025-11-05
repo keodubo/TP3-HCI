@@ -50,23 +50,16 @@ export class ListItem extends BaseEntity {
   deletedAt: Date;
 
   getFormattedListItem(): any {
-    const productEntity = this.product;
-    const category = productEntity?.category;
-    const pantry = (productEntity as any)?.pantry;
     return {
-      id: String(this.id),
-      product_id: productEntity ? String(productEntity.id) : null,
-      product_name: productEntity ? productEntity.name : null,
-      category_id: category ? String(category.id) : null,
-      pantry_id: pantry ? String(pantry.id) : null,
+      id: this.id,
       quantity: this.quantity,
       unit: this.unit,
       metadata: this.metadata ?? null,
       purchased: this.purchased,
-      is_acquired: this.purchased,
-      last_purchased_at: this.lastPurchasedAt ? this.lastPurchasedAt.toISOString() : null,
-      created_at: this.createdAt?.toISOString() ?? null,
-      updated_at: this.updatedAt?.toISOString() ?? null,
+      lastPurchasedAt: this.lastPurchasedAt?.toISOString().substring(0, 19).replace('T', ' ') ?? null,
+      createdAt: this.createdAt.toISOString().substring(0, 19).replace('T', ' '),
+      updatedAt: this.updatedAt.toISOString().substring(0, 19).replace('T', ' '),
+      product: this.product?.getFormattedProduct() ?? null,
     };
   }
 }

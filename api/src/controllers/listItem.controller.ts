@@ -6,11 +6,9 @@ import {
     isValidListItemData,
     isValidListItemId,
     isValidListItemUpdateData,
-    isValidListItemPatchData,
     RegisterListItemData,
     ListItemUpdateData,
     ListItemFilterOptions,
-    ListItemPatchData,
 } from "../types/listItem";
 import { isValidListId } from "../types/list";
 import { User } from "../entities/user";
@@ -24,11 +22,9 @@ export async function getListItems(req: Request, res: Response): Promise<void> {
         const validation = isValidListId(req.params);
         if (!validation.isValid) throw new BadRequestError(validation.message);
 
-        const allowedSortBy = ["updated_at", "created_at", "last_purchased_at", "product_name"];
-        const sortBy = req.query.sort_by ? String(req.query.sort_by) : "created_at";
-        const sort_by = allowedSortBy.includes(sortBy)
-            ? (sortBy as "updated_at" | "created_at" | "last_purchased_at" | "product_name")
-            : "created_at";
+        const allowedSortBy = ["updatedAt", "createdAt", "lastPurchasedAt", "productName"];
+        const sortBy = req.query.sort_by ? String(req.query.sort_by) : "createdAt";
+        const sort_by = allowedSortBy.includes(sortBy) ? sortBy as "updatedAt" | "createdAt" | "lastPurchasedAt" | "productName" : "createdAt";
         const order = req.query.order && ["ASC", "DESC"].includes(String(req.query.order).toUpperCase()) ? String(req.query.order).toUpperCase() as "ASC" | "DESC" : "DESC";
         const pantry_id = req.query.pantry_id ? Number(req.query.pantry_id) : undefined;
         const category_id = req.query.category_id ? Number(req.query.category_id) : undefined;
@@ -36,7 +32,7 @@ export async function getListItems(req: Request, res: Response): Promise<void> {
 
         const filterOptions: ListItemFilterOptions = {
             listId: Number(req.params.id),
-            user: req.user as User,
+            owner: req.user as User,
             purchased:
                 req.query.purchased !== undefined
                     ? req.query.purchased === "true"
@@ -68,18 +64,16 @@ export async function addListItem(req: Request, res: Response): Promise<void> {
         const bodyValidation = isValidListItemData(req.body);
         if (!bodyValidation.isValid) throw new BadRequestError(bodyValidation.message);
 
+        const { product, quantity, unit, metadata } = req.body;
+
         const itemData: RegisterListItemData = {
             listId: Number(req.params.id),
             owner: req.user as User,
-            productId: Number(req.body.product_id),
-            quantity: Number(req.body.quantity),
+            product: product,
+            quantity: Number(quantity),
+            unit: String(unit),
+            metadata: metadata ?? null,
         };
-        if (req.body.unit !== undefined) {
-            itemData.unit = req.body.unit ?? null;
-        }
-        if (req.body.metadata !== undefined) {
-            itemData.metadata = req.body.metadata ?? null;
-        }
 
         const newItem = await ListItemService.addListItemService(itemData);
         replyCreated(res, newItem);
@@ -101,21 +95,9 @@ export async function updateListItem(req: Request, res: Response): Promise<void>
 
         const listId = Number(req.params.id);
         const itemId = Number(req.params.item_id);
-        const updatePayload: ListItemUpdateData = {};
-        if (req.body.product_id !== undefined) {
-            updatePayload.productId = Number(req.body.product_id);
-        }
-        if (req.body.quantity !== undefined) {
-            updatePayload.quantity = Number(req.body.quantity);
-        }
-        if (req.body.unit !== undefined) {
-            updatePayload.unit = req.body.unit ?? null;
-        }
-        if (req.body.metadata !== undefined) {
-            updatePayload.metadata = req.body.metadata ?? null;
-        }
+        const { quantity, unit, metadata } = req.body;
 
-        const updatedItem = await ListItemService.updateListItemService(listId, itemId, req.user as User, updatePayload);
+        const updatedItem = await ListItemService.updateListItemService(listId, itemId, { quantity, unit, metadata });
         replySuccess(res, updatedItem);
     } catch (err) {
         replyWithError(res, err);
@@ -125,30 +107,24 @@ export async function updateListItem(req: Request, res: Response): Promise<void>
 /**
  * Toggle purchased status of a shopping list item.
  */
-export async function patchListItem(req: Request, res: Response): Promise<void> {
+export async function toggleListItemPurchased(req: Request, res: Response): Promise<void> {
     try {
         const validation = isValidListItemId(req.params);
         if (!validation.isValid) throw new BadRequestError(validation.message);
 
-        const patchValidation = isValidListItemPatchData(req.body);
-        if (!patchValidation.isValid) throw new BadRequestError(patchValidation.message);
+        if (typeof req.body.purchased !== "boolean") {
+            throw new BadRequestError(ERROR_MESSAGES.VALIDATION.INVALID("purchased"));
+        }
 
         const listId = Number(req.params.id);
         const itemId = Number(req.params.item_id);
 
-        const patchData: ListItemPatchData = {};
-        if (req.body.quantity !== undefined) {
-            patchData.quantity = Number(req.body.quantity);
-        }
-        if (req.body.unit !== undefined) {
-            patchData.unit = req.body.unit ?? null;
-        }
-        if (req.body.purchased !== undefined) {
-            patchData.purchased = req.body.purchased;
-        }
-
-        const patchedItem = await ListItemService.patchListItemService(listId, itemId, req.user as User, patchData);
-        replySuccess(res, patchedItem);
+        const toggledItem = await ListItemService.toggleListItemPurchasedService(
+            listId,
+            itemId,
+            req.body.purchased
+        );
+        replySuccess(res, toggledItem);
     } catch (err) {
         replyWithError(res, err);
     }
@@ -165,7 +141,7 @@ export async function deleteListItem(req: Request, res: Response): Promise<void>
         const listId = Number(req.params.id);
         const itemId = Number(req.params.item_id);
 
-        const deleted = await ListItemService.deleteListItemService(listId, itemId, req.user as User);
+        const deleted = await ListItemService.deleteListItemService(listId, itemId);
         if (!deleted) throw new ServerError(ERROR_MESSAGES.SERVER.OPERATION_FAILED);
 
         replySuccess(res, {});

@@ -19,10 +19,6 @@ export class PantryItem extends BaseEntity {
   @Column({ nullable: true })
   unit: string;
 
-  @Column({ type: "datetime", nullable: true })
-  @IsOptional()
-  expirationDate: Date | null;
-
   @Column({ type: "simple-json", nullable: true })
   @IsOptional()
   metadata: Record<string, any>;
@@ -47,20 +43,14 @@ export class PantryItem extends BaseEntity {
   deletedAt: Date;
 
   getFormattedListItem(): any {
-    const product = this.product;
-    const category = product?.category;
     return {
-      id: String(this.id),
-      product_id: product ? String(product.id) : null,
-      product_name: product ? product.name : null,
-      category_id: category ? String(category.id) : null,
-      pantry_id: this.pantry ? String(this.pantry.id) : null,
+      id: this.id,
       quantity: this.quantity,
       unit: this.unit,
       metadata: this.metadata ?? null,
-      expiration_date: this.expirationDate ? this.expirationDate.toISOString() : null,
-      created_at: this.createdAt?.toISOString() ?? null,
-      updated_at: this.updatedAt?.toISOString() ?? null,
+      product : this.product.getFormattedProduct(),
+      createdAt: this.createdAt.toISOString().substring(0, 19).replace('T', ' '),
+      updatedAt: this.updatedAt.toISOString().substring(0, 19).replace('T', ' '),
     };
   }
 }

@@ -4,48 +4,44 @@ import { ERROR_MESSAGES } from './errorMessages';
 
 export type RegisterProductData = {
     name: string;
-    description?: string | null;
     owner: User;
-    categoryId?: number | null;
-    unit?: string | null;
-    defaultQuantity?: number;
+    category?: { id: number };
     metadata?: Record<string, any>;
 }
 
 export interface GetProductsData {
     owner: User;
-    search?: string;
+    name?: string;
     category_id?: number;
     page?: number;
     per_page?: number;
-    sort_by?: "name" | "created_at" | "updated_at";
+    sort_by?: "name" | "categoryName" | "createdAt" | "updatedAt";
     order?: "ASC" | "DESC";
 }
 
 export interface ProductUpdateData {
     name?: string;
-    description?: string | null;
-    categoryId?: number | null;
-    unit?: string | null;
-    defaultQuantity?: number;
+    category?: { id: number };
     metadata?: Record<string, any>;
 }
 
 export function isValidProductData(body: any): { isValid: boolean; message?: string } {
-    if (!body || typeof body !== 'object') {
+    if (!body) {
         return { isValid: false, message: ERROR_MESSAGES.VALIDATION.REQUIRED("body") };
     }
-    if (!body.name || typeof body.name !== 'string') {
+    if (!body.name) {
         return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("name") };
     }
-    if ('description' in body && body.description !== null && typeof body.description !== 'string') {
-        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("description") };
+    if (typeof body.name !== "string") {
+        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("name") };
     }
-    if ('category_id' in body && body.category_id !== null && isNaN(Number(body.category_id))) {
-        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID_ID_WITH_TYPE("Category") };
-    }
-    if ('default_quantity' in body && body.default_quantity !== undefined && body.default_quantity !== null && isNaN(Number(body.default_quantity))) {
-        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("default_quantity") };
+    if (body.category) {
+        if (typeof body.category !== "object" || !body.category.id) {
+            return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("category") };
+        }
+        if (typeof body.category.id !== "number") {
+            return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID_ID_WITH_TYPE("Category") };
+        }
     }
     if (body.metadata && typeof body.metadata !== "object") {
         return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("metadata") };
@@ -72,8 +68,8 @@ export function generateProductsFilteringOptions(productData: GetProductsData): 
         owner: { id: productData.owner.id },
     };
 
-    if (productData.search) {
-        whereOptions.name = ILike(`%${productData.search}%`);
+    if (productData.name) {
+        whereOptions.name = ILike(`%${productData.name}%`);
     }
 
     if (productData.category_id) {

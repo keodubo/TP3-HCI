@@ -4,7 +4,7 @@ import {RegisterCategoryData, GetCategoryData, generateCategoriesFilteringOption
 import {Category} from "../entities/category";
 import {User} from "../entities/user";
 import { ERROR_MESSAGES } from '../types/errorMessages';
-import { PaginatedResponse, createPaginationResponse } from '../types/pagination';
+import { PaginatedResponse, createPaginationMeta } from '../types/pagination';
 
 /**
  * Creates a new category.
@@ -14,15 +14,26 @@ import { PaginatedResponse, createPaginationResponse } from '../types/pagination
  * @returns {Promise<Category>} Created category
  * @throws {Error} If any error occurs during the process
  */
-export async function createNewCategoryService(categoryData: RegisterCategoryData): Promise<any> {
+export async function createNewCategoryService(categoryData: RegisterCategoryData): Promise<{ category: Category }> {
   const queryRunner = AppDataSource.createQueryRunner();
   await queryRunner.connect();
   await queryRunner.startTransaction();
 
   try {
+    const existingCategory = await queryRunner.manager.findOne(Category, {
+      where: { 
+        name: categoryData.name, 
+        owner: { id: categoryData.owner.id },
+        deletedAt: null 
+      }
+    });
+    
+    if (existingCategory) {
+      throw new ConflictError(ERROR_MESSAGES.CONFLICT.CATEGORY_EXISTS);
+    }
+
     const category = new Category();
     category.name = categoryData.name;
-    category.description = categoryData.description ?? null;
     category.owner = categoryData.owner;
     category.metadata = categoryData.metadata ?? null;
 
@@ -70,13 +81,11 @@ export async function getUserCategoriesService(categoryData: GetCategoryData): P
     });
 
     const formattedCategories = categories.map(c => c.getFormattedCategory());
-
-    return createPaginationResponse(
-      formattedCategories,
-      total,
-      parseInt(categoryData.page),
-      categoryData.per_page
-    );
+    
+    return {
+      data: formattedCategories,
+      pagination: createPaginationMeta(total, parseInt(categoryData.page), categoryData.per_page)
+    };
   } catch (err: unknown) {
     handleCaughtError(err);
   }
@@ -114,7 +123,7 @@ export async function getCategoryByIdService(
  * @returns {Promise<Category>} Updated category object
  * @throws {NotFoundError} If category is not found
  */
-export async function updateCategoryService(id: number, name: string, description?: string | null, metadata?: any): Promise<any> {
+export async function updateCategoryService(id: number, name: string, metadata?: any): Promise<Category> {
   const queryRunner = AppDataSource.createQueryRunner();
   await queryRunner.connect();
   await queryRunner.startTransaction();
@@ -123,17 +132,25 @@ export async function updateCategoryService(id: number, name: string, descriptio
     const category: Category | null = await queryRunner.manager.findOne(Category, { where: { id: id, deletedAt: null }, relations: ['owner'] });
     if (!category) throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.CATEGORY);
 
-    category.name = name;
-    if (description !== undefined) {
-      category.description = description;
+    const existingCategory = await queryRunner.manager.findOne(Category, {
+      where: { 
+        name: name, 
+        owner: { id: category.owner.id },
+        deletedAt: null 
+      }
+    });
+    
+    if (existingCategory && existingCategory.id !== id) {
+      throw new ConflictError(ERROR_MESSAGES.CONFLICT.CATEGORY_EXISTS);
     }
+    
+    category.name = name;
     if (metadata !== undefined) category.metadata = metadata;
     await queryRunner.manager.save(category);
 
     await queryRunner.commitTransaction();
     const refreshed = await queryRunner.manager.findOne(Category, { where: { id: category.id }, relations: ['owner'] });
-    const payload = refreshed ?? category;
-    return payload.getFormattedCategory();
+    return refreshed ? (refreshed.getFormattedCategory() as unknown as Category) : category;
   } catch (err: any) {
     await queryRunner.rollbackTransaction();
     

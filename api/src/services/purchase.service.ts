@@ -3,10 +3,10 @@ import { Purchase } from "../entities/purchase";
 import { List } from "../entities/list";
 import { User } from "../entities/user";
 import { NotFoundError, BadRequestError, handleCaughtError } from "../types/errors";
-import { GetPurchasesData } from "../types/purchase";
+import { GetPurchasesData, generatePurchasesFilteringOptions } from "../types/purchase";
 import {ListItem} from "../entities/listItem";
 import { ERROR_MESSAGES } from '../types/errorMessages';
-import { PaginatedResponse, createPaginationResponse } from '../types/pagination';
+import { PaginatedResponse, createPaginationMeta } from '../types/pagination';
 import { generateUniqueListName } from '../utils/listNameUtils';
 
 /**
@@ -18,46 +18,34 @@ import { generateUniqueListName } from '../utils/listNameUtils';
  */
 export async function getPurchasesService(filter: GetPurchasesData): Promise<PaginatedResponse<any>> {
   try {
-    const perPage = filter.per_page && filter.per_page > 0 ? filter.per_page : 10;
-    const page = filter.page && filter.page > 0 ? filter.page : 1;
+    const whereOptions = generatePurchasesFilteringOptions(filter);
+    const take = filter.per_page || 10;
+    const skip = ((filter.page || 1) - 1) * take;
 
-    const queryBuilder = Purchase.createQueryBuilder("purchase")
-      .leftJoinAndSelect("purchase.list", "list")
-      .leftJoinAndSelect("list.owner", "listOwner")
-      .leftJoinAndSelect("list.sharedWith", "listShared")
-      .leftJoinAndSelect("purchase.owner", "owner")
-      .leftJoinAndSelect("purchase.items", "items")
-      .leftJoinAndSelect("items.product", "product")
-      .leftJoinAndSelect("product.category", "category")
-      .where("purchase.ownerId = :ownerId", { ownerId: filter.user.id })
-      .withDeleted();
-
-    if (filter.list_id) {
-      queryBuilder.andWhere("purchase.listId = :listId", { listId: filter.list_id });
-    }
-
-    const orderDirection = filter.order ?? "DESC";
-    let orderField: string;
+    let order: any = {};
+    const orderDirection = filter.order && String(filter.order).toUpperCase() === "ASC" ? "ASC" : "DESC";
     switch (filter.sort_by) {
-      case "restored_at":
-        orderField = "purchase.restoredAt";
+      case "createdAt":
+        order = { createdAt: orderDirection };
         break;
-      case "list_name":
-        orderField = "list.name";
+      case "list":
+        order = { list: { name: orderDirection } };
         break;
       case "id":
-        orderField = "purchase.id";
+        order = { id: orderDirection };
         break;
-      case "created_at":
       default:
-        orderField = "purchase.createdAt";
-        break;
+        order = { createdAt: orderDirection };
     }
 
-    queryBuilder.orderBy(orderField, orderDirection);
-    queryBuilder.skip((page - 1) * perPage).take(perPage);
-
-    const [purchases, total] = await queryBuilder.getManyAndCount();
+    const [purchases, total] = await Purchase.findAndCount({
+      where: whereOptions,
+      relations: ["list", "list.owner", "list.sharedWith", "owner", "items", "items.product", "items.product.category", "items.product.pantry", "items.product.pantry.owner"],
+      order,
+      take,
+      skip,
+      withDeleted: true
+    });
 
     for (const purchase of purchases) {
       if (!purchase.list && purchase.listId) {
@@ -70,11 +58,13 @@ export async function getPurchasesService(filter: GetPurchasesData): Promise<Pag
     }
 
     const formattedPurchases = purchases.map(p => p.getFormattedPurchase());
-
-    return createPaginationResponse(formattedPurchases, total, page, perPage);
+    
+    return {
+      data: formattedPurchases,
+      pagination: createPaginationMeta(total, filter.page || 1, filter.per_page || 10)
+    };
   } catch (err) {
     handleCaughtError(err);
-    throw err;
   }
 }
 
@@ -86,7 +76,7 @@ export async function getPurchasesService(filter: GetPurchasesData): Promise<Pag
  * @returns {Promise<Purchase>} Purchase information
  * @throws {NotFoundError} If purchase is not found
  */
-export async function getPurchaseByIdService(id: number, user: User): Promise<any> {
+export async function getPurchaseByIdService(id: number, user: User): Promise<Purchase> {
   try {
     const purchase = await AppDataSource.getRepository(Purchase)
         .createQueryBuilder("purchase")
@@ -94,8 +84,6 @@ export async function getPurchaseByIdService(id: number, user: User): Promise<an
         .leftJoinAndSelect("purchase.items", "items")
         .leftJoinAndSelect("items.product", "product")
         .leftJoinAndSelect("product.category", "productCategory")
-        .leftJoinAndSelect("product.pantry", "productPantry")
-        .leftJoinAndSelect("productPantry.owner", "productPantryOwner")
         .where("purchase.id = :id", { id })
         .andWhere("purchase.ownerId = :ownerId", { ownerId: user.id })
         .withDeleted()
@@ -126,7 +114,7 @@ export async function getPurchaseByIdService(id: number, user: User): Promise<an
  * @returns {Promise<List>} Restored purchased list information
  * @throws {NotFoundError} If purchase is not found
  */
-export async function restorePurchaseService(id: number, user: User): Promise<any> {
+export async function restorePurchaseService(id: number, user: User): Promise<List> {
   const queryRunner = AppDataSource.createQueryRunner();
   await queryRunner.connect();
   await queryRunner.startTransaction();
@@ -153,7 +141,7 @@ export async function restorePurchaseService(id: number, user: User): Promise<an
     if (!purchase.list && purchase.listId) {
       purchase.list = await queryRunner.manager.findOne(List, {
         where: { id: purchase.listId },
-        relations: ["owner", "sharedWith", "items"],
+        relations: ["owner", "sharedWith", "items", "items.product", "items.product.category"],
         withDeleted: true,
       });
     }
@@ -170,17 +158,19 @@ export async function restorePurchaseService(id: number, user: User): Promise<an
 
     await queryRunner.manager.save(newList);
 
-    if (purchase.items && purchase.items.length > 0) {
-      for (const item of purchase.items) {
+    if (purchase.list.items && purchase.list.items.length > 0) {
+      for (const originalItem of purchase.list.items) {
+        if (!originalItem.product || originalItem.product.deletedAt) {
+          continue;
+        }
+
         const newItem = new ListItem();
-        Object.assign(newItem, item);
-        newItem.id = undefined;
-        newItem.quantity = item.quantity;
-        newItem.unit = item.unit;
-        newItem.metadata = item.metadata;
+        newItem.quantity = originalItem.quantity;
+        newItem.unit = originalItem.unit;
+        newItem.metadata = originalItem.metadata;
         newItem.purchased = false;
         newItem.lastPurchasedAt = null;
-        newItem.product = item.product;
+        newItem.product = originalItem.product;
         newItem.owner = user;
         newItem.list = newList;
         newItem.purchase = null;
@@ -189,19 +179,8 @@ export async function restorePurchaseService(id: number, user: User): Promise<an
       }
     }
 
-    purchase.list = newList;
-    purchase.listId = newList.id;
-    purchase.restoredAt = new Date();
-    await queryRunner.manager.save(purchase);
-
     await queryRunner.commitTransaction();
-    const refreshed = await Purchase.findOne({
-      where: { id: purchase.id },
-      relations: ["list", "list.owner", "list.sharedWith", "items", "items.product", "items.product.category"],
-      withDeleted: true,
-    });
-
-    return (refreshed ?? purchase).getFormattedPurchase();
+    return newList.getFormattedList();
   } catch (err) {
     if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
     handleCaughtError(err);

@@ -3,7 +3,7 @@ import {
     getListItems,
     addListItem,
     updateListItem,
-    patchListItem,
+    toggleListItemPurchased,
     deleteListItem,
 } from "../controllers/listItem.controller";
 import { authenticateJWT } from "../middleware/authToken";
@@ -89,8 +89,8 @@ router.post("/:id/items", authenticateJWT, addListItem);
  *         name: sort_by
  *         schema:
  *           type: string
- *           enum: [updated_at, created_at, last_purchased_at, product_name]
- *           default: created_at
+ *           enum: [updatedAt, createdAt, lastPurchasedAt, productName]
+ *           default: createdAt
  *         description: Sort field
  *       - in: query
  *         name: order
@@ -236,9 +236,9 @@ router.put("/:id/items/:item_id", authenticateJWT, updateListItem);
  *   patch:
  *     security:
  *       - bearerAuth: []
- *     summary: Partially update list item
+ *     summary: Toggle list item purchased status
  *     tags: [Shopping List Items]
- *     operationId: patchListItem
+ *     operationId: toggleListItemPurchased
  *     parameters:
  *       - in: path
  *         name: id
@@ -259,11 +259,6 @@ router.put("/:id/items/:item_id", authenticateJWT, updateListItem);
  *           schema:
  *             type: object
  *             properties:
- *               quantity:
- *                 type: number
- *               unit:
- *                 type: string
- *                 nullable: true
  *               purchased:
  *                 type: boolean
  *             required: []
@@ -283,7 +278,7 @@ router.put("/:id/items/:item_id", authenticateJWT, updateListItem);
  *       500:
  *         $ref: '#/responses/ServerError'
  */
-router.patch("/:id/items/:item_id", authenticateJWT, patchListItem);
+router.patch("/:id/items/:item_id", authenticateJWT, toggleListItemPurchased);
 
 /**
  * @swagger

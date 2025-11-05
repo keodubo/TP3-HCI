@@ -172,20 +172,6 @@ router.get('/', authenticateJWT, getLists);
  *         schema:
  *           type: integer
  *         description: Shopping list ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               pantry_id:
- *                 type: integer
- *               notes:
- *                 type: string
- *                 nullable: true
- *             required:
- *               - pantry_id
  *     responses:
  *       200:
  *         description: Shopping list data
@@ -405,17 +391,11 @@ router.post('/:id/move-to-pantry', authenticateJWT, moveToPantry);
  *           schema:
  *             type: object
  *             properties:
- *               recipients:
- *                 type: array
- *                 items:
- *                   type: string
- *                   format: email
- *                 description: List of recipient email addresses
- *               message:
+ *               email:
  *                 type: string
- *                 nullable: true
- *             required:
- *               - recipients
+ *                 format: email
+ *                 description: User email
+ *                 example: "janedoe@email.com"
  *     responses:
  *       200:
  *         description: Shopping list successfully shared

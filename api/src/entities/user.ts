@@ -27,57 +27,31 @@ export class User extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({nullable: false})
+  @Length(1, 50)
+  name: string;
+
   @Column({ nullable: false })
-  @Length(1, 100)
-  displayName: string;
+  @Length(1, 50)
+  surname: string;
 
   @Column({ nullable: false, unique: true })
   @IsEmail()
   email: string;
 
-  @Column({ nullable: true })
-  @IsOptional()
-  photoUrl: string;
-
   @Column({ type: "simple-json", nullable: true })
   @IsOptional()
   metadata: Record<string, any>;
 
-  @Column({ type: "text", nullable: true })
-  @IsOptional()
-  bio: string | null;
-
-  @Column({ nullable: true })
-  @IsOptional()
-  phoneNumber: string | null;
-
-  @Column({ nullable: true })
-  @IsOptional()
-  preferredLanguage: string | null;
-
-  @Column({ nullable: false, default: true })
-  notificationOptIn: boolean;
-
-  @Column({ nullable: false, default: 'system' })
-  themeMode: string;
-
   getFormattedUser(): any {
     return {
-      id: String(this.id),
+      id: this.id,
+      name: this.name,
+      surname: this.surname,
       email: this.email,
-      display_name: this.displayName,
-      photo_url: this.photoUrl ?? null,
-      is_verified: this.isVerified,
       metadata: this.metadata ?? {},
-    };
-  }
-
-  getSummary(): any {
-    return {
-      id: String(this.id),
-      email: this.email,
-      display_name: this.displayName,
-      avatar: this.photoUrl ?? null,
+      createdAt: this.createdAt.toISOString().substring(0, 19).replace('T', ' '),
+      updatedAt: this.updatedAt.toISOString().substring(0, 19).replace('T', ' '),
     };
   }
 
@@ -129,16 +103,4 @@ export class User extends BaseEntity {
 
   @CreateDateColumn()
   createdAt: Date;
-
-  getProfile(): any {
-    return {
-      user_id: String(this.id),
-      bio: this.bio ?? null,
-      phone_number: this.phoneNumber ?? null,
-      preferred_language: this.preferredLanguage ?? null,
-      notification_opt_in: this.notificationOptIn,
-      theme_mode: this.themeMode,
-      updated_at: this.updatedAt.toISOString(),
-    };
-  }
 }

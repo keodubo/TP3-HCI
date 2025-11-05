@@ -6,12 +6,10 @@ import {ListFilterOptions, ListUpdateData, RegisterListData} from "../types/list
 import {ListItem} from "../entities/listItem";
 import {removeUserForListShared, removeUserPrivateValues} from "../utils/users";
 import {PantryItem} from "../entities/pantryItem";
-import {Pantry} from "../entities/pantry";
-import {In} from "typeorm";
 import {Purchase} from "../entities/purchase";
 import { ERROR_MESSAGES } from '../types/errorMessages';
 import { Mailer, EmailType } from './email.service';
-import { PaginatedResponse, createPaginationResponse } from '../types/pagination';
+import { PaginatedResponse, createPaginationMeta } from '../types/pagination';
 
 /**
  * Creates a new list.
@@ -27,31 +25,31 @@ export async function createListService(listData: RegisterListData): Promise<Lis
     await queryRunner.startTransaction();
 
     try {
+        const existingList = await queryRunner.manager.findOne(List, {
+            where: { 
+                name: listData.name, 
+                owner: { id: listData.owner.id },
+                deletedAt: null 
+            }
+        });
+        
+        if (existingList) {
+            throw new ConflictError(ERROR_MESSAGES.CONFLICT.LIST_NAME_EXISTS);
+        }
+
         const list = new List();
         list.name = listData.name;
-        list.description = listData.description ?? null;
+        list.description = listData.description;
         list.recurring = listData.recurring ?? false;
         list.metadata = listData.metadata ?? null;
         list.owner = listData.owner!;
 
-        if (listData.sharedUserIds && listData.sharedUserIds.length > 0) {
-            const sharedUsers = await queryRunner.manager.find(User, {
-                where: listData.sharedUserIds.map(id => ({ id })),
-            });
-            list.sharedWith = sharedUsers.filter(user => user.id !== list.owner.id);
-        }
-
         await queryRunner.manager.save(list);
         await queryRunner.commitTransaction();
 
-        const saved = await List.findOne({ where: { id: list.id }, relations: ["owner", "sharedWith", "items"] });
-        return (saved ?? list).getFormattedList();
+        return list.getFormattedList();
     } catch (err: any) {
         if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
-        
-        if (err.code === 'SQLITE_CONSTRAINT' && err.message.includes('unique_list_name_per_owner')) {
-            throw new ConflictError(ERROR_MESSAGES.CONFLICT.LIST_NAME_EXISTS);
-        }
         
         handleCaughtError(err);
     } finally {
@@ -68,15 +66,10 @@ export async function createListService(listData: RegisterListData): Promise<Lis
  */
 export async function getListsService(listData: ListFilterOptions): Promise<PaginatedResponse<any>> {
     try {
-        const perPage = listData.per_page && listData.per_page > 0 ? listData.per_page : 10;
-        const page = listData.page && listData.page > 0 ? listData.page : 1;
         const queryBuilder = List.createQueryBuilder("list")
             .leftJoinAndSelect("list.owner", "owner")
             .leftJoinAndSelect("list.sharedWith", "sharedWith")
             .leftJoinAndSelect("list.items", "items")
-            .leftJoinAndSelect("items.product", "itemProduct")
-            .leftJoinAndSelect("itemProduct.category", "itemCategory")
-            .leftJoinAndSelect("itemProduct.pantry", "itemPantry")
             .andWhere("list.deletedAt IS NULL");
 
         if (listData.owner === true) {
@@ -90,8 +83,8 @@ export async function getListsService(listData: ListFilterOptions): Promise<Pagi
             );
         }
 
-        if (listData.search) {
-            queryBuilder.andWhere("list.name LIKE :search", { search: `%${listData.search}%` });
+        if (listData.name) {
+            queryBuilder.andWhere("list.name LIKE :name", { name: `%${listData.name}%` });
         }
         if (listData.recurring !== undefined) {
             queryBuilder.andWhere("list.recurring = :recurring", { recurring: listData.recurring });
@@ -99,13 +92,16 @@ export async function getListsService(listData: ListFilterOptions): Promise<Pagi
 
         let orderField: string;
         switch (listData.sort_by) {
-            case "created_at":
+            case "owner":
+                orderField = "owner.id";
+                break;
+            case "createdAt":
                 orderField = "list.createdAt";
                 break;
-            case "updated_at":
+            case "updatedAt":
                 orderField = "list.updatedAt";
                 break;
-            case "last_purchased_at":
+            case "lastPurchasedAt":
                 orderField = "list.lastPurchasedAt";
                 break;
             case "name":
@@ -116,19 +112,17 @@ export async function getListsService(listData: ListFilterOptions): Promise<Pagi
 
         queryBuilder
             .orderBy(orderField, orderDirection)
-            .take(perPage)
-            .skip((page - 1) * perPage);
+            .take(listData.per_page)
+            .skip((listData.page! - 1) * (listData.per_page ?? 10));
 
         const [lists, total] = await queryBuilder.getManyAndCount();
 
         const formattedLists = lists.map(list => list.getFormattedList());
-
-        return createPaginationResponse(
-            formattedLists,
-            total,
-            page,
-            perPage
-        );
+        
+        return {
+            data: formattedLists,
+            pagination: createPaginationMeta(total, listData.page!, listData.per_page!)
+        };
     } catch (err) {
         handleCaughtError(err);
     }
@@ -143,10 +137,7 @@ export async function getListsService(listData: ListFilterOptions): Promise<Pagi
  */
 export async function getListByIdService(listId: number, user: User): Promise<List> {
     try {
-        const list = await List.findOne({
-            where: { id: listId },
-            relations: ["owner", "sharedWith", "items", "items.product", "items.product.category", "items.product.pantry"]
-        });
+        const list = await List.findOne({ where: { id: listId }, relations: ["owner", "sharedWith", "items"] });
         if (!list || (list.owner.id !== user.id && !list.sharedWith.some(u => u.id === user.id))) {
             throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.LIST);
         }
@@ -172,33 +163,33 @@ export async function updateListService(listId: number, data: ListUpdateData, us
     try {
         const list = await queryRunner.manager.findOne(List, {
             where: { id: listId } as any,
-            relations: ["owner", "sharedWith", "items", "items.product", "items.product.category", "items.product.pantry"],
+            relations: ["owner", "sharedWith", "items"],
         });
         if (!list || (list.owner.id !== user.id && !list.sharedWith.some(u => u.id === user.id))) {
             throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.LIST);
         }
-        if (data.name !== undefined) list.name = data.name;
+        if (data.name !== undefined) {
+            const existingList = await queryRunner.manager.findOne(List, {
+                where: { 
+                    name: data.name, 
+                    owner: { id: user.id },
+                    deletedAt: null 
+                }
+            });
+            
+            if (existingList && existingList.id !== listId) {
+                throw new ConflictError(ERROR_MESSAGES.CONFLICT.LIST_NAME_EXISTS);
+            }
+            
+            list.name = data.name;
+        }
         if (data.description !== undefined) list.description = data.description;
         if (data.recurring !== undefined) list.recurring = data.recurring;
         if (data.metadata !== undefined) list.metadata = data.metadata;
-
-        if (data.sharedUserIds !== undefined) {
-            if (data.sharedUserIds === null) {
-                list.sharedWith = [];
-            } else {
-                const sharedUsers = await queryRunner.manager.find(User, {
-                    where: data.sharedUserIds.map(id => ({ id })),
-                });
-                list.sharedWith = sharedUsers.filter(u => u.id !== list.owner.id);
-            }
-        }
         await queryRunner.manager.save(list);
         await queryRunner.commitTransaction();
-        const refreshed = await queryRunner.manager.findOne(List, {
-            where: { id: list.id },
-            relations: ["owner", "sharedWith", "items", "items.product", "items.product.category", "items.product.pantry"],
-        });
-        return (refreshed ?? list).getFormattedList();
+        const refreshed = await queryRunner.manager.findOne(List, { where: { id: list.id }, relations: ["owner", "sharedWith", "items"] });
+        return refreshed ? (refreshed.getFormattedList() as unknown as List)  : list;
     } catch (err) {
         if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
         throw err;
@@ -266,21 +257,38 @@ export async function purchaseListService(listId: number, user: User, metadata: 
             throw new BadRequestError(ERROR_MESSAGES.BUSINESS_RULE.NO_ITEMS_IN_SHOPPING_LIST);
         }
 
-        const listItems: ListItem[] = [];
+        const purchasedItems: ListItem[] = [];
+        const purchaseItems: ListItem[] = [];
+        
         for (const item of list.items) {
-            const listItem = await queryRunner.manager.findOne(ListItem, { where: { id: item.id } });
+            const listItem = await queryRunner.manager.findOne(ListItem, { 
+                where: { id: item.id },
+                relations: ["product", "product.category"]
+            });
             if (listItem) {
                 if(listItem.purchased) {
                     listItem.lastPurchasedAt = new Date();
-                    listItems.push(listItem);
                     await queryRunner.manager.save(listItem);
+                    purchasedItems.push(listItem);
+                    
+                    const purchaseItem = new ListItem();
+                    purchaseItem.product = listItem.product;
+                    purchaseItem.quantity = listItem.quantity;
+                    purchaseItem.unit = listItem.unit;
+                    purchaseItem.purchased = listItem.purchased;
+                    purchaseItem.lastPurchasedAt = listItem.lastPurchasedAt;
+                    purchaseItem.metadata = listItem.metadata;
+                    purchaseItem.owner = listItem.owner;
+                    purchaseItem.list = listItem.list;
+                    
+                    purchaseItems.push(purchaseItem);
                 }
             } else {
                 throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.ITEM);
             }
         }
 
-        if(listItems.length <= 0) {
+        if(purchasedItems.length <= 0) {
             throw new BadRequestError(ERROR_MESSAGES.BUSINESS_RULE.NO_ITEMS_PURCHASED_IN_SHOPPING_LIST);
         }
 
@@ -289,8 +297,16 @@ export async function purchaseListService(listId: number, user: User, metadata: 
         await queryRunner.manager.save(list);
         purchase.owner = user;
         purchase.list = list;
-        purchase.items = listItems;
         purchase.metadata = metadata ?? {};
+        
+        await queryRunner.manager.save(purchase);
+        
+        for (const purchaseItem of purchaseItems) {
+            purchaseItem.purchase = purchase;
+            await queryRunner.manager.save(purchaseItem);
+        }
+        
+        purchase.items = purchaseItems;
         await queryRunner.manager.save(purchase);
 
         if (!list.recurring) {
@@ -298,11 +314,7 @@ export async function purchaseListService(listId: number, user: User, metadata: 
         }
 
         await queryRunner.commitTransaction();
-        const refreshed = await List.findOne({
-            where: { id: list.id },
-            relations: ["owner", "sharedWith", "items", "items.product", "items.product.category", "items.product.pantry"],
-        });
-        return (refreshed ?? list).getFormattedList();
+        return list.getFormattedList();
     } catch (err) {
         if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
         handleCaughtError(err);
@@ -339,11 +351,7 @@ export async function resetListItemsService(listId: number, user: User): Promise
         }
 
         await queryRunner.commitTransaction();
-        const refreshed = await List.findOne({
-            where: { id: list.id },
-            relations: ["owner", "sharedWith", "items", "items.product", "items.product.category", "items.product.pantry"],
-        });
-        return (refreshed ?? list).getFormattedList();
+        return list.getFormattedList();
     } catch (err) {
         if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
         handleCaughtError(err);
@@ -358,105 +366,60 @@ export async function resetListItemsService(listId: number, user: User): Promise
  *
  * @param {number} listId - Shopping list ID
  * @param {User} user - Authenticated user
- * @param {number} listId - Shopping list ID
- * @param {User} user - Authenticated user
- * @param {number} pantryId - Destination pantry ID
- * @param {string | null | undefined} notes - Optional notes metadata
- * @returns {Promise<{ pantry_id: string; items: any[] }>} Transfer summary
- * @throws {NotFoundError} If the list or pantry is not accessible
+ * @returns {Promise<PantryItem[]>} The updated list with items moved to pantry
+ * @throws {NotFoundError} If the list is not found
  */
-export async function moveToPantryService(
-    listId: number,
-    user: User,
-    pantryId: number,
-    notes?: string | null
-): Promise<{ pantry_id: string; items: any[] }> {
+export async function moveToPantryService(listId: number, user: User): Promise<PantryItem[]> {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
         const list = await queryRunner.manager.findOne(List, {
             where: { id: listId, owner: { id: user.id }, deletedAt: null },
-            relations: ["items", "items.product", "items.product.category", "owner"]
+            relations: ["items", "items.product", "items.product.pantry", "owner"]
         });
         if (!list) throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.LIST);
 
-        const pantry = await queryRunner.manager.findOne(Pantry, {
-            where: { id: pantryId, deletedAt: null },
-            relations: ["owner", "sharedWith"]
-        });
-        if (!pantry) throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.PANTRY);
-
-        const canAccessPantry =
-            pantry.owner.id === user.id ||
-            (pantry.sharedWith && pantry.sharedWith.some(u => u.id === user.id));
-        if (!canAccessPantry) {
-            throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.PANTRY);
-        }
-
         const movedItems: PantryItem[] = [];
         for (const item of list.items) {
-            if (!item.purchased) continue;
-
-            let pantryItem = await queryRunner.manager.findOne(PantryItem, {
-                where: {
-                    product: { id: item.product.id },
-                    owner: { id: user.id },
-                    pantry: { id: pantry.id },
-                    deletedAt: null
+            if (item.purchased) {
+                if (!item.product.pantry) {
+                    continue;
                 }
-            });
-
-            if (!pantryItem) {
-                pantryItem = new PantryItem();
-                pantryItem.product = item.product;
-                pantryItem.quantity = item.quantity;
-                pantryItem.unit = item.unit ?? item.product.unit ?? null;
-                pantryItem.metadata = item.metadata ? { ...item.metadata } : {};
-                pantryItem.owner = user;
-                pantryItem.pantry = pantry;
-            } else {
-                pantryItem.quantity += item.quantity;
-                if (item.unit && item.unit !== pantryItem.unit) {
+                let pantryItem = await queryRunner.manager.findOne(PantryItem, {
+                    where: {
+                        product: { id: item.product.id },
+                        owner: { id: user.id },
+                        pantry: { id: item.product.pantry.id },
+                        deletedAt: null
+                    }
+                });
+                if (pantryItem) {
+                    pantryItem.quantity += item.quantity;
+                    if (item.unit && item.unit !== pantryItem.unit) {
+                        pantryItem.unit = item.unit;
+                    }
+                    if (item.metadata) {
+                        pantryItem.metadata = { ...pantryItem.metadata, ...item.metadata };
+                    }
+                    await queryRunner.manager.save(pantryItem);
+                    movedItems.push(pantryItem);
+                } else {
+                    pantryItem = new PantryItem();
+                    pantryItem.product = item.product;
+                    pantryItem.quantity = item.quantity;
                     pantryItem.unit = item.unit;
-                }
-                if (item.metadata) {
-                    pantryItem.metadata = { ...(pantryItem.metadata ?? {}), ...item.metadata };
+                    pantryItem.metadata = item.metadata;
+                    pantryItem.owner = user;
+                    pantryItem.pantry = item.product.pantry;
+                    await queryRunner.manager.save(pantryItem);
+                    movedItems.push(pantryItem);
                 }
             }
-
-            if (notes) {
-                pantryItem.metadata = { ...(pantryItem.metadata ?? {}), transfer_notes: notes };
-            }
-
-            pantryItem.addedAt = new Date();
-            await queryRunner.manager.save(pantryItem);
-            movedItems.push(pantryItem);
         }
 
         await queryRunner.commitTransaction();
-
-        if (movedItems.length === 0) {
-            return {
-                pantry_id: String(pantry.id),
-                items: [],
-            };
-        }
-
-        const refreshedItems = await PantryItem.find({
-            where: {
-                pantry: { id: pantry.id },
-                owner: { id: user.id },
-                id: In(movedItems.map(item => item.id)),
-            },
-            relations: ["product", "product.category", "pantry"]
-        });
-
-        const formattedItems = refreshedItems.map(item => item.getFormattedListItem());
-        return {
-            pantry_id: String(pantry.id),
-            items: formattedItems,
-        };
+        return movedItems.map(item => item.getFormattedListItem() ? item.getFormattedListItem() : item);
     } catch (err) {
         if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
         handleCaughtError(err);
@@ -476,83 +439,48 @@ export async function moveToPantryService(
  * @returns {Promise<List>} The shared list
  * @throws {NotFoundError} If the list or user is not found or not accessible
  */
-export async function shareListService(listId: number, fromUser: User, recipientEmails: string[], mailer?: Mailer): Promise<List> {
+export async function shareListService(listId: number, fromUser: User, toUserEmail: string, mailer?: Mailer): Promise<List> {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
         const list = await queryRunner.manager.findOne(List, {
             where: { id: listId },
-            relations: ["sharedWith", "owner", "items", "items.product", "items.product.category", "items.product.pantry"]
+            relations: ["sharedWith", "owner"]
         });
         if (!list || (list.owner.id !== fromUser.id && !list.sharedWith.some(u => u.id === fromUser.id))) {
             throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.LIST);
         }
 
-        const normalizedEmails = (recipientEmails || [])
-            .map(email => email?.trim().toLowerCase())
-            .filter((email): email is string => !!email);
+        const toUser = await queryRunner.manager.findOne(User, { where: { email: toUserEmail, deletedAt: null } });
+        if (!toUser) throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.USER);
 
-        if (normalizedEmails.length === 0) {
-            throw new BadRequestError(ERROR_MESSAGES.VALIDATION.REQUIRED("recipients"));
+        if (toUser.id === fromUser.id) throw new BadRequestError(ERROR_MESSAGES.BUSINESS_RULE.CANNOT_SHARE_WITH_YOURSELF);
+
+        if (list.sharedWith && list.sharedWith.some(u => u.id === toUser.id)) {
+            await queryRunner.release();
+            throw new ConflictError(ERROR_MESSAGES.CONFLICT.ALREADY_SHARED);
         }
 
-        const currentSharedMap = new Map(list.sharedWith?.map(u => [u.id, u]) || []);
-        const newlyAddedUsers: User[] = [];
-
-        for (const email of normalizedEmails) {
-            const toUser = await queryRunner.manager.findOne(User, { where: { email, deletedAt: null } });
-            if (!toUser) {
-                throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.USER);
-            }
-
-            if (toUser.id === fromUser.id) {
-                throw new BadRequestError(ERROR_MESSAGES.BUSINESS_RULE.CANNOT_SHARE_WITH_YOURSELF);
-            }
-
-            if (currentSharedMap.has(toUser.id)) {
-                continue;
-            }
-
-            currentSharedMap.set(toUser.id, toUser);
-            newlyAddedUsers.push(toUser);
-        }
-
-        if (newlyAddedUsers.length === 0) {
-            await queryRunner.commitTransaction();
-            const refreshed = await List.findOne({
-                where: { id: list.id },
-                relations: ["owner", "sharedWith", "items", "items.product", "items.product.category", "items.product.pantry"],
-            });
-            return (refreshed ?? list).getFormattedList();
-        }
-
-        list.sharedWith = Array.from(currentSharedMap.values());
+        list.sharedWith = [...(list.sharedWith || []), toUser];
         await queryRunner.manager.save(list);
 
         await queryRunner.commitTransaction();
-
-        const refreshed = await List.findOne({
-            where: { id: list.id },
-            relations: ["owner", "sharedWith", "items", "items.product", "items.product.category", "items.product.pantry"],
-        });
-
+        
         if (mailer) {
             try {
-                for (const toUser of newlyAddedUsers) {
-                    await mailer.sendEmail(
-                        EmailType.LIST_SHARED,
-                        toUser.displayName,
-                        list.name,
-                        fromUser.displayName
-                    );
-                }
+                await mailer.sendEmail(
+                    EmailType.LIST_SHARED,
+                    toUser.name,
+                    list.name,
+                    fromUser.name
+                );
             } catch (emailError) {
                 console.error('Failed to send list shared notification email:', emailError);
             }
         }
-
-        return (refreshed ?? list).getFormattedList();
+        
+        return list.getFormattedList();
     } catch (err) {
         if (queryRunner.isTransactionActive) await queryRunner.rollbackTransaction();
         handleCaughtError(err);
@@ -570,7 +498,7 @@ export async function shareListService(listId: number, fromUser: User, recipient
  * @returns {Promise<User[]>} List of users with whom the list is shared
  * @throws {NotFoundError} If the list is not found or not accessible
  */
-export async function getSharedUsersService(listId: number, user: User): Promise<PaginatedResponse<any>> {
+export async function getSharedUsersService(listId: number, user: User): Promise<User[]> {
     try {
         const list = await List.findOne({
             where: { id: listId },
@@ -583,8 +511,13 @@ export async function getSharedUsersService(listId: number, user: User): Promise
             throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND.LIST);
         }
 
-        const summaries = (list.sharedWith || []).map(sharedUser => sharedUser.getSummary());
-        return createPaginationResponse(summaries, summaries.length, 1, summaries.length || 1);
+        if (!list.sharedWith || list.sharedWith.length === 0) {
+            return [];
+        }
+
+        return list.sharedWith.map(user => {
+            return user.getFormattedUser();
+        });
 
     } catch (err) {
         handleCaughtError(err);

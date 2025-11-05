@@ -4,32 +4,26 @@ import { ERROR_MESSAGES } from './errorMessages';
 export interface RegisterListItemData {
     listId: number;
     owner: User;
-    productId: number;
+    product: { id: number };
     quantity: number;
-    unit?: string | null;
-    metadata?: Record<string, any> | null;
+    unit: string;
+    metadata?: any;
 }
 
 export interface ListItemUpdateData {
-    productId?: number;
+    name?: string;
     quantity?: number;
-    unit?: string | null;
+    unit?: string;
     metadata?: Record<string, any> | null;
-}
-
-export interface ListItemPatchData {
-    quantity?: number;
-    unit?: string | null;
-    purchased?: boolean;
 }
 
 export interface ListItemFilterOptions {
     listId: number;
-    user: User;
+    owner: User;
     purchased?: boolean;
     page?: number;
     per_page?: number;
-    sort_by?: "updated_at" | "created_at" | "last_purchased_at" | "product_name";
+    sort_by?: "updatedAt" | "createdAt" | "lastPurchasedAt" | "productName";
     order?: "ASC" | "DESC";
     pantry_id?: number;
     category_id?: number;
@@ -37,30 +31,35 @@ export interface ListItemFilterOptions {
 }
 
 export function isValidListItemData(body: any): { isValid: boolean; message?: string } {
-    if (!body || typeof body !== "object") {
+    if (!body) {
         return { isValid: false, message: ERROR_MESSAGES.VALIDATION.REQUIRED("body") };
     }
 
-    if (!body.product_id) {
-        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("product_id") };
+    if (!body.product) {
+        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("product") };
     }
-    const productId = Number(body.product_id);
-    if (Number.isNaN(productId) || productId <= 0) {
+    if (typeof body.product !== "object" || !body.product.id) {
+        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("product") };
+    }
+    if (typeof body.product.id !== "number") {
         return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID_ID_WITH_TYPE("Product") };
     }
 
     if (body.quantity === undefined) {
         return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("quantity") };
     }
-    if (typeof body.quantity !== "number" || Number.isNaN(body.quantity) || body.quantity <= 0) {
+    if (typeof body.quantity !== "number" || (body.quantity) <= 0) {
         return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("quantity") };
     }
 
-    if (body.unit !== undefined && body.unit !== null && (typeof body.unit !== "string" || body.unit.trim() === "")) {
+    if (!body.unit) {
+        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("unit") };
+    }
+    if (typeof body.unit !== "string" || body.unit.trim() === "") {
         return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("unit") };
     }
 
-    if (body.metadata !== undefined && body.metadata !== null && typeof body.metadata !== "object") {
+    if (body.metadata && typeof body.metadata !== "object") {
         return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("metadata") };
     }
 
@@ -68,54 +67,29 @@ export function isValidListItemData(body: any): { isValid: boolean; message?: st
 }
 
 export function isValidListItemUpdateData(body: any): { isValid: boolean; message?: string } {
-    if (!body || typeof body !== "object") {
-        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.REQUIRED("body") };
-    }
-
-    if (body.product_id !== undefined) {
-        const productId = Number(body.product_id);
-        if (Number.isNaN(productId) || productId <= 0) {
-            return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID_ID_WITH_TYPE("Product") };
-        }
-    }
-
-    if (body.quantity !== undefined) {
-        if (typeof body.quantity !== "number" || Number.isNaN(body.quantity) || body.quantity <= 0) {
-            return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("quantity") };
-        }
-    }
-
-    if (body.unit !== undefined && body.unit !== null && (typeof body.unit !== "string" || body.unit.trim() === "")) {
-        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("unit") };
-    }
-
-    if (body.metadata !== undefined && body.metadata !== null && typeof body.metadata !== "object") {
-        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("metadata") };
-    }
-
-    return { isValid: true };
-}
-
-export function isValidListItemPatchData(body: any): { isValid: boolean; message?: string } {
-    if (!body || typeof body !== "object") {
-        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.REQUIRED("body") };
-    }
-
-    if (body.quantity !== undefined) {
-        if (typeof body.quantity !== "number" || Number.isNaN(body.quantity) || body.quantity <= 0) {
-            return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("quantity") };
-        }
-    }
-
-    if (body.unit !== undefined && body.unit !== null && (typeof body.unit !== "string" || body.unit.trim() === "")) {
-        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("unit") };
-    }
-
-    if (body.purchased !== undefined && typeof body.purchased !== "boolean") {
-        return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("purchased") };
-    }
-
-    return { isValid: true };
+  if (!body) {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.REQUIRED("body") };
+  }
+  
+  if (body.quantity === undefined) {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("quantity") };
+  }
+  if (typeof body.quantity !== "number" || isNaN(body.quantity) || (body.quantity) <= 0) {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("quantity") };
+  }
+  
+  if (body.unit === undefined) {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("unit") };
+  }
+  if (typeof body.unit !== "string" || body.unit.trim() === "") {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("unit") };
+  }
+  
+  if (body.metadata !== undefined && body.metadata !== null && typeof body.metadata !== "object") {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("metadata") };
+  }
+  
+  return { isValid: true };
 }
 
 export function isValidListItemId(params: any): { isValid: boolean; message?: string } {

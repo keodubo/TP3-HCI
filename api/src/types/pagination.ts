@@ -1,22 +1,25 @@
-export interface PaginatedResponse<T> {
-  data: T[];
+export interface PaginationMeta {
+  total: number;
   page: number;
   per_page: number;
-  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
 }
 
-export function createPaginationResponse<T>(
-  data: T[],
-  total: number,
-  page: number | undefined,
-  perPage: number | undefined
-): PaginatedResponse<T> {
-  const safePerPage = perPage && perPage > 0 ? perPage : 10;
-  const safePage = page && page > 0 ? page : 1;
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: PaginationMeta;
+}
+
+export function createPaginationMeta(total: number, page: number, per_page: number): PaginationMeta {
+  const total_pages = Math.ceil(total / per_page);
   return {
-    data,
-    page: safePage,
-    per_page: safePerPage,
     total,
+    page,
+    per_page,
+    total_pages,
+    has_next: page < total_pages,
+    has_prev: page > 1
   };
 }

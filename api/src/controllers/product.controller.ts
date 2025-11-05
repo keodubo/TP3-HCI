@@ -9,22 +9,21 @@ import { ERROR_MESSAGES } from '../types/errorMessages';
 export async function getProducts(req: Request, res: Response): Promise<void> {
   try {
     const owner = req.user as User;
-  const page: number = req.query.page ? Number(req.query.page) : 1;
-  const per_page: number = req.query.per_page ? Number(req.query.per_page) : 10;
-  const sortQuery = typeof req.query.sort_by === "string" ? req.query.sort_by : undefined;
-  const sort_by = getSortByValue(sortQuery);
+    const page: number = req.query.page ? Number(req.query.page) : 1;
+    const per_page: number = req.query.per_page ? Number(req.query.per_page) : 10;
+    const sort_by: "name" | "categoryName" | "createdAt" | "updatedAt" = req.query.sort_by
+        ? String(req.query.sort_by) as "name" | "categoryName" | "createdAt" | "updatedAt"
+        : "name";
     const order: "ASC" | "DESC" = req.query.order
         ? String(req.query.order).toUpperCase() as "ASC" | "DESC"
         : "DESC";
 
-    const search: string | undefined = req.query.search ? String(req.query.search) : undefined;
-    const category_id: number | undefined = req.query.category_id !== undefined && req.query.category_id !== null
-      ? Number(req.query.category_id)
-      : undefined;
+    const name: string | undefined = req.query.name ? String(req.query.name) : undefined;
+    const category_id: number | undefined = req.query.category_id ? Number(req.query.category_id) : undefined;
 
     const result = await ProductService.getProductsService({
       owner,
-      search,
+      name,
       category_id,
       page,
       per_page,
@@ -35,16 +34,6 @@ export async function getProducts(req: Request, res: Response): Promise<void> {
     replySuccess(res, result);
   } catch (err) {
     replyWithError(res, err);
-  }
-}
-
-function getSortByValue(sortQuery: string | undefined): "name" | "created_at" | "updated_at" {
-  switch (sortQuery) {
-    case "created_at":
-    case "updated_at":
-      return sortQuery;
-    default:
-      return "name";
   }
 }
 
@@ -72,12 +61,9 @@ export async function createProduct(req: Request, res: Response): Promise<void> 
 
     const productData: RegisterProductData = {
       name: req.body.name,
-      description: req.body.description ?? null,
       owner: req.user as User,
-      categoryId: req.body.category_id ? Number(req.body.category_id) : null,
-      unit: req.body.unit ?? null,
-      defaultQuantity: req.body.default_quantity !== undefined ? Number(req.body.default_quantity) : undefined,
-      metadata: req.body.metadata,
+      category: req.body.category,
+      metadata: req.body.metadata
     };
 
     replyCreated(res, await ProductService.createProductService(productData));
@@ -100,15 +86,13 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
       throw new BadRequestError(bodyValidation.message);
     }
     
+    const { name, category, metadata } = req.body;
     const product = await ProductService.updateProductService(id, owner, {
-      name: req.body.name,
-      description: req.body.description ?? null,
-      categoryId: req.body.category_id !== undefined ? Number(req.body.category_id) : undefined,
-      unit: req.body.unit ?? null,
-      defaultQuantity: req.body.default_quantity !== undefined ? Number(req.body.default_quantity) : undefined,
-      metadata: req.body.metadata,
+      name,
+      category,
+      metadata
     });
-    replySuccess(res, product);
+    replySuccess(res, { product });
   } catch (err) {
     replyWithError(res, err);
   }

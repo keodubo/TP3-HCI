@@ -3,7 +3,8 @@ import { ERROR_MESSAGES } from './errorMessages';
 export type RegisterUserData = {
   email: string;
   password: string;
-  displayName: string;
+  name: string;
+  surname: string;
   metadata?: Record<string, any>;
 }
 
@@ -13,12 +14,7 @@ export type LoginUserData = {
 }
 
 export type VerificationData = {
-  email: string;
   code: string;
-}
-
-export type SendVerificationData = {
-  email: string;
 }
 
 export type PasswordRecoveryData = {
@@ -26,24 +22,8 @@ export type PasswordRecoveryData = {
 }
 
 export type PasswordResetData = {
-  email: string;
-  resetToken: string;
+  code: string;
   password: string;
-}
-
-export type ChangePasswordData = {
-  currentPassword: string;
-  newPassword: string;
-}
-
-export type UpdateProfileData = {
-  displayName?: string;
-  phoneNumber?: string | null;
-  preferredLanguage?: string | null;
-  notificationOptIn?: boolean;
-  themeMode?: string | null;
-  metadata?: Record<string, any>;
-  bio?: string | null;
 }
 
 export function isValidUserId(data: any): { isValid: boolean; message?: string } {
@@ -70,8 +50,9 @@ export function isValidEmail(email: string): { isValid: boolean, message?: strin
   return { isValid: true };
 }
 
-export function isValidRegistrationData(data: RegisterUserData): { isValid: boolean; message?: string } {
-  if (!data.email) {
+
+export function isValidRegistrationData(data: any): { isValid: boolean; message?: string } {
+  if (!('email' in data) || data.email.length <= 0) {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("email") };
   }
 
@@ -80,68 +61,60 @@ export function isValidRegistrationData(data: RegisterUserData): { isValid: bool
     return { isValid: false, message: emailValidation.message };
   }
 
-  if (!data.password) {
+  if (!('password' in data) || data.password.length <= 0) {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("password") };
   }
 
-  if (data.password.length < 6) {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID_PASSWORD };
+  if (!('name' in data) || data.name.length <= 0) {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("name") };
   }
 
-  if (!data.displayName || data.displayName.trim().length === 0) {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("display_name") };
+  if (!('surname' in data) || data.surname.length <= 0) {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("surname") };
   }
 
   return { isValid: true };
 }
 
-export function isValidLoginData(data: LoginUserData): { isValid: boolean; message?: string } {
-  if (!data.email) {
+
+export function isValidLoginData(data: any): { isValid: boolean; message?: string } {
+  if (!('email' in data) || data.email.length <= 0) {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("email") };
   }
 
-  if (!data.password) {
+  if (!('password' in data) || data.password.length <= 0) {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("password") };
   }
 
   return { isValid: true };
+
 }
 
-export function isValidVerificationTokenData(data: VerificationData): { isValid: boolean; message?: string } {
-  if (!data.email) {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("email") };
-  }
-  if (!data.code) {
+export function isValidVerificationTokenData(data: any): { isValid: boolean; message?: string } {
+  if (!('code' in data) || data.code.length <= 0) {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("code") };
   }
 
   return { isValid: true };
 }
 
-export function isValidSendVerificationData(data: SendVerificationData): { isValid: boolean; message?: string } {
-  if (!data.email) {
+export function isValidPasswordRecoveryData(data: any): { isValid: boolean; message?: string } {
+  if (!('email' in data) || data.email.length <= 0) {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("email") };
   }
+
   return { isValid: true };
 }
 
-export function isValidPasswordRecoveryData(data: PasswordRecoveryData): { isValid: boolean; message?: string } {
-  if (!data.email) {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("email") };
+export function isValidPasswordResetData(data: any): { isValid: boolean; message?: string } {
+  if (!('code' in data) || data.code.length <= 0) {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("code") };
   }
-  return { isValid: true };
-}
 
-export function isValidPasswordResetData(data: PasswordResetData): { isValid: boolean; message?: string } {
-  if (!data.email) {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("email") };
-  }
-  if (!data.resetToken) {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("reset_token") };
-  }
-  if (!data.password) {
+  if (!('password' in data) || data.password === undefined || data.password === null || data.password === '') {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("password") };
   }
+
   if (data.password.length < 6) {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID_PASSWORD };
   }
@@ -149,33 +122,37 @@ export function isValidPasswordResetData(data: PasswordResetData): { isValid: bo
   return { isValid: true };
 }
 
-export function isValidChangePassword(data: ChangePasswordData): { isValid: boolean; message?: string } {
-  if (!data.currentPassword || data.currentPassword.length < 6) {
+export function isValidChangePassword(data: any): { isValid: boolean; message?: string } {
+  if (!('currentPassword' in data) || data.currentPassword.length < 6) {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID_PASSWORD };
   }
 
-  if (!data.newPassword || data.newPassword.length < 6) {
+  if (!('newPassword' in data) || data.newPassword.length < 6) {
     return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID_PASSWORD };
   }
 
   return { isValid: true };
 }
 
-export function isValidModificationData(data: UpdateProfileData): { isValid: boolean; message?: string } {
-  if (!data) {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.REQUIRED("body") };
+export function isValidModificationData(data: any): { isValid: boolean; message?: string } {
+  if ('email' in data) {
+    return { isValid: false, message: ERROR_MESSAGES.BUSINESS_RULE.CANNOT_CHANGE_EMAIL };
   }
 
-  if (data.displayName !== undefined && (typeof data.displayName !== 'string' || data.displayName.trim().length === 0)) {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("display_name") };
+  if (!('name' in data) || data.name === undefined || data.name === null) {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("name") };
+  }
+  
+  if (typeof data.name !== 'string' || data.name.trim().length === 0) {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("name") };
   }
 
-  if (data.themeMode !== undefined && typeof data.themeMode !== 'string') {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("theme_mode") };
+  if (!('surname' in data) || data.surname === undefined || data.surname === null) {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.MISSING_FIELD("surname") };
   }
-
-  if (data.metadata !== undefined && typeof data.metadata !== 'object') {
-    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("metadata") };
+  
+  if (typeof data.surname !== 'string' || data.surname.trim().length === 0) {
+    return { isValid: false, message: ERROR_MESSAGES.VALIDATION.INVALID("surname") };
   }
 
   return { isValid: true };
