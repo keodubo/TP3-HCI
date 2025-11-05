@@ -14,7 +14,7 @@ data class ComprartirAppState(
     val featureFlags: FeatureFlags,
 ) {
     val currentDestinationRoute: String?
-        get() = navController.currentDestination?.route
+        get() = navController.currentBackStackEntry?.destination?.route
 
     fun navigate(intent: NavigationIntent) {
         val route = buildString {

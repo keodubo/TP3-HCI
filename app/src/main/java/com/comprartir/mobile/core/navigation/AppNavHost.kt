@@ -7,9 +7,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.comprartir.mobile.auth.presentation.RegisterRoute
-import com.comprartir.mobile.auth.presentation.SignInRoute
 import com.comprartir.mobile.auth.presentation.UpdatePasswordRoute
 import com.comprartir.mobile.auth.presentation.VerifyScreen
+import com.comprartir.mobile.feature.auth.login.LoginRoute
 import com.comprartir.mobile.shared.components.DashboardRoute
 import com.comprartir.mobile.lists.presentation.ListDetailsRoute
 import com.comprartir.mobile.lists.presentation.ListsRoute
@@ -44,7 +44,16 @@ fun ComprartirNavHost(
 
 private fun NavGraphBuilder.authGraph(appState: ComprartirAppState) {
     composable(AppDestination.SignIn.route) {
-        SignInRoute(onNavigate = appState::navigate)
+        LoginRoute(
+            onRecoverPassword = { appState.navigate(NavigationIntent(AppDestination.UpdatePassword)) },
+            onRegister = { appState.navigate(NavigationIntent(AppDestination.Register)) },
+            onSubmit = {
+                appState.navController.navigate(AppDestination.Dashboard.route) {
+                    popUpTo(AppDestination.SignIn.route) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+        )
     }
     composable(AppDestination.Dashboard.route) {
         DashboardRoute(onNavigate = appState::navigate)

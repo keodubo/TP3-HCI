@@ -20,9 +20,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.comprartir.mobile.core.navigation.AppDestination
 import com.comprartir.mobile.core.navigation.ComprartirAppState
 import com.comprartir.mobile.R
@@ -51,7 +53,8 @@ fun ResponsiveAppScaffold(
         )
     }
 
-    val currentRoute = appState.currentDestinationRoute
+    val navBackStackEntry by appState.navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
     val authRoutes = remember {
         setOf(
             AppDestination.SignIn.route,
@@ -60,7 +63,7 @@ fun ResponsiveAppScaffold(
             AppDestination.UpdatePassword.route,
         )
     }
-    val showNavigation = currentRoute !in authRoutes
+    val showNavigation = currentRoute != null && currentRoute !in authRoutes
     val onNavigate: (AppDestination) -> Unit = { destination ->
         if (currentRoute != destination.route) {
             appState.navigate(com.comprartir.mobile.core.navigation.NavigationIntent(destination))

@@ -8,12 +8,19 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.comprartir.mobile.core.designsystem.ComprartirTheme
 import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.core.navigation.ComprartirNavHost
+import com.comprartir.mobile.core.navigation.SessionViewModel
+import com.comprartir.mobile.core.navigation.AppDestination
 import com.comprartir.mobile.core.navigation.rememberComprartirAppState
 import com.comprartir.mobile.core.ui.ResponsiveAppScaffold
 import com.comprartir.mobile.core.util.FeatureFlags
@@ -34,41 +41,75 @@ fun ComprartirApp(
             featureFlags = featureFlags,
         )
         val spacing = LocalSpacing.current
+        val sessionViewModel: SessionViewModel = hiltViewModel()
+        val isAuthenticated by sessionViewModel.isAuthenticated.collectAsStateWithLifecycle()
+        val navBackStackEntry by appState.navController.currentBackStackEntryAsState()
+        val currentRoute = navBackStackEntry?.destination?.route
+        val isAuthRoute = currentRoute == null || currentRoute in AuthRoutes
+
+        LaunchedEffect(isAuthenticated, currentRoute) {
+            if (!isAuthenticated && currentRoute != null && currentRoute !in AuthRoutes) {
+                appState.navController.navigate(AppDestination.SignIn.route) {
+                    popUpTo(AppDestination.SignIn.route) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+        }
+
         val horizontalPadding = when (windowSizeClass.widthSizeClass) {
             WindowWidthSizeClass.Expanded -> spacing.xxl
             else -> spacing.mobileGutter
         }
 
-        ResponsiveAppScaffold(
-            appState = appState,
-            isLandscape = isLandscape,
-            topBar = {
-                ComprartirTopBar(
-                    destinationRoute = appState.currentDestinationRoute,
-                    showBack = appState.navController.previousBackStackEntry != null,
-                    onBack = appState::onBack,
-                    featureFlags = featureFlags,
-                )
-            },
-        ) { paddingValues ->
+        if (isAuthRoute) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
             ) {
+                ComprartirNavHost(
+                    appState = appState,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        } else {
+            ResponsiveAppScaffold(
+                appState = appState,
+                isLandscape = isLandscape,
+                topBar = {
+                    ComprartirTopBar(
+                        destinationRoute = appState.currentDestinationRoute,
+                        showBack = appState.navController.previousBackStackEntry != null,
+                        onBack = appState::onBack,
+                        featureFlags = featureFlags,
+                    )
+                },
+            ) { paddingValues ->
                 Box(
                     modifier = Modifier
-                        .align(Alignment.TopCenter)
                         .fillMaxSize()
-                        .padding(horizontal = horizontalPadding)
-                        .widthIn(max = spacing.maxContentWidth),
+                        .padding(paddingValues),
                 ) {
-                    ComprartirNavHost(
-                        appState = appState,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxSize()
+                            .padding(horizontal = horizontalPadding)
+                            .widthIn(max = spacing.maxContentWidth),
+                    ) {
+                        ComprartirNavHost(
+                            appState = appState,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 }
             }
         }
     }
 }
+
+private val AuthRoutes = setOf(
+    AppDestination.SignIn.route,
+    AppDestination.Register.route,
+    AppDestination.Verify.route,
+    AppDestination.UpdatePassword.route,
+)

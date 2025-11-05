@@ -40,6 +40,13 @@
     <string name="label_profile_heading">Perfil</string>
     <string name="label_name">Nombre</string>
     <string name="label_save">Guardar</string>
+    <string name="login_title">Iniciar sesión</string>
+    <string name="login_subtitle">Accedé con tu email y contraseña</string>
+    <string name="login_forgot_prompt">¿Olvidaste tu contraseña?</string>
+    <string name="login_forgot_action">Recuperarla</string>
+    <string name="login_register_prompt">¿No tenés cuenta?</string>
+    <string name="login_register_action">Registrate</string>
+    <string name="login_toggle_password_visibility">Mostrar u ocultar contraseña</string>
     <string name="hint_search_products">Buscar productos</string>
     <string name="empty_product_name">Producto sin nombre</string>
     <string name="header_assign_categories">Asigna categorías a los productos</string>

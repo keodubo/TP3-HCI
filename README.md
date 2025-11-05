@@ -58,6 +58,11 @@ The app reads runtime configuration values from Gradle properties so each develo
 
 > `build/` outputs are ignored via `.gitignore` and should remain excluded from any ZIP submissions.
 
+## Backend Troubleshooting
+- If `npm run api` reports `EADDRINUSE` for port 8080, run `bash scripts/stop_port_8080.sh` to list and terminate any lingering backend instances.
+- Add `--force` to skip the confirmation prompt when you are certain the processes belong to Comprartir.
+- Remember to stop the backend with `Ctrl+C` when you no longer need it, so the port stays free for the next run.
+
 ## Next Steps / TODO Highlights
 1. Integrate shopping-list sharing flows (RF8/RF11) once the backend endpoints support invitations & acceptance.
 2. Hook pantry CRUD UI to the new repository mutations (add/edit/delete) and expose bulk actions.

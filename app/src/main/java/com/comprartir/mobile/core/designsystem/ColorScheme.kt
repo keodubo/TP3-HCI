@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 object ComprartirColors {
     val Surface = Color(0xFFF4F6F8)
     val SurfaceDark = Color(0xFF101522)
+    val SurfaceCard = Color(0xFFFFFFFF)
     val Border = Color(0xFFE5E7EB)
     val BorderHover = Color(0xFFD1D5DB)
     val TextPrimary = Color(0xFF0F172A)
@@ -86,3 +87,24 @@ fun comprartirDarkColorScheme(): ColorScheme = darkColorScheme(
     errorContainer = ComprartirColors.Error,
     onErrorContainer = ComprartirColors.White,
 )
+
+val ColorScheme.brand: Color
+    get() = ComprartirColors.BrandPrimary
+
+val ColorScheme.brandDark: Color
+    get() = ComprartirColors.BrandPressed
+
+val ColorScheme.brandTint: Color
+    get() = ComprartirColors.BrandTint
+
+val ColorScheme.textPrimary: Color
+    get() = ComprartirColors.TextPrimary
+
+val ColorScheme.textMuted: Color
+    get() = ComprartirColors.TextMuted
+
+val ColorScheme.surfaceCard: Color
+    get() = ComprartirColors.SurfaceCard
+
+val ColorScheme.borderDefault: Color
+    get() = ComprartirColors.Border

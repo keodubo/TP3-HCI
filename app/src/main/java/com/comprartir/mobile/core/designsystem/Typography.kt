@@ -2,11 +2,35 @@ package com.comprartir.mobile.core.designsystem
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontLoadingStrategy
 import androidx.compose.ui.unit.sp
+import com.comprartir.mobile.R
 
-private val HankenGrotesk = FontFamily.SansSerif
+private val HankenGrotesk = FontFamily(
+    Font(
+        resId = R.font.hanken_grotesk_regular,
+        weight = FontWeight.Normal,
+        loadingStrategy = FontLoadingStrategy.Async
+    ),
+    Font(
+        resId = R.font.hanken_grotesk_medium,
+        weight = FontWeight.Medium,
+        loadingStrategy = FontLoadingStrategy.Async
+    ),
+    Font(
+        resId = R.font.hanken_grotesk_semibold,
+        weight = FontWeight.SemiBold,
+        loadingStrategy = FontLoadingStrategy.Async
+    ),
+    Font(
+        resId = R.font.hanken_grotesk_bold,
+        weight = FontWeight.Bold,
+        loadingStrategy = FontLoadingStrategy.Async
+    ),
+)
 
 fun comprartirTypography(): Typography = Typography(
     displaySmall = TextStyle(

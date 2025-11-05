@@ -40,6 +40,13 @@
     <string name="label_profile_heading">Profile</string>
     <string name="label_name">Name</string>
     <string name="label_save">Save</string>
+    <string name="login_title">Sign in</string>
+    <string name="login_subtitle">Sign in with your email and password</string>
+    <string name="login_forgot_prompt">Forgot your password?</string>
+    <string name="login_forgot_action">Recover it</string>
+    <string name="login_register_prompt">No account yet?</string>
+    <string name="login_register_action">Register</string>
+    <string name="login_toggle_password_visibility">Toggle password visibility</string>
     <string name="hint_search_products">Search products</string>
     <string name="empty_product_name">Unnamed product</string>
     <string name="header_assign_categories">Assign categories to products</string>
