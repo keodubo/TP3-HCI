@@ -21,7 +21,7 @@ interface ComprartirApi {
 
     // region Auth
     @POST("users/register")
-    suspend fun register(@Body request: RegisterRequest): AuthResponse
+    suspend fun register(@Body request: RegisterRequest): UserDto
 
     @POST("users/login")
     suspend fun login(@Body request: LoginRequest): AuthResponse
@@ -33,7 +33,7 @@ interface ComprartirApi {
     suspend fun sendVerification(@Body request: SendVerificationRequest)
 
     @POST("users/verify-account")
-    suspend fun verifyAccount(@Body request: VerifyAccountRequest): AuthResponse
+    suspend fun verifyAccount(@Body request: VerifyAccountRequest): UserDto
 
     @POST("users/forgot-password")
     suspend fun forgotPassword(@Body request: ForgotPasswordRequest)
@@ -272,7 +272,8 @@ interface ComprartirApi {
 data class RegisterRequest(
     val email: String,
     val password: String,
-    @SerialName("display_name") val displayName: String,
+    val name: String,
+    val surname: String,
 )
 
 @Serializable
@@ -288,7 +289,6 @@ data class SendVerificationRequest(
 
 @Serializable
 data class VerifyAccountRequest(
-    val email: String,
     val code: String,
 )
 

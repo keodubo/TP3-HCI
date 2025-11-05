@@ -6,6 +6,7 @@ import com.comprartir.mobile.core.database.dao.CategoryDao
 import com.comprartir.mobile.core.database.dao.ProductDao
 import com.comprartir.mobile.core.database.entity.CategoryEntity
 import com.comprartir.mobile.core.database.entity.ProductEntity
+import com.comprartir.mobile.core.network.CategoryUpsertRequest
 import com.comprartir.mobile.core.network.ComprartirApi
 import com.comprartir.mobile.core.network.ProductUpsertRequest
 import com.comprartir.mobile.core.network.fetchAllPages
@@ -41,6 +42,9 @@ interface ProductsRepository {
     fun observeCatalog(): Flow<List<Product>>
     fun observeCategories(): Flow<List<Category>>
     suspend fun refresh()
+    suspend fun createCategory(name: String, description: String?)
+    suspend fun updateCategory(categoryId: String, name: String, description: String?)
+    suspend fun deleteCategory(categoryId: String)
     suspend fun upsertProduct(product: Product)
     suspend fun deleteProduct(productId: String)
     suspend fun assignCategory(productId: String, categoryId: String)
@@ -76,6 +80,27 @@ class DefaultProductsRepository @Inject constructor(
         withContext(Dispatchers.IO) {
             refreshCategoriesInternal()
             refreshProductsInternal()
+        }
+    }
+
+    override suspend fun createCategory(name: String, description: String?) {
+        withContext(Dispatchers.IO) {
+            api.createCategory(CategoryUpsertRequest(name = name, description = description))
+            refreshCategoriesInternal()
+        }
+    }
+
+    override suspend fun updateCategory(categoryId: String, name: String, description: String?) {
+        withContext(Dispatchers.IO) {
+            api.updateCategory(categoryId, CategoryUpsertRequest(name = name, description = description))
+            refreshCategoriesInternal()
+        }
+    }
+
+    override suspend fun deleteCategory(categoryId: String) {
+        withContext(Dispatchers.IO) {
+            api.deleteCategory(categoryId)
+            refreshCategoriesInternal()
         }
     }
 

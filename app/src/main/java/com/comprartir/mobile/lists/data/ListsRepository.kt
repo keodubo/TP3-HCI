@@ -7,8 +7,11 @@ import com.comprartir.mobile.core.database.dao.ShoppingListDao
 import com.comprartir.mobile.core.database.entity.ListItemEntity
 import com.comprartir.mobile.core.database.entity.ShoppingListEntity
 import com.comprartir.mobile.core.network.ComprartirApi
+import com.comprartir.mobile.core.network.MoveListToPantryRequest
+import com.comprartir.mobile.core.network.ShareListRequest
 import com.comprartir.mobile.core.network.ShoppingListItemPatchRequest
 import com.comprartir.mobile.core.network.ShoppingListItemUpsertRequest
+import com.comprartir.mobile.core.network.ShoppingListPurchaseRequest
 import com.comprartir.mobile.core.network.ShoppingListUpsertRequest
 import com.comprartir.mobile.core.network.fetchAllPages
 import java.time.Instant
@@ -54,8 +57,17 @@ interface ShoppingListsRepository {
     fun observeList(listId: String): Flow<ShoppingList?>
     suspend fun refresh()
     suspend fun createList(name: String, description: String? = null)
+    suspend fun updateList(listId: String, name: String, description: String?)
+    suspend fun deleteList(listId: String)
     suspend fun toggleAcquired(listId: String, itemId: String, isAcquired: Boolean)
     suspend fun addItem(listId: String, productId: String, quantity: Double, unit: String? = null)
+    suspend fun deleteItem(listId: String, itemId: String)
+    suspend fun purchaseList(listId: String)
+    suspend fun resetList(listId: String)
+    suspend fun moveListToPantry(listId: String, pantryId: String)
+    suspend fun shareList(listId: String, email: String)
+    suspend fun getSharedUsers(listId: String)
+    suspend fun revokeShare(listId: String, userId: String)
 }
 
 @Singleton
@@ -102,6 +114,26 @@ class DefaultShoppingListsRepository @Inject constructor(
         }
     }
 
+    override suspend fun updateList(listId: String, name: String, description: String?) {
+        withContext(Dispatchers.IO) {
+            val response = api.updateShoppingList(
+                id = listId,
+                payload = ShoppingListUpsertRequest(
+                    name = name,
+                    description = description,
+                )
+            )
+            shoppingListDao.upsert(response.toEntity())
+        }
+    }
+
+    override suspend fun deleteList(listId: String) {
+        withContext(Dispatchers.IO) {
+            api.deleteShoppingList(listId)
+            shoppingListDao.delete(listId)
+        }
+    }
+
     override suspend fun toggleAcquired(listId: String, itemId: String, isAcquired: Boolean) {
         withContext(Dispatchers.IO) {
             val response = api.patchListItem(
@@ -124,6 +156,49 @@ class DefaultShoppingListsRepository @Inject constructor(
                 ),
             )
             listItemDao.upsert(response.toEntity(listId))
+        }
+    }
+
+    override suspend fun deleteItem(listId: String, itemId: String) {
+        withContext(Dispatchers.IO) {
+            api.deleteListItem(listId, itemId)
+            listItemDao.delete(itemId)
+        }
+    }
+
+    override suspend fun purchaseList(listId: String) {
+        withContext(Dispatchers.IO) {
+            api.markListPurchased(listId, ShoppingListPurchaseRequest())
+        }
+    }
+
+    override suspend fun resetList(listId: String) {
+        withContext(Dispatchers.IO) {
+            api.resetList(listId)
+        }
+    }
+
+    override suspend fun moveListToPantry(listId: String, pantryId: String) {
+        withContext(Dispatchers.IO) {
+            api.moveListToPantry(listId, MoveListToPantryRequest(pantryId = pantryId))
+        }
+    }
+
+    override suspend fun shareList(listId: String, email: String) {
+        withContext(Dispatchers.IO) {
+            api.shareList(listId, ShareListRequest(recipients = listOf(email)))
+        }
+    }
+
+    override suspend fun getSharedUsers(listId: String) {
+        withContext(Dispatchers.IO) {
+            api.getSharedUsers(listId)
+        }
+    }
+
+    override suspend fun revokeShare(listId: String, userId: String) {
+        withContext(Dispatchers.IO) {
+            api.revokeListShare(listId, userId)
         }
     }
 

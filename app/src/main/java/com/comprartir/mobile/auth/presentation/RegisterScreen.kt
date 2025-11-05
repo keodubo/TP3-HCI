@@ -33,11 +33,18 @@ fun RegisterRoute(
         onConfirmPasswordChanged = viewModel::onConfirmPasswordChanged,
         onRegister = {
             viewModel.register(
-                onSuccess = { onNavigate(NavigationIntent(AppDestination.Verify)) },
-                onError = { /* TODO: Surface error */ },
+                onSuccess = {
+                    println("RegisterScreen: Registration successful, navigating to Verify")
+                    onNavigate(NavigationIntent(AppDestination.Verify))
+                },
+                onError = { error ->
+                    println("RegisterScreen: Registration error: ${error.message}")
+                    error.printStackTrace()
+                },
             )
         },
         onSignIn = { onNavigate(NavigationIntent(AppDestination.SignIn)) },
+        onVerifyAccount = { onNavigate(NavigationIntent(AppDestination.Verify)) },
     )
 }
 
@@ -49,6 +56,7 @@ fun RegisterScreen(
     onConfirmPasswordChanged: (String) -> Unit,
     onRegister: () -> Unit,
     onSignIn: () -> Unit,
+    onVerifyAccount: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
     Column(
@@ -91,6 +99,9 @@ fun RegisterScreen(
             } else {
                 Text(text = stringResource(id = R.string.action_register))
             }
+        }
+        Button(onClick = onVerifyAccount) {
+            Text(text = stringResource(id = R.string.action_verify_account))
         }
         Button(onClick = onSignIn) {
             Text(text = stringResource(id = R.string.action_back_to_sign_in))

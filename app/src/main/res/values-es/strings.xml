@@ -30,6 +30,7 @@
     <string name="headline_verify">Verifica tu cuenta</string>
     <string name="label_verification_code">Código de verificación</string>
     <string name="action_verify">Verificar</string>
+    <string name="action_verify_account">¿Ya te registraste? Verificar cuenta</string>
     <string name="action_resend_code">Reenviar código</string>
     <string name="headline_update_password">Actualizar contraseña</string>
     <string name="label_current_password">Contraseña actual</string>
@@ -65,6 +66,7 @@
     <string name="settings_language_en">Inglés</string>
     <string name="profile_saved">Perfil guardado</string>
     <string name="passwords_do_not_match">Las contraseñas no coinciden</string>
+    <string name="registration_failed">Error al registrar. Por favor, inténtalo de nuevo.</string>
     <string name="common_retry">Intentar de nuevo</string>
     <string name="pantry_item_expires">Vence el %1$s</string>
     <string name="placeholder_password_recovery">RF12 Recuperar contraseña se implementará más adelante.</string>

@@ -42,13 +42,17 @@ class RegisterViewModel @Inject constructor(
                 return@launch
             }
             _state.value = current.copy(isLoading = true, errorMessageRes = null)
+            println("RegisterViewModel: Starting registration for ${current.credentials.email}")
             runCatching {
                 repository.register(current.credentials.email, current.credentials.password)
             }.onSuccess {
-                _state.value = current.copy(isLoading = false, errorMessageRes = null)
+                println("RegisterViewModel: Registration successful, calling onSuccess()")
+                _state.value = _state.value.copy(isLoading = false, errorMessageRes = null)
                 onSuccess()
             }.onFailure { throwable ->
-                _state.value = current.copy(isLoading = false)
+                println("RegisterViewModel: Registration failed with error: ${throwable.message}")
+                throwable.printStackTrace()
+                _state.value = _state.value.copy(isLoading = false)
                 onError(throwable)
             }
         }

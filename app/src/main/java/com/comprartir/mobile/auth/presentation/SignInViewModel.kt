@@ -30,12 +30,16 @@ class SignInViewModel @Inject constructor(
     fun signIn(onSuccess: () -> Unit, onError: (Throwable) -> Unit) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+            println("SignInViewModel: Starting sign-in for ${_state.value.credentials.email}")
             runCatching {
                 repository.signIn(_state.value.credentials.email, _state.value.credentials.password)
             }.onSuccess {
+                println("SignInViewModel: Sign-in successful, calling onSuccess()")
                 _state.value = _state.value.copy(isLoading = false)
                 onSuccess()
             }.onFailure { throwable ->
+                println("SignInViewModel: Sign-in failed with error: ${throwable.message}")
+                throwable.printStackTrace()
                 _state.value = _state.value.copy(isLoading = false, errorMessage = throwable.message)
                 onError(throwable)
             }

@@ -33,11 +33,18 @@ fun SignInRoute(
         onPasswordChanged = viewModel::onPasswordChanged,
         onSignIn = {
             viewModel.signIn(
-                onSuccess = { onNavigate(NavigationIntent(AppDestination.Dashboard)) },
-                onError = { /* TODO: Surface error feedback */ },
+                onSuccess = {
+                    println("SignInScreen: Sign-in successful, navigating to Dashboard")
+                    onNavigate(NavigationIntent(AppDestination.Dashboard))
+                },
+                onError = { error ->
+                    println("SignInScreen: Sign-in error: ${error.message}")
+                    error.printStackTrace()
+                },
             )
         },
         onRegister = { onNavigate(NavigationIntent(AppDestination.Register)) },
+        onVerifyAccount = { onNavigate(NavigationIntent(AppDestination.Verify)) },
         onForgotPassword = {
             // TODO: Wire optional password recovery when RF12 is enabled.
         },
@@ -51,6 +58,7 @@ fun SignInScreen(
     onPasswordChanged: (String) -> Unit,
     onSignIn: () -> Unit,
     onRegister: () -> Unit,
+    onVerifyAccount: () -> Unit,
     onForgotPassword: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
@@ -94,6 +102,9 @@ fun SignInScreen(
         }
         Button(onClick = onRegister) {
             Text(text = stringResource(id = R.string.action_register))
+        }
+        Button(onClick = onVerifyAccount) {
+            Text(text = stringResource(id = R.string.action_verify_account))
         }
         Button(onClick = onForgotPassword) {
             Text(text = stringResource(id = R.string.action_forgot_password))

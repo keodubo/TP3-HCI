@@ -6,70 +6,71 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.comprartir.mobile.R
-import com.comprartir.mobile.core.designsystem.LocalSpacing
-import com.comprartir.mobile.core.designsystem.ComprartirOutlinedTextField
-import com.comprartir.mobile.core.navigation.AppDestination
-import com.comprartir.mobile.core.navigation.NavigationIntent
-
-@Composable
-fun VerifyRoute(
-    onNavigate: (NavigationIntent) -> Unit,
-    viewModel: VerifyViewModel = hiltViewModel(),
-) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    VerifyScreen(
-        state = state,
-        onCodeChanged = viewModel::onCodeChanged,
-        onVerify = {
-            viewModel.verify(
-                onSuccess = { onNavigate(NavigationIntent(AppDestination.Dashboard)) },
-                onError = { /* TODO: Show error */ },
-            )
-        },
-        onResendCode = { /* TODO: Trigger resend */ },
-    )
-}
 
 @Composable
 fun VerifyScreen(
-    state: com.comprartir.mobile.auth.domain.VerificationState,
-    onCodeChanged: (String) -> Unit,
-    onVerify: () -> Unit,
-    onResendCode: () -> Unit,
+    viewModel: VerifyViewModel = hiltViewModel(),
+    onVerificationSuccess: () -> Unit,
 ) {
-    val spacing = LocalSpacing.current
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.isVerificationSuccess) {
+        if (uiState.isVerificationSuccess) {
+            println("VerifyScreen: Verification successful, navigating to SignIn")
+            onVerificationSuccess()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = spacing.large, vertical = spacing.extraLarge),
-        verticalArrangement = Arrangement.spacedBy(spacing.large),
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = stringResource(id = R.string.headline_verify))
-        ComprartirOutlinedTextField(
-            modifier = Modifier.fillMaxWidth(),
-            value = state.code,
-            onValueChange = onCodeChanged,
-            label = { Text(stringResource(id = R.string.label_verification_code)) },
-            singleLine = true,
+        Text(
+            text = "Verify your account",
+            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 16.dp)
         )
-        Button(onClick = onVerify, enabled = !state.isLoading) {
-            if (state.isLoading) {
-                CircularProgressIndicator()
-            } else {
-                Text(text = stringResource(id = R.string.action_verify))
-            }
+        OutlinedTextField(
+            value = uiState.email,
+            onValueChange = viewModel::onEmailChange,
+            label = { Text("Email") },
+            singleLine = true,
+            isError = uiState.error != null,
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = uiState.code,
+            onValueChange = viewModel::onCodeChange,
+            label = { Text("Verification Code") },
+            singleLine = true,
+            isError = uiState.error != null,
+            modifier = Modifier.fillMaxWidth()
+        )
+        uiState.error?.let {
+            Text(
+                text = it,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.error,
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall
+            )
         }
-        Button(onClick = onResendCode) {
-            Text(text = stringResource(id = R.string.action_resend_code))
+        Button(
+            onClick = viewModel::verify,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Verify")
         }
     }
 }

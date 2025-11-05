@@ -30,6 +30,7 @@
     <string name="headline_verify">Verify your account</string>
     <string name="label_verification_code">Verification code</string>
     <string name="action_verify">Verify</string>
+    <string name="action_verify_account">Already registered? Verify account</string>
     <string name="action_resend_code">Resend code</string>
     <string name="headline_update_password">Update password</string>
     <string name="label_current_password">Current password</string>
@@ -65,6 +66,7 @@
     <string name="settings_language_en">English</string>
     <string name="profile_saved">Profile saved</string>
     <string name="passwords_do_not_match">Passwords do not match</string>
+    <string name="registration_failed">Registration failed. Please try again.</string>
     <string name="common_retry">Try again</string>
     <string name="pantry_item_expires">Expires on %1$s</string>
     <string name="placeholder_password_recovery">RF12 Password recovery will be implemented in a future iteration.</string>

@@ -9,7 +9,7 @@ import androidx.navigation.navArgument
 import com.comprartir.mobile.auth.presentation.RegisterRoute
 import com.comprartir.mobile.auth.presentation.SignInRoute
 import com.comprartir.mobile.auth.presentation.UpdatePasswordRoute
-import com.comprartir.mobile.auth.presentation.VerifyRoute
+import com.comprartir.mobile.auth.presentation.VerifyScreen
 import com.comprartir.mobile.shared.components.DashboardRoute
 import com.comprartir.mobile.lists.presentation.ListDetailsRoute
 import com.comprartir.mobile.lists.presentation.ListsRoute
@@ -53,7 +53,7 @@ private fun NavGraphBuilder.authGraph(appState: ComprartirAppState) {
         RegisterRoute(onNavigate = appState::navigate)
     }
     composable(AppDestination.Verify.route) {
-        VerifyRoute(onNavigate = appState::navigate)
+        VerifyScreen(onVerificationSuccess = { appState.navigate(NavigationIntent(AppDestination.SignIn)) })
     }
     composable(AppDestination.UpdatePassword.route) {
         UpdatePasswordRoute(onNavigate = appState::navigate)

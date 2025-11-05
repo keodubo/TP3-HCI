@@ -6,6 +6,8 @@ import com.comprartir.mobile.core.database.dao.PantryDao
 import com.comprartir.mobile.core.database.entity.PantryItemEntity
 import com.comprartir.mobile.core.network.ComprartirApi
 import com.comprartir.mobile.core.network.PantryItemUpsertRequest
+import com.comprartir.mobile.core.network.PantryUpsertRequest
+import com.comprartir.mobile.core.network.SharePantryRequest
 import com.comprartir.mobile.core.network.fetchAllPages
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
@@ -35,8 +37,14 @@ data class PantryItem(
 interface PantryRepository {
     fun observePantry(): Flow<List<PantryItem>>
     suspend fun refresh()
+    suspend fun createPantry(name: String, description: String?)
+    suspend fun updatePantry(pantryId: String, name: String, description: String?)
+    suspend fun deletePantry(pantryId: String)
     suspend fun upsertItem(item: PantryItem)
     suspend fun deleteItem(itemId: String)
+    suspend fun sharePantry(pantryId: String, email: String)
+    suspend fun getSharedUsers(pantryId: String)
+    suspend fun revokeShare(pantryId: String, userId: String)
 }
 
 @Singleton
@@ -54,6 +62,24 @@ class DefaultPantryRepository @Inject constructor(
 
     override suspend fun refresh() {
         withContext(Dispatchers.IO) { refreshPantryInternal() }
+    }
+
+    override suspend fun createPantry(name: String, description: String?) {
+        withContext(Dispatchers.IO) {
+            api.createPantry(PantryUpsertRequest(name = name, description = description))
+        }
+    }
+
+    override suspend fun updatePantry(pantryId: String, name: String, description: String?) {
+        withContext(Dispatchers.IO) {
+            api.updatePantry(pantryId, PantryUpsertRequest(name = name, description = description))
+        }
+    }
+
+    override suspend fun deletePantry(pantryId: String) {
+        withContext(Dispatchers.IO) {
+            api.deletePantry(pantryId)
+        }
     }
 
     override suspend fun upsertItem(item: PantryItem) {
@@ -84,6 +110,24 @@ class DefaultPantryRepository @Inject constructor(
                 Log.w(TAG, "Failed to delete pantry item $itemId", throwable)
             }
             pantryDao.delete(itemId)
+        }
+    }
+
+    override suspend fun sharePantry(pantryId: String, email: String) {
+        withContext(Dispatchers.IO) {
+            api.sharePantry(pantryId, SharePantryRequest(recipients = listOf(email)))
+        }
+    }
+
+    override suspend fun getSharedUsers(pantryId: String) {
+        withContext(Dispatchers.IO) {
+            api.getPantrySharedUsers(pantryId)
+        }
+    }
+
+    override suspend fun revokeShare(pantryId: String, userId: String) {
+        withContext(Dispatchers.IO) {
+            api.revokePantryShare(pantryId, userId)
         }
     }
 

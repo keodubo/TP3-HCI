@@ -10,6 +10,7 @@ import com.comprartir.mobile.core.network.ChangePasswordRequest
 import com.comprartir.mobile.core.network.ComprartirApi
 import com.comprartir.mobile.core.network.LoginRequest
 import com.comprartir.mobile.core.network.RegisterRequest
+import com.comprartir.mobile.core.network.SendVerificationRequest
 import com.comprartir.mobile.core.network.VerifyAccountRequest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,7 +34,7 @@ interface AuthRepository {
     val isAuthenticated: Flow<Boolean>
 
     suspend fun register(email: String, password: String)
-    suspend fun verify(code: String)
+    suspend fun verify(email: String, code: String)
     suspend fun signIn(email: String, password: String)
     suspend fun signOut()
     suspend fun updatePassword(currentPassword: String, newPassword: String)
@@ -50,29 +51,43 @@ class DefaultAuthRepository @Inject constructor(
     override val currentUser: Flow<UserAccount?> = userDao.observeCurrentUser()
         .map { entity -> entity?.toAccount() }
 
-    override val isAuthenticated: Flow<Boolean> = currentUser.map { it != null }
+    override val isAuthenticated: Flow<Boolean> = currentUser.map { it != null && it.isVerified }
 
     override suspend fun register(email: String, password: String) = withContext(Dispatchers.IO) {
+        val displayName = email.substringBefore("@")
+        val name = displayName.substringBefore(".").replaceFirstChar { it.uppercase() }
+        val surname = displayName.substringAfter(".", "").replaceFirstChar { it.uppercase() }
+
         val response = api.register(
             RegisterRequest(
                 email = email,
                 password = password,
-                displayName = email.substringBefore("@"),
+                name = name,
+                surname = if (surname.isNotEmpty()) surname else name,
             )
         )
-        persistAuth(response)
+        userDao.upsert(response.toEntity())
+
+        // Send verification email - don't fail the registration if this fails
+        try {
+            api.sendVerification(SendVerificationRequest(email = email))
+        } catch (e: Exception) {
+            // Log but don't fail - user can still verify with code
+            e.printStackTrace()
+        }
     }
 
-    override suspend fun verify(code: String) = withContext(Dispatchers.IO) {
-        val pendingUser = userDao.observeCurrentUser().firstOrNull()
-            ?: throw IllegalStateException("No pending user to verify")
-        val response = api.verifyAccount(
+    override suspend fun verify(email: String, code: String) = withContext(Dispatchers.IO) {
+        // Note: Backend only uses the code to look up the user
+        // Email is kept in the signature for UI purposes but not sent to API
+        // Backend returns UserDto only (no token), so user needs to login after verification
+        val userDto = api.verifyAccount(
             VerifyAccountRequest(
-                email = pendingUser.email,
                 code = code,
             )
         )
-        persistAuth(response)
+        // Save the verified user to database (without token - user will login next)
+        userDao.upsert(userDto.toEntity())
     }
 
     override suspend fun signIn(email: String, password: String) = withContext(Dispatchers.IO) {

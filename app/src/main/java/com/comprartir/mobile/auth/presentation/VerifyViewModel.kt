@@ -3,40 +3,57 @@ package com.comprartir.mobile.auth.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.comprartir.mobile.auth.data.AuthRepository
-import com.comprartir.mobile.auth.domain.VerificationState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+data class VerifyUiState(
+    val email: String = "",
+    val code: String = "",
+    val error: String? = null,
+    val isVerificationSuccess: Boolean = false
+)
 
 @HiltViewModel
 class VerifyViewModel @Inject constructor(
-    private val repository: AuthRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(VerificationState())
-    val state: StateFlow<VerificationState> = _state.asStateFlow()
+    private val _uiState = MutableStateFlow(VerifyUiState())
+    val uiState: StateFlow<VerifyUiState> = _uiState.asStateFlow()
 
-    fun onCodeChanged(code: String) {
-        _state.value = _state.value.copy(code = code.take(6))
+    fun onEmailChange(email: String) {
+        _uiState.update { it.copy(email = email, error = null) }
     }
 
-    fun verify(onSuccess: () -> Unit, onError: (Throwable) -> Unit) {
+    fun onCodeChange(code: String) {
+        _uiState.update { it.copy(code = code, error = null) }
+    }
+
+    fun verify() {
         viewModelScope.launch {
-            val current = _state.value
-            _state.value = current.copy(isLoading = true, errorMessageRes = null)
-            runCatching {
-                repository.verify(current.code)
-            }.onSuccess {
-                _state.value = current.copy(isLoading = false)
-                onSuccess()
-            }.onFailure { throwable ->
-                // Map throwable to a resource id when possible. For now set a generic null
-                // and surface the throwable via the callback so the UI can decide.
-                _state.value = current.copy(isLoading = false, errorMessageRes = null)
-                onError(throwable)
+            try {
+                val currentState = uiState.value
+                if (currentState.email.isBlank()) {
+                    _uiState.update { it.copy(error = "Please enter your email") }
+                    return@launch
+                }
+                if (currentState.code.isBlank()) {
+                    _uiState.update { it.copy(error = "Please enter verification code") }
+                    return@launch
+                }
+                println("VerifyViewModel: Starting verification for ${currentState.email} with code: ${currentState.code}")
+                authRepository.verify(currentState.email, currentState.code)
+                println("VerifyViewModel: Verification successful")
+                _uiState.update { it.copy(isVerificationSuccess = true) }
+            } catch (e: Exception) {
+                println("VerifyViewModel: Verification failed with error: ${e.message}")
+                e.printStackTrace()
+                _uiState.update { it.copy(error = e.message ?: "Verification failed") }
             }
         }
     }
