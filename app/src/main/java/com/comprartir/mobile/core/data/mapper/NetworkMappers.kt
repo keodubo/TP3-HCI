@@ -22,7 +22,7 @@ import kotlinx.serialization.json.contentOrNull
 fun UserDto.toEntity(): UserEntity = UserEntity(
     id = id,
     email = email,
-    displayName = displayName,
+    displayName = displayName ?: listOfNotNull(name, surname).joinToString(" ").ifBlank { email },
     photoUrl = photoUrl,
     isVerified = isVerified,
     createdAt = Instant.now(),

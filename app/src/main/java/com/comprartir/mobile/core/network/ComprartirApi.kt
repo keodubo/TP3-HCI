@@ -313,14 +313,16 @@ data class ChangePasswordRequest(
 @Serializable
 data class AuthResponse(
     val token: String,
-    val user: UserDto,
+    val user: UserDto? = null,
 )
 
 @Serializable
 data class UserDto(
     val id: String,
     val email: String,
-    @SerialName("display_name") val displayName: String,
+    @SerialName("display_name") val displayName: String? = null,
+    val name: String? = null,
+    val surname: String? = null,
     @SerialName("photo_url") val photoUrl: String? = null,
     @SerialName("is_verified") val isVerified: Boolean = false,
     val metadata: JsonObject? = null,

@@ -33,7 +33,7 @@ interface AuthRepository {
     val currentUser: Flow<UserAccount?>
     val isAuthenticated: Flow<Boolean>
 
-    suspend fun register(email: String, password: String)
+    suspend fun register(email: String, password: String, name: String, surname: String)
     suspend fun verify(email: String, code: String)
     suspend fun signIn(email: String, password: String)
     suspend fun signOut()
@@ -53,17 +53,13 @@ class DefaultAuthRepository @Inject constructor(
 
     override val isAuthenticated: Flow<Boolean> = currentUser.map { it != null && it.isVerified }
 
-    override suspend fun register(email: String, password: String) = withContext(Dispatchers.IO) {
-        val displayName = email.substringBefore("@")
-        val name = displayName.substringBefore(".").replaceFirstChar { it.uppercase() }
-        val surname = displayName.substringAfter(".", "").replaceFirstChar { it.uppercase() }
-
+    override suspend fun register(email: String, password: String, name: String, surname: String) = withContext(Dispatchers.IO) {
         val response = api.register(
             RegisterRequest(
                 email = email,
                 password = password,
                 name = name,
-                surname = if (surname.isNotEmpty()) surname else name,
+                surname = surname,
             )
         )
         userDao.upsert(response.toEntity())
@@ -120,7 +116,12 @@ class DefaultAuthRepository @Inject constructor(
 
     private suspend fun persistAuth(response: AuthResponse) {
         authTokenRepository.updateToken(response.token)
-        userDao.upsert(response.user.toEntity())
+        
+        // If user data is not included in response, we can't save it yet
+        // The user will be loaded later when needed
+        response.user?.let { userDto ->
+            userDao.upsert(userDto.toEntity())
+        }
     }
 
     private fun UserEntity.toAccount(): UserAccount = UserAccount(

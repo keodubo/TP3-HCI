@@ -43,8 +43,19 @@ class RegisterViewModel @Inject constructor(
             }
             _state.value = current.copy(isLoading = true, errorMessageRes = null)
             println("RegisterViewModel: Starting registration for ${current.credentials.email}")
+            
+            // Extract name from email as fallback for old registration screen
+            val emailPrefix = current.credentials.email.substringBefore("@")
+            val name = emailPrefix.substringBefore(".").replaceFirstChar { it.uppercase() }
+            val surname = emailPrefix.substringAfter(".", name).replaceFirstChar { it.uppercase() }
+            
             runCatching {
-                repository.register(current.credentials.email, current.credentials.password)
+                repository.register(
+                    current.credentials.email,
+                    current.credentials.password,
+                    name,
+                    surname
+                )
             }.onSuccess {
                 println("RegisterViewModel: Registration successful, calling onSuccess()")
                 _state.value = _state.value.copy(isLoading = false, errorMessageRes = null)

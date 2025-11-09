@@ -45,10 +45,11 @@ fun ComprartirApp(
         val isAuthenticated by sessionViewModel.isAuthenticated.collectAsStateWithLifecycle()
         val navBackStackEntry by appState.navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
-        val isAuthRoute = currentRoute == null || currentRoute in AuthRoutes
+        val currentRouteBase = currentRoute?.substringBefore("?")
+        val isAuthRoute = currentRouteBase == null || currentRouteBase in AuthRoutes
 
-        LaunchedEffect(isAuthenticated, currentRoute) {
-            if (!isAuthenticated && currentRoute != null && currentRoute !in AuthRoutes) {
+        LaunchedEffect(isAuthenticated, currentRouteBase) {
+            if (!isAuthenticated && currentRouteBase != null && currentRouteBase !in AuthRoutes) {
                 appState.navController.navigate(AppDestination.SignIn.route) {
                     popUpTo(AppDestination.SignIn.route) { inclusive = true }
                     launchSingleTop = true

@@ -1,15 +1,16 @@
 package com.comprartir.mobile.core.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.comprartir.mobile.auth.presentation.RegisterRoute
 import com.comprartir.mobile.auth.presentation.UpdatePasswordRoute
-import com.comprartir.mobile.auth.presentation.VerifyScreen
 import com.comprartir.mobile.feature.auth.login.LoginRoute
+import com.comprartir.mobile.feature.auth.register.RegisterRoute
+import com.comprartir.mobile.feature.auth.verify.VerifyRoute
 import com.comprartir.mobile.shared.components.DashboardRoute
 import com.comprartir.mobile.lists.presentation.ListDetailsRoute
 import com.comprartir.mobile.lists.presentation.ListsRoute
@@ -59,10 +60,35 @@ private fun NavGraphBuilder.authGraph(appState: ComprartirAppState) {
         DashboardRoute(onNavigate = appState::navigate)
     }
     composable(AppDestination.Register.route) {
-        RegisterRoute(onNavigate = appState::navigate)
+        RegisterRoute(
+            onNavigateToLogin = { appState.navigate(NavigationIntent(AppDestination.SignIn)) },
+            onNavigateToVerify = { email ->
+                println("AppNavHost: Navigating to verify with email: $email")
+                val encodedEmail = Uri.encode(email)
+                val route = "${AppDestination.Verify.route}?email=$encodedEmail"
+                println("AppNavHost: Full route: $route")
+                appState.navController.navigate(route) {
+                    popUpTo(AppDestination.Register.route) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+        )
     }
-    composable(AppDestination.Verify.route) {
-        VerifyScreen(onVerificationSuccess = { appState.navigate(NavigationIntent(AppDestination.SignIn)) })
+    composable(
+        route = AppDestination.Verify.route + "?email={email}",
+        arguments = listOf(
+            navArgument("email") { type = NavType.StringType },
+        ),
+    ) {
+        VerifyRoute(
+            onNavigateToLogin = { appState.navigate(NavigationIntent(AppDestination.SignIn)) },
+            onVerifySuccess = {
+                appState.navController.navigate(AppDestination.Dashboard.route) {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+        )
     }
     composable(AppDestination.UpdatePassword.route) {
         UpdatePasswordRoute(onNavigate = appState::navigate)
