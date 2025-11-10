@@ -36,7 +36,7 @@ fun ComprartirNavHost(
         startDestination = AppDestination.SignIn.route,
         modifier = modifier,
     ) {
-        authGraph(appState)
+        authGraph(appState, contentPadding)
         profileGraph()
         productsGraph(appState)
         listsGraph(appState, contentPadding)
@@ -46,7 +46,10 @@ fun ComprartirNavHost(
     }
 }
 
-private fun NavGraphBuilder.authGraph(appState: ComprartirAppState) {
+private fun NavGraphBuilder.authGraph(
+    appState: ComprartirAppState,
+    contentPadding: PaddingValues,
+) {
     composable(AppDestination.SignIn.route) {
         LoginRoute(
             onRecoverPassword = { appState.navigate(NavigationIntent(AppDestination.UpdatePassword)) },
@@ -65,6 +68,7 @@ private fun NavGraphBuilder.authGraph(appState: ComprartirAppState) {
         HomeRoute(
             onNavigate = appState::navigate,
             windowSizeClass = appState.windowSizeClass,
+            contentPadding = contentPadding,
         )
     }
     composable(AppDestination.Register.route) {
@@ -141,6 +145,7 @@ private fun NavGraphBuilder.listsGraph(
         ListDetailRoute(
             onBack = appState::onBack,
             windowSizeClass = appState.windowSizeClass,
+            contentPadding = contentPadding,
         )
     }
     composable(

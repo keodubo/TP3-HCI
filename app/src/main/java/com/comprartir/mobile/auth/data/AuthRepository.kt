@@ -89,6 +89,21 @@ class DefaultAuthRepository @Inject constructor(
     override suspend fun signIn(email: String, password: String) = withContext(Dispatchers.IO) {
         val response = api.login(LoginRequest(email = email, password = password))
         persistAuth(response)
+        
+        // If the login response doesn't include user data, create a minimal user entry
+        // so that isAuthenticated becomes true
+        if (response.user == null) {
+            // Create a minimal user entity with the email
+            // The full profile will be loaded later by other parts of the app
+            val minimalUser = UserEntity(
+                id = "", // Will be updated when profile is fetched
+                email = email,
+                displayName = email.substringBefore("@"),
+                photoUrl = null,
+                isVerified = true, // Assume verified since login succeeded
+            )
+            userDao.upsert(minimalUser)
+        }
     }
 
     override suspend fun signOut() = withContext(Dispatchers.IO) {

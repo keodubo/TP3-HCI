@@ -9,7 +9,7 @@ enum class AppDestination(val route: String) {
     Profile("profile/manage"),
     Products("products/manage"),
     Lists("lists/manage"),
-    ListDetails("lists/details"),
+    ListDetails("lists/{listId}"),
     ShareList("lists/share"),
     Categorize("products/categorize"),
     AcquireProduct("lists/acquire"),

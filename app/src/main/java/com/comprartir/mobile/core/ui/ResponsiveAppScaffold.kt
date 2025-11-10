@@ -4,16 +4,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FormatListBulleted
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Inventory2
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
@@ -28,12 +20,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.comprartir.mobile.core.navigation.AppDestination
 import com.comprartir.mobile.core.navigation.ComprartirAppState
 import com.comprartir.mobile.R
-
-private data class NavigationItem(
-    val destination: AppDestination,
-    val labelRes: Int,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
-)
+import com.comprartir.mobile.core.ui.BottomNavItem
+import com.comprartir.mobile.core.ui.ComprartirBottomNavBar
+import com.comprartir.mobile.core.ui.primaryNavigationItems
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,15 +32,7 @@ fun ResponsiveAppScaffold(
     topBar: @Composable () -> Unit,
     content: @Composable (PaddingValues) -> Unit,
 ) {
-    val navigationItems = remember {
-        listOf(
-            NavigationItem(AppDestination.Dashboard, R.string.title_dashboard, Icons.Outlined.Home),
-            NavigationItem(AppDestination.Lists, R.string.title_lists, Icons.Outlined.FormatListBulleted),
-            NavigationItem(AppDestination.Products, R.string.title_products, Icons.Outlined.Inventory2),
-            NavigationItem(AppDestination.Profile, R.string.title_profile, Icons.Outlined.Person),
-            NavigationItem(AppDestination.Settings, R.string.title_settings, Icons.Outlined.Settings),
-        )
-    }
+    val navigationItems = remember { primaryNavigationItems() }
 
     val navBackStackEntry by appState.navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -99,16 +80,11 @@ fun ResponsiveAppScaffold(
                 topBar = topBar,
                 bottomBar = {
                     if (showNavigation) {
-                        NavigationBar {
-                            navigationItems.forEach { item ->
-                                NavigationBarItem(
-                                    selected = currentRoute == item.destination.route,
-                                    onClick = { onNavigate(item.destination) },
-                                    icon = { Icon(item.icon, contentDescription = stringResource(id = item.labelRes)) },
-                                    label = { Text(stringResource(id = item.labelRes)) },
-                                )
-                            }
-                        }
+                        ComprartirBottomNavBar(
+                            items = navigationItems,
+                            currentRoute = currentRoute,
+                            onNavigate = onNavigate,
+                        )
                     }
                 },
                 content = { padding ->

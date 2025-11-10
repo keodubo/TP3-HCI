@@ -17,12 +17,22 @@ data class ComprartirAppState(
         get() = navController.currentBackStackEntry?.destination?.route
 
     fun navigate(intent: NavigationIntent) {
+        val consumed = mutableSetOf<String>()
+        var resolvedRoute = intent.destination.route
+        intent.arguments.forEach { (key, value) ->
+            val placeholder = "{$key}"
+            if (resolvedRoute.contains(placeholder)) {
+                resolvedRoute = resolvedRoute.replace(placeholder, value)
+                consumed += key
+            }
+        }
+        val queryArgs = intent.arguments.filterKeys { it !in consumed }
         val route = buildString {
-            append(intent.destination.route)
-            if (intent.arguments.isNotEmpty()) {
+            append(resolvedRoute)
+            if (queryArgs.isNotEmpty()) {
                 append("?")
                 append(
-                    intent.arguments.entries.joinToString("&") { (key, value) ->
+                    queryArgs.entries.joinToString("&") { (key, value) ->
                         "$key=$value"
                     }
                 )

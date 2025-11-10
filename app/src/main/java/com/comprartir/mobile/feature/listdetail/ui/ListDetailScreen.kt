@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -81,6 +82,7 @@ fun ListDetailScreen(
     onBack: () -> Unit,
     snackbarHostState: SnackbarHostState,
     isTabletLayout: Boolean,
+    contentPadding: PaddingValues = PaddingValues(),
     modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
@@ -98,23 +100,28 @@ fun ListDetailScreen(
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { innerPadding ->
-        val padding = PaddingValues(
-            start = innerPadding.calculateStartPadding(layoutDirection) + spacing.large,
-            end = innerPadding.calculateEndPadding(layoutDirection) + spacing.large,
-            top = innerPadding.calculateTopPadding() + spacing.large,
-            bottom = innerPadding.calculateBottomPadding() + spacing.large,
+        val combinedPadding = PaddingValues(
+            start = innerPadding.calculateStartPadding(layoutDirection) +
+                contentPadding.calculateStartPadding(layoutDirection),
+            end = innerPadding.calculateEndPadding(layoutDirection) +
+                contentPadding.calculateEndPadding(layoutDirection),
+            top = innerPadding.calculateTopPadding() +
+                contentPadding.calculateTopPadding() + spacing.large,
+            bottom = innerPadding.calculateBottomPadding() +
+                contentPadding.calculateBottomPadding() + spacing.large,
         )
         if (isTabletLayout) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = padding,
+                contentPadding = combinedPadding,
                 verticalArrangement = Arrangement.Top,
             ) {
                 item {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 0.dp),
+                            .heightIn(min = 0.dp)
+                            .padding(horizontal = spacing.large),
                         horizontalArrangement = Arrangement.spacedBy(spacing.large),
                         verticalAlignment = Alignment.Top,
                     ) {
@@ -156,14 +163,16 @@ fun ListDetailScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = padding,
+                contentPadding = combinedPadding,
                 verticalArrangement = Arrangement.spacedBy(spacing.large),
             ) {
                 item {
                     ListDetailMainCard(
                         state = state,
                         onEvent = onEvent,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = spacing.large),
                     )
                 }
                 item {
@@ -173,6 +182,9 @@ fun ListDetailScreen(
                         onQuantityChange = { onEvent(ListDetailEvent.AddProductQuantityChanged(it)) },
                         onUnitChange = { onEvent(ListDetailEvent.AddProductUnitChanged(it)) },
                         onSubmit = { onEvent(ListDetailEvent.SubmitNewProduct) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = spacing.large),
                     )
                 }
                 item {
@@ -186,6 +198,9 @@ fun ListDetailScreen(
                                 onEvent(ListDetailEvent.LinkCopied)
                             }
                         },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = spacing.large),
                     )
                 }
             }
@@ -194,7 +209,7 @@ fun ListDetailScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding),
+                    .padding(combinedPadding),
                 contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -255,6 +270,12 @@ private fun ListDetailMainCard(
                 .padding(spacing.large),
             verticalArrangement = Arrangement.spacedBy(spacing.medium),
         ) {
+            val title = state.title.ifBlank { stringResource(id = R.string.lists_default_title) }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
             state.subtitle.takeIf { it.isNotBlank() }?.let {
                 Text(
                     text = it,
@@ -485,9 +506,11 @@ private fun AddProductPanel(
     onQuantityChange: (String) -> Unit,
     onUnitChange: (String) -> Unit,
     onSubmit: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
     Card(
+        modifier = modifier,
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
     ) {
@@ -555,9 +578,11 @@ private fun SharePanel(
     link: String,
     onEmailChange: (String) -> Unit,
     onCopyLink: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
     Card(
+        modifier = modifier,
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
     ) {

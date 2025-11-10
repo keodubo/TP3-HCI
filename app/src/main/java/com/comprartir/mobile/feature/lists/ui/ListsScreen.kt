@@ -22,10 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -35,7 +32,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Divider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -49,7 +45,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -83,13 +78,10 @@ fun ListsScreen(
     modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
-    val layoutDirection = LocalLayoutDirection.current
-    val combinedPadding = PaddingValues(
-        start = contentPadding.calculateStartPadding(layoutDirection) + spacing.large,
-        end = contentPadding.calculateEndPadding(layoutDirection) + spacing.large,
-        top = contentPadding.calculateTopPadding() + spacing.large,
-        bottom = contentPadding.calculateBottomPadding() + spacing.large,
-    )
+    val bottomInset = contentPadding.calculateBottomPadding()
+    val horizontalItemModifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = spacing.large)
 
     Box(
         modifier = modifier
@@ -98,12 +90,12 @@ fun ListsScreen(
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = combinedPadding,
+            contentPadding = contentPadding,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item { ListsTopBar() }
             item {
                 ListsSearchCard(
+                    modifier = horizontalItemModifier,
                     query = state.searchQuery,
                     onQueryChange = { onEvent(ListsEvent.SearchQueryChanged(it)) },
                     onCreateList = { onEvent(ListsEvent.CreateList) },
@@ -111,6 +103,7 @@ fun ListsScreen(
             }
             item {
                 ListsFilterPanel(
+                    modifier = horizontalItemModifier,
                     isExpanded = state.isFiltersExpanded,
                     sortOption = state.sortOption,
                     sortDirection = state.sortDirection,
@@ -120,13 +113,17 @@ fun ListsScreen(
             }
             item {
                 ListsCarousel(
+                    modifier = horizontalItemModifier,
                     lists = state.lists,
                     onOpenList = { onEvent(ListsEvent.OpenList(it)) },
                     onCreateList = { onEvent(ListsEvent.CreateList) },
                 )
             }
             item {
-                ListsSummaryPanel(summary = state.summary)
+                ListsSummaryPanel(
+                    summary = state.summary,
+                    modifier = horizontalItemModifier,
+                )
             }
         }
 
@@ -145,7 +142,11 @@ fun ListsScreen(
         SnackbarHost(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(horizontal = spacing.large, vertical = spacing.large),
+                .padding(
+                    start = spacing.large,
+                    end = spacing.large,
+                    bottom = spacing.large + bottomInset,
+                ),
             hostState = snackbarHostState,
         )
     }
@@ -160,63 +161,15 @@ fun ListsScreen(
 }
 
 @Composable
-private fun ListsTopBar() {
-    val spacing = LocalSpacing.current
-    Column {
-        Surface(
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 0.dp,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = spacing.large, vertical = spacing.medium),
-                verticalArrangement = Arrangement.spacedBy(spacing.xs),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.lists_breadcrumb_home),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.textMuted,
-                    )
-                    Icon(
-                        imageVector = Icons.Filled.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.textMuted,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Text(
-                        text = stringResource(id = R.string.lists_screen_title),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.textMuted,
-                    )
-                }
-                Text(
-                    text = stringResource(id = R.string.lists_screen_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        }
-        Divider(
-            thickness = 1.dp,
-            color = MaterialTheme.colorScheme.borderDefault,
-        )
-    }
-}
-
-@Composable
 private fun ListsSearchCard(
     query: String,
     onQueryChange: (String) -> Unit,
     onCreateList: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
     Card(
+        modifier = modifier,
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -264,10 +217,12 @@ private fun ListsFilterPanel(
     sortDirection: SortDirection,
     listType: ListTypeFilter,
     onEvent: (ListsEvent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = ColorTokens.PurpleDeep),
         shape = RoundedCornerShape(24.dp),
     ) {
         Column(
@@ -284,7 +239,7 @@ private fun ListsFilterPanel(
                 Text(
                     text = stringResource(id = R.string.lists_filters_title),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = Color.White,
                 )
                 val toggleLabel = if (isExpanded) {
                     stringResource(id = R.string.lists_filters_hide)
@@ -298,7 +253,7 @@ private fun ListsFilterPanel(
                         contentDescription = toggleDescription
                     },
                     colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        contentColor = Color.White,
                     ),
                 ) {
                     Text(text = toggleLabel)
@@ -358,7 +313,7 @@ private fun <T> FilterSection(
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f),
+            color = Color.White.copy(alpha = 0.75f),
         )
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(spacing.small),
@@ -379,10 +334,10 @@ private fun <T> FilterSection(
                         }
                     } else null,
                     colors = FilterChipDefaults.filterChipColors(
-                        containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f),
-                        selectedContainerColor = MaterialTheme.colorScheme.surface,
-                        selectedLabelColor = MaterialTheme.colorScheme.primary,
-                        labelColor = MaterialTheme.colorScheme.onPrimary,
+                        containerColor = Color.White.copy(alpha = 0.12f),
+                        selectedContainerColor = Color.White,
+                        selectedLabelColor = ColorTokens.PurpleDeep,
+                        labelColor = Color.White,
                     ),
                 )
             }
@@ -395,14 +350,18 @@ private fun ListsCarousel(
     lists: List<ShoppingListUi>,
     onOpenList: (String) -> Unit,
     onCreateList: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     if (lists.isEmpty()) {
-        EmptyStateCard(onCreateList = onCreateList)
+        EmptyStateCard(
+            onCreateList = onCreateList,
+            modifier = modifier,
+        )
         return
     }
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.semantics { contentDescription = "lists-carousel" },
+        modifier = modifier.semantics { contentDescription = "lists-carousel" },
     ) {
         items(lists, key = { it.id }) { list ->
             ListCard(list = list, onOpen = { onOpenList(list.id) })
@@ -482,10 +441,13 @@ private fun ListCard(
 }
 
 @Composable
-private fun EmptyStateCard(onCreateList: () -> Unit) {
+private fun EmptyStateCard(
+    onCreateList: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val spacing = LocalSpacing.current
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
         shape = RoundedCornerShape(24.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.borderDefault),
@@ -522,9 +484,13 @@ private fun EmptyStateCard(onCreateList: () -> Unit) {
 }
 
 @Composable
-private fun ListsSummaryPanel(summary: ListsSummaryUi) {
+private fun ListsSummaryPanel(
+    summary: ListsSummaryUi,
+    modifier: Modifier = Modifier,
+) {
     val spacing = LocalSpacing.current
     Card(
+        modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),

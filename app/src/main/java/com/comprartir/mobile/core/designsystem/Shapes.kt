@@ -5,7 +5,7 @@ import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 val ComprartirPillShape = RoundedCornerShape(999.dp)
-val ComprartirCardShape = RoundedCornerShape(16.dp)
+val ComprartirCardShape = RoundedCornerShape(24.dp)
 val ComprartirDialogShape = RoundedCornerShape(24.dp)
 
 fun comprartirShapes(): Shapes = Shapes(

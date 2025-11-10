@@ -54,12 +54,16 @@ class LoginViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            println("LoginViewModel: Starting login for email: ${current.email}")
             runCatching {
                 authRepository.signIn(current.email, current.password)
             }.onSuccess {
+                println("LoginViewModel: Login successful! Calling onSuccess()")
                 _uiState.update { state -> state.copy(isLoading = false) }
                 onSuccess()
+                println("LoginViewModel: onSuccess() called")
             }.onFailure { throwable ->
+                println("LoginViewModel: Login failed with error: ${throwable.message}")
                 _uiState.update { state ->
                     state.copy(
                         isLoading = false,

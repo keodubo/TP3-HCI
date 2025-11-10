@@ -5,20 +5,31 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.SettingsVoice
 import androidx.compose.material.icons.outlined.PhotoCamera
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.comprartir.mobile.R
 import com.comprartir.mobile.core.navigation.AppDestination
 import com.comprartir.mobile.core.util.FeatureFlags
 import com.comprartir.mobile.core.util.IntegrationPlaceholders
+import com.comprartir.mobile.core.designsystem.LocalSpacing
+import com.comprartir.mobile.core.designsystem.theme.ColorTokens
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComprartirTopBar(
     destinationRoute: String?,
@@ -46,16 +57,32 @@ fun ComprartirTopBar(
         }
     }
 
-    CenterAlignedTopAppBar(
-        title = { Text(text = stringResource(id = title)) },
-        navigationIcon = {
+    val spacing = LocalSpacing.current
+    Surface(
+        color = ColorTokens.NavSurface,
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(horizontal = spacing.large, vertical = spacing.medium),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.medium),
+        ) {
             if (showBack) {
                 IconButton(onClick = onBack) {
                     Icon(imageVector = Icons.Outlined.ArrowBack, contentDescription = stringResource(id = R.string.cd_back))
                 }
             }
-        },
-        actions = {
+            Text(
+                text = stringResource(id = title),
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    lineHeight = 28.sp,
+                ),
+                modifier = Modifier.weight(1f),
+            )
             if (featureFlags.rnf7Barcode) {
                 IconButton(onClick = { IntegrationPlaceholders.launchBarcodeScanner() }) {
                     Icon(imageVector = Icons.Outlined.QrCodeScanner, contentDescription = stringResource(id = R.string.cd_barcode_scanner))
@@ -71,6 +98,10 @@ fun ComprartirTopBar(
                     Icon(imageVector = Icons.Outlined.PhotoCamera, contentDescription = stringResource(id = R.string.cd_photo_capture))
                 }
             }
-        },
+        }
+    }
+    Divider(
+        thickness = 1.dp,
+        color = ColorTokens.NavDivider,
     )
-}
+    }
