@@ -87,8 +87,7 @@ fun ComprartirApp(
             ) { paddingValues ->
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                        .fillMaxSize(),
                 ) {
                     Box(
                         modifier = Modifier
@@ -100,6 +99,7 @@ fun ComprartirApp(
                         ComprartirNavHost(
                             appState = appState,
                             modifier = Modifier.fillMaxSize(),
+                            contentPadding = paddingValues,
                         )
                     }
                 }

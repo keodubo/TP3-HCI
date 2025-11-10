@@ -1,6 +1,7 @@
 package com.comprartir.mobile.core.navigation
 
 import android.net.Uri
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
@@ -11,9 +12,10 @@ import com.comprartir.mobile.auth.presentation.UpdatePasswordRoute
 import com.comprartir.mobile.feature.auth.login.LoginRoute
 import com.comprartir.mobile.feature.auth.register.RegisterRoute
 import com.comprartir.mobile.feature.auth.verify.VerifyRoute
-import com.comprartir.mobile.shared.components.DashboardRoute
-import com.comprartir.mobile.lists.presentation.ListDetailsRoute
-import com.comprartir.mobile.lists.presentation.ListsRoute
+import com.comprartir.mobile.feature.home.ui.HomeRoute
+import com.comprartir.mobile.feature.listdetail.ui.ListDetailRoute
+import com.comprartir.mobile.feature.listdetail.navigation.ListDetailDestination
+import com.comprartir.mobile.feature.lists.navigation.listsScreen
 import com.comprartir.mobile.lists.presentation.ShareListRoute
 import com.comprartir.mobile.pantry.presentation.PantryRoute
 import com.comprartir.mobile.products.presentation.CategorizeProductsRoute
@@ -27,6 +29,7 @@ import com.comprartir.mobile.lists.presentation.AcquireProductRoute
 fun ComprartirNavHost(
     appState: ComprartirAppState,
     modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
+    contentPadding: PaddingValues = PaddingValues(),
 ) {
     NavHost(
         navController = appState.navController,
@@ -36,7 +39,7 @@ fun ComprartirNavHost(
         authGraph(appState)
         profileGraph()
         productsGraph(appState)
-        listsGraph(appState)
+        listsGraph(appState, contentPadding)
         settingsGraph()
         pantryGraph(appState)
         optionalFeaturesGraph(appState)
@@ -49,15 +52,20 @@ private fun NavGraphBuilder.authGraph(appState: ComprartirAppState) {
             onRecoverPassword = { appState.navigate(NavigationIntent(AppDestination.UpdatePassword)) },
             onRegister = { appState.navigate(NavigationIntent(AppDestination.Register)) },
             onSubmit = {
+                println("AppNavHost: onSubmit called, navigating to Dashboard")
                 appState.navController.navigate(AppDestination.Dashboard.route) {
                     popUpTo(AppDestination.SignIn.route) { inclusive = true }
                     launchSingleTop = true
                 }
+                println("AppNavHost: Navigation to Dashboard completed")
             },
         )
     }
     composable(AppDestination.Dashboard.route) {
-        DashboardRoute(onNavigate = appState::navigate)
+        HomeRoute(
+            onNavigate = appState::navigate,
+            windowSizeClass = appState.windowSizeClass,
+        )
     }
     composable(AppDestination.Register.route) {
         RegisterRoute(
@@ -113,20 +121,27 @@ private fun NavGraphBuilder.productsGraph(appState: ComprartirAppState) {
     }
 }
 
-private fun NavGraphBuilder.listsGraph(appState: ComprartirAppState) {
-    composable(AppDestination.Lists.route) {
-        ListsRoute(onNavigate = appState::navigate)
-    }
+private fun NavGraphBuilder.listsGraph(
+    appState: ComprartirAppState,
+    contentPadding: PaddingValues,
+) {
+    listsScreen(
+        onNavigate = appState::navigate,
+        contentPadding = contentPadding,
+    )
     composable(
-        route = AppDestination.ListDetails.route + "?listId={listId}",
+        route = AppDestination.ListDetails.route,
         arguments = listOf(
-            navArgument("listId") {
+            navArgument(ListDetailDestination.listIdArg) {
                 type = NavType.StringType
                 defaultValue = ""
             },
         ),
     ) {
-        ListDetailsRoute(onNavigate = appState::navigate)
+        ListDetailRoute(
+            onBack = appState::onBack,
+            windowSizeClass = appState.windowSizeClass,
+        )
     }
     composable(
         route = AppDestination.ShareList.route + "?listId={listId}",
