@@ -90,19 +90,25 @@ class DefaultAuthRepository @Inject constructor(
         val response = api.login(LoginRequest(email = email, password = password))
         persistAuth(response)
         
-        // If the login response doesn't include user data, create a minimal user entry
-        // so that isAuthenticated becomes true
+        // If the login response doesn't include user data, fetch it from the profile endpoint
         if (response.user == null) {
-            // Create a minimal user entity with the email
-            // The full profile will be loaded later by other parts of the app
-            val minimalUser = UserEntity(
-                id = "", // Will be updated when profile is fetched
-                email = email,
-                displayName = email.substringBefore("@"),
-                photoUrl = null,
-                isVerified = true, // Assume verified since login succeeded
-            )
-            userDao.upsert(minimalUser)
+            try {
+                // Fetch the user profile after successful login
+                val userDto = api.getUserProfile()
+                userDao.upsert(userDto.toEntity())
+            } catch (e: Exception) {
+                // If profile fetch fails, create a minimal user entry
+                // so that isAuthenticated becomes true
+                e.printStackTrace()
+                val minimalUser = UserEntity(
+                    id = "", // Will be updated when profile is fetched
+                    email = email,
+                    displayName = email.substringBefore("@"),
+                    photoUrl = null,
+                    isVerified = true, // Assume verified since login succeeded
+                )
+                userDao.upsert(minimalUser)
+            }
         }
     }
 

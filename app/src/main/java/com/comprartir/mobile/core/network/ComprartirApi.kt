@@ -46,6 +46,9 @@ interface ComprartirApi {
 
     @GET("users/profile")
     suspend fun fetchProfile(): ProfileDto
+    
+    @GET("users/profile")
+    suspend fun getUserProfile(): UserDto
 
     @PUT("users/profile")
     suspend fun updateProfile(@Body payload: ProfileUpdateRequest): ProfileDto
