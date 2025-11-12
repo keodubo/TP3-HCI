@@ -119,6 +119,38 @@
     <string name="passwords_do_not_match">Passwords do not match</string>
     <string name="registration_failed">Registration failed. Please try again.</string>
     <string name="common_retry">Try again</string>
+    
+    <!-- Profile Screen -->
+    <string name="profile_edit_button">Edit</string>
+    <string name="profile_cancel_button">Cancel</string>
+    <string name="profile_save_button">Save changes</string>
+    <string name="profile_change_photo">Change photo</string>
+    <string name="profile_remove_background">Remove background</string>
+    <string name="profile_first_name">Name</string>
+    <string name="profile_last_name">Surname</string>
+    <string name="profile_email_label">Email</string>
+    <string name="profile_language">Language</string>
+    <string name="profile_theme">Theme</string>
+    <string name="profile_email_hint">No es posible cambiar el email desde esta pantalla</string>
+    <string name="profile_error_name_empty">Name cannot be empty</string>
+    <string name="profile_error_name_too_short">Name must be at least 2 characters</string>
+    <string name="profile_error_surname_empty">Surname cannot be empty</string>
+    <string name="profile_error_surname_too_short">Surname must be at least 2 characters</string>
+    <string name="profile_updated_success">Profile updated successfully</string>
+    <string name="profile_update_error">Error updating profile</string>
+    <string name="profile_loading">Loading profile…</string>
+    <string name="profile_avatar_cd">Profile avatar</string>
+    <string name="profile_edit_mode_cd">Edit profile button</string>
+    
+    <!-- Language options -->
+    <string name="language_system">System</string>
+    <string name="language_spanish_ar">Español (AR)</string>
+    <string name="language_english_us">English (US)</string>
+    
+    <!-- Theme options -->
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
     <string name="pantry_item_expires">Expires on %1$s</string>
     <string name="placeholder_password_recovery">RF12 Password recovery will be implemented in a future iteration.</string>
     <string name="placeholder_history">RF13 Shopping list history is not yet available on mobile.</string>

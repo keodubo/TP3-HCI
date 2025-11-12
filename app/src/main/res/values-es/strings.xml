@@ -119,6 +119,38 @@
     <string name="passwords_do_not_match">Las contraseñas no coinciden</string>
     <string name="registration_failed">Error al registrar. Por favor, inténtalo de nuevo.</string>
     <string name="common_retry">Intentar de nuevo</string>
+    
+    <!-- Profile Screen -->
+    <string name="profile_edit_button">Editar</string>
+    <string name="profile_cancel_button">Cancelar</string>
+    <string name="profile_save_button">Guardar cambios</string>
+    <string name="profile_change_photo">Cambiar foto</string>
+    <string name="profile_remove_background">Quitar fondo</string>
+    <string name="profile_first_name">Nombre</string>
+    <string name="profile_last_name">Apellido</string>
+    <string name="profile_email_label">Email</string>
+    <string name="profile_language">Idioma</string>
+    <string name="profile_theme">Tema</string>
+    <string name="profile_email_hint">No es posible cambiar el email desde esta pantalla</string>
+    <string name="profile_error_name_empty">El nombre no puede estar vacío</string>
+    <string name="profile_error_name_too_short">El nombre debe tener al menos 2 caracteres</string>
+    <string name="profile_error_surname_empty">El apellido no puede estar vacío</string>
+    <string name="profile_error_surname_too_short">El apellido debe tener al menos 2 caracteres</string>
+    <string name="profile_updated_success">Perfil actualizado correctamente</string>
+    <string name="profile_update_error">Error al actualizar el perfil</string>
+    <string name="profile_loading">Cargando perfil…</string>
+    <string name="profile_avatar_cd">Avatar del perfil</string>
+    <string name="profile_edit_mode_cd">Botón de editar perfil</string>
+    
+    <!-- Language options -->
+    <string name="language_system">Sistema</string>
+    <string name="language_spanish_ar">Español (AR)</string>
+    <string name="language_english_us">English (US)</string>
+    
+    <!-- Theme options -->
+    <string name="theme_system">Sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
     <string name="pantry_item_expires">Vence el %1$s</string>
     <string name="placeholder_password_recovery">RF12 Recuperar contraseña se implementará más adelante.</string>
     <string name="placeholder_history">RF13 El historial de listas aún no está disponible en mobile.</string>

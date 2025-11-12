@@ -5,10 +5,13 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.SettingsVoice
 import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -19,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,6 +39,7 @@ fun ComprartirTopBar(
     destinationRoute: String?,
     showBack: Boolean,
     onBack: () -> Unit,
+    onProfileClick: () -> Unit = {},
     featureFlags: FeatureFlags = FeatureFlags.Disabled,
 ) {
     val title = remember(destinationRoute) {
@@ -96,6 +101,29 @@ fun ComprartirTopBar(
             if (featureFlags.rnf9PhotoCapture) {
                 IconButton(onClick = { IntegrationPlaceholders.captureProductPhoto() }) {
                     Icon(imageVector = Icons.Outlined.PhotoCamera, contentDescription = stringResource(id = R.string.cd_photo_capture))
+                }
+            }
+            
+            // Profile button - only show if not already on profile screen
+            if (destinationRoute != AppDestination.Profile.route) {
+                IconButton(
+                    onClick = onProfileClick,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape),
+                ) {
+                    Surface(
+                        modifier = Modifier.size(36.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Person,
+                            contentDescription = stringResource(R.string.title_profile),
+                            modifier = Modifier.padding(8.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
                 }
             }
         }

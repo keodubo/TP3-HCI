@@ -85,6 +85,11 @@ fun ComprartirApp(
                         destinationRoute = appState.currentDestinationRoute,
                         showBack = appState.navController.previousBackStackEntry != null,
                         onBack = appState::onBack,
+                        onProfileClick = {
+                            appState.navController.navigate(AppDestination.Profile.route) {
+                                launchSingleTop = true
+                            }
+                        },
                         featureFlags = featureFlags,
                     )
                 },
