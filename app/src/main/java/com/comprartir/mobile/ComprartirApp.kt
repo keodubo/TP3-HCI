@@ -48,8 +48,12 @@ fun ComprartirApp(
         val currentRouteBase = currentRoute?.substringBefore("?")
         val isAuthRoute = currentRouteBase == null || currentRouteBase in AuthRoutes
 
-        LaunchedEffect(isAuthenticated, currentRouteBase) {
-            if (!isAuthenticated && currentRouteBase != null && currentRouteBase !in AuthRoutes) {
+        LaunchedEffect(isAuthenticated) {
+            // Only redirect to login if we're not authenticated
+            // Check current route inside the effect to get the latest value
+            val currentDest = appState.navController.currentBackStackEntry?.destination?.route
+            val routeBase = currentDest?.substringBefore("?")
+            if (!isAuthenticated && routeBase != null && routeBase !in AuthRoutes) {
                 appState.navController.navigate(AppDestination.SignIn.route) {
                     popUpTo(AppDestination.SignIn.route) { inclusive = true }
                     launchSingleTop = true

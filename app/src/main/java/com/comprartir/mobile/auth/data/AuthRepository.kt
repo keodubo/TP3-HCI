@@ -87,18 +87,29 @@ class DefaultAuthRepository @Inject constructor(
     }
 
     override suspend fun signIn(email: String, password: String) = withContext(Dispatchers.IO) {
+        println("AuthRepository: Starting login for $email")
         val response = api.login(LoginRequest(email = email, password = password))
-        persistAuth(response)
+        println("AuthRepository: Login response received. User data present: ${response.user != null}")
         
-        // If the login response doesn't include user data, fetch it from the profile endpoint
-        if (response.user == null) {
+        // First save the token
+        authTokenRepository.updateToken(response.token)
+        println("AuthRepository: Token saved")
+        
+        // Then save or fetch user data
+        if (response.user != null) {
+            println("AuthRepository: Saving user from login response, isVerified=${response.user.isVerified}")
+            userDao.upsert(response.user.toEntity())
+        } else {
             try {
                 // Fetch the user profile after successful login
+                println("AuthRepository: Fetching user profile")
                 val userDto = api.getUserProfile()
+                println("AuthRepository: Profile received, isVerified=${userDto.isVerified}")
                 userDao.upsert(userDto.toEntity())
             } catch (e: Exception) {
                 // If profile fetch fails, create a minimal user entry
                 // so that isAuthenticated becomes true
+                println("AuthRepository: Failed to fetch profile: ${e.message}")
                 e.printStackTrace()
                 val minimalUser = UserEntity(
                     id = "", // Will be updated when profile is fetched
@@ -110,6 +121,7 @@ class DefaultAuthRepository @Inject constructor(
                 userDao.upsert(minimalUser)
             }
         }
+        println("AuthRepository: Login completed, user should be saved")
     }
 
     override suspend fun signOut() = withContext(Dispatchers.IO) {
@@ -132,16 +144,6 @@ class DefaultAuthRepository @Inject constructor(
                 authTokenRepository.clearToken()
             }
             throw http
-        }
-    }
-
-    private suspend fun persistAuth(response: AuthResponse) {
-        authTokenRepository.updateToken(response.token)
-        
-        // If user data is not included in response, we can't save it yet
-        // The user will be loaded later when needed
-        response.user?.let { userDto ->
-            userDao.upsert(userDto.toEntity())
         }
     }
 
