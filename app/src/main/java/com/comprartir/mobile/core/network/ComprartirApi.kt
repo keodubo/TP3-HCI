@@ -51,7 +51,7 @@ interface ComprartirApi {
     suspend fun getUserProfile(): UserDto
 
     @PUT("users/profile")
-    suspend fun updateProfile(@Body payload: ProfileUpdateRequest): ProfileDto
+    suspend fun updateProfile(@Body payload: ProfileUpdateRequest): UserDto
     // endregion
 
     // region Categories
@@ -355,11 +355,9 @@ data class ProfileDto(
 
 @Serializable
 data class ProfileUpdateRequest(
-    @SerialName("display_name") val displayName: String? = null,
-    @SerialName("phone_number") val phoneNumber: String? = null,
-    @SerialName("preferred_language") val preferredLanguage: String? = null,
-    @SerialName("notification_opt_in") val notificationOptIn: Boolean? = null,
-    @SerialName("theme_mode") val themeMode: String? = null,
+    val name: String,
+    val surname: String,
+    val metadata: JsonObject = JsonObject(emptyMap()),
 )
 // endregion
 

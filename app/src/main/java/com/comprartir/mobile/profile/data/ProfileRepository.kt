@@ -1,7 +1,9 @@
 package com.comprartir.mobile.profile.data
 
 import com.comprartir.mobile.auth.data.AuthRepository
+import com.comprartir.mobile.core.data.mapper.toEntity
 import com.comprartir.mobile.core.database.dao.ProfileDao
+import com.comprartir.mobile.core.database.dao.UserDao
 import com.comprartir.mobile.core.database.entity.ProfileEntity
 import com.comprartir.mobile.core.network.ComprartirApi
 import com.comprartir.mobile.core.network.ProfileUpdateRequest
@@ -14,6 +16,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -40,6 +44,7 @@ class DefaultProfileRepository @Inject constructor(
     private val api: ComprartirApi,
     private val profileDao: ProfileDao,
     private val authRepository: AuthRepository,
+    private val userDao: UserDao,
 ) : ProfileRepository {
 
     override val profile: Flow<UserProfile> = authRepository.currentUser
@@ -69,22 +74,43 @@ class DefaultProfileRepository @Inject constructor(
         .flowOn(Dispatchers.IO)
 
     override suspend fun updateProfile(userProfile: UserProfile) = withContext(Dispatchers.IO) {
-        val displayName = "${userProfile.name} ${userProfile.surname}".trim()
-        
-        // Update profile via API
-        api.updateProfile(
+        // Update profile via API - returns updated User with name/surname changes
+        val updatedUser = api.updateProfile(
             ProfileUpdateRequest(
-                displayName = displayName,
-                phoneNumber = userProfile.phoneNumber,
-                preferredLanguage = if (userProfile.language != AppLanguage.SYSTEM) 
-                    userProfile.language.code else null,
-                themeMode = if (userProfile.theme != AppTheme.SYSTEM) 
-                    userProfile.theme.code else null,
+                name = userProfile.name,
+                surname = userProfile.surname,
+                metadata = buildJsonObject {
+                    // Store language and theme in metadata since API doesn't have direct fields for them
+                    if (userProfile.language != AppLanguage.SYSTEM) {
+                        put("preferredLanguage", userProfile.language.code)
+                    }
+                    if (userProfile.theme != AppTheme.SYSTEM) {
+                        put("themeMode", userProfile.theme.code)
+                    }
+                }
             )
         )
-        
-        // Refresh to get updated data
-        refresh()
+
+        // Save the updated user directly (includes name, surname, email, etc.)
+        userDao.upsert(updatedUser.toEntity())
+
+        // Also fetch and update ProfileEntity with latest preferences
+        try {
+            val profileDto = api.fetchProfile()
+            val profileEntity = ProfileEntity(
+                userId = profileDto.userId,
+                bio = profileDto.bio,
+                phoneNumber = profileDto.phoneNumber,
+                preferredLanguage = profileDto.preferredLanguage,
+                notificationOptIn = profileDto.notificationOptIn,
+                themeMode = profileDto.themeMode,
+                updatedAt = profileDto.updatedAt,
+            )
+            profileDao.upsert(profileEntity)
+        } catch (e: Exception) {
+            // If fetching profile fails, continue anyway - we already updated the user
+            println("ProfileRepository: Failed to fetch profile after update: ${e.message}")
+        }
     }
 
     override suspend fun refresh() = withContext(Dispatchers.IO) {

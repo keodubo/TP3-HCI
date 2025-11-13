@@ -93,6 +93,11 @@ class DefaultAuthRepository @Inject constructor(
         val response = api.login(LoginRequest(email = email, password = password))
         println("AuthRepository: Login response received. User data present: ${response.user != null}")
         
+        // IMPORTANT: Clear old user data BEFORE saving new user
+        println("AuthRepository: Clearing old user data")
+        userDao.clear()
+        profileDao.clear()
+
         // First save the token
         authTokenRepository.updateToken(response.token)
         println("AuthRepository: Token saved")
