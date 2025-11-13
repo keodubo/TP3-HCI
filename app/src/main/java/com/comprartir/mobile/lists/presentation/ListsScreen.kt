@@ -214,6 +214,15 @@ fun ListsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = spacing.small)
                     )
+                    Spacer(modifier = Modifier.padding(top = spacing.large))
+                    Button(
+                        onClick = {
+                            android.util.Log.d("ListsScreen", "Empty state button clicked - opening create dialog")
+                            onShowCreateDialog()
+                        }
+                    ) {
+                        Text(text = stringResource(id = R.string.lists_empty_action))
+                    }
                 }
             }
 
@@ -305,72 +314,62 @@ private fun ShoppingListCard(
                 color = MaterialTheme.colorScheme.onSurface,
             )
             
-            // Secondary info row
+            // Description
+            Text(
+                text = list.description?.takeIf { it.isNotBlank() } 
+                    ?: stringResource(id = R.string.lists_no_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = spacing.small)
+            )
+            
+            // Action buttons row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Left: item count or description
-                val itemCountText = if (list.items.isEmpty()) {
-                    stringResource(id = R.string.lists_no_items)
-                } else {
-                    stringResource(id = R.string.lists_items_count, list.items.size)
+                FilledTonalIconButton(
+                    onClick = { onShareClick() },
+                    modifier = Modifier.size(36.dp),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = stringResource(id = R.string.lists_share),
+                        modifier = Modifier.size(18.dp),
+                    )
                 }
                 
-                Text(
-                    text = itemCountText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                
-                // Right: action buttons
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(spacing.tiny),
-                    verticalAlignment = Alignment.CenterVertically,
+                FilledTonalIconButton(
+                    onClick = { onEditClick() },
+                    modifier = Modifier.size(36.dp),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    ),
                 ) {
-                    FilledTonalIconButton(
-                        onClick = { onShareClick() },
-                        modifier = Modifier.size(36.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = stringResource(id = R.string.lists_share),
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
-                    
-                    FilledTonalIconButton(
-                        onClick = { onEditClick() },
-                        modifier = Modifier.size(36.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = stringResource(id = R.string.lists_edit),
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
-                    
-                    FilledTonalIconButton(
-                        onClick = { onDeleteClick() },
-                        modifier = Modifier.size(36.dp),
-                        colors = IconButtonDefaults.filledTonalIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = stringResource(id = R.string.lists_delete),
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = stringResource(id = R.string.lists_edit),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                
+                FilledTonalIconButton(
+                    onClick = { onDeleteClick() },
+                    modifier = Modifier.size(36.dp),
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = stringResource(id = R.string.lists_delete),
+                        modifier = Modifier.size(18.dp),
+                    )
                 }
             }
         }

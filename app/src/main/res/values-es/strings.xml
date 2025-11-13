@@ -197,6 +197,7 @@
     <string name="lists_empty_subtitle">Creá tu primera lista usando el botón "Nueva lista"</string>
     <string name="lists_empty_message">Creá tu primera lista para comenzar.</string>
     <string name="lists_empty_action">Crear lista</string>
+    <string name="lists_no_description">Sin descripción</string>
     <string name="lists_open_list">Abrir</string>
     <string name="lists_open_list_cd">Abrir lista %1$s</string>
     <string name="lists_summary_shared">Listas compartidas</string>

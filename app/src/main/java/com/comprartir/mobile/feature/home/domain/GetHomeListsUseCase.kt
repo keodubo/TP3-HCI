@@ -80,6 +80,13 @@ class GetHomeListsUseCase @Inject constructor(
             else -> "Pendiente"
         }
 
+        android.util.Log.d("GetHomeListsUseCase", "🔍 toRecentListUi: List '$name' (id=$id)")
+        android.util.Log.d("GetHomeListsUseCase", "  - totalItems: $totalItems")
+        android.util.Log.d("GetHomeListsUseCase", "  - acquiredItems: $acquiredItems")
+        android.util.Log.d("GetHomeListsUseCase", "  - status: $status")
+        android.util.Log.d("GetHomeListsUseCase", "  - items.size from domain: ${items.size}")
+        android.util.Log.d("GetHomeListsUseCase", "  - items details: ${items.map { "${it.name}(acquired=${it.isAcquired})" }}")
+
         return RecentListUi(
             id = id,
             name = name,

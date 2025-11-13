@@ -111,9 +111,15 @@ class DefaultShoppingListsRepository @Inject constructor(
                     Log.d(TAG, "observeLists: List names = ${listEntities.map { it.name }}")
                     Log.d(TAG, "observeLists: List ownerIds = ${listEntities.map { it.ownerId }}")
                     Log.d(TAG, "observeLists: Got ${itemEntities.size} items from Room for userId=$userId")
+                    Log.d(TAG, "observeLists: Items by listId: ${itemEntities.groupBy { it.listId }.mapValues { it.value.size }}")
                     val groupedItems = itemEntities.groupBy { it.listId }
-                    val domainLists = listEntities.map { entity -> entity.toDomainModel(groupedItems[entity.id].orEmpty()) }
+                    val domainLists = listEntities.map { entity -> 
+                        val items = groupedItems[entity.id].orEmpty()
+                        Log.d(TAG, "observeLists: List ${entity.name} (${entity.id}) has ${items.size} items")
+                        entity.toDomainModel(items)
+                    }
                     Log.d(TAG, "observeLists: Mapped to ${domainLists.size} domain models")
+                    Log.d(TAG, "observeLists: Domain lists with items: ${domainLists.map { "${it.name}:${it.items.size}" }}")
                     domainLists
                 }
             }
