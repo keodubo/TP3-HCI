@@ -1,8 +1,5 @@
 package com.comprartir.mobile.profile.presentation
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -29,6 +26,7 @@ import com.comprartir.mobile.profile.domain.ProfileField
 fun ProfileRoute(
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: ProfileViewModel = hiltViewModel(),
+    onLogout: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -55,6 +53,7 @@ fun ProfileRoute(
         onThemeChanged = viewModel::onThemeChanged,
         onChangePhotoClick = { /* TODO: Implement photo picker */ },
         onRemoveBackgroundClick = { /* TODO: Implement when backend supports */ },
+        onLogoutClick = { viewModel.onLogout(onLogout) },
     )
 }
 
@@ -72,6 +71,7 @@ fun ProfileScreen(
     onThemeChanged: (AppTheme) -> Unit,
     onChangePhotoClick: () -> Unit,
     onRemoveBackgroundClick: () -> Unit,
+    onLogoutClick: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
     
@@ -182,6 +182,21 @@ fun ProfileScreen(
                             )
                         }
                     }
+                }
+
+                // Logout button at the bottom
+                Spacer(modifier = Modifier.height(spacing.medium))
+
+                OutlinedButton(
+                    onClick = onLogoutClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(999.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                ) {
+                    Text(text = stringResource(R.string.action_logout))
                 }
             }
         }

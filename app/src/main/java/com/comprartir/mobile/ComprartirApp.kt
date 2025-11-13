@@ -122,4 +122,6 @@ private val AuthRoutes = setOf(
     AppDestination.Register.route,
     AppDestination.Verify.route,
     AppDestination.UpdatePassword.route,
+    AppDestination.ForgotPassword.route,
+    AppDestination.ResetPassword.route,
 )

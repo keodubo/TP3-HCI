@@ -38,6 +38,8 @@ interface AuthRepository {
     suspend fun signIn(email: String, password: String)
     suspend fun signOut()
     suspend fun updatePassword(currentPassword: String, newPassword: String)
+    suspend fun sendPasswordRecoveryCode(email: String)
+    suspend fun resetPassword(email: String, resetToken: String, newPassword: String)
 }
 
 @Singleton
@@ -145,6 +147,22 @@ class DefaultAuthRepository @Inject constructor(
             }
             throw http
         }
+    }
+
+    override suspend fun sendPasswordRecoveryCode(email: String) = withContext(Dispatchers.IO) {
+        api.forgotPassword(email)
+    }
+
+    override suspend fun resetPassword(email: String, resetToken: String, newPassword: String) = withContext(Dispatchers.IO) {
+        // API returns empty object {}, not AuthResponse
+        api.resetPassword(
+            com.comprartir.mobile.core.network.ResetPasswordRequest(
+                code = resetToken,
+                password = newPassword,
+            )
+        )
+        // Password was reset successfully, but user must login manually
+        // No token is returned, so we don't save anything
     }
 
     private fun UserEntity.toAccount(): UserAccount = UserAccount(

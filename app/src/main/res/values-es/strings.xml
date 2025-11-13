@@ -187,4 +187,31 @@
     <string name="lists_progress_label">%1$d de %2$d ítems</string>
     <string name="lists_filters_toggle_cd">Mostrar u ocultar filtros</string>
     <string name="lists_search_cd">Campo buscar listas</string>
+
+    <!-- Password Recovery -->
+    <string name="forgot_password_title">Recuperar contraseña</string>
+    <string name="forgot_password_description">Ingresa el mail asociado a tu cuenta para recibir el código de recuperación</string>
+    <string name="forgot_password_send_button">Ingresar código</string>
+    <string name="forgot_password_back_to_login">¿Recordaste tu contraseña? Volver atrás</string>
+    <string name="forgot_password_success">Te enviamos un código a tu correo. Revisá tu bandeja de entrada.</string>
+
+    <string name="reset_password_title">Restablecer contraseña</string>
+    <string name="reset_password_description">Ingresa el código enviado a tu correo. Revisá tu bandeja de entrada</string>
+    <string name="reset_password_button">Restablecer contraseña</string>
+    <string name="reset_password_back_to_login">¿Recordaste tu código? Solicitar acá</string>
+    <string name="reset_password_success">Tu contraseña ha sido restablecida. Podés iniciar sesión.</string>
+
+    <string name="label_reset_code">Código</string>
+    <string name="action_close">Cerrar</string>
+    <string name="action_show_password">Mostrar contraseña</string>
+    <string name="action_hide_password">Ocultar contraseña</string>
+    <string name="action_logout">Cerrar sesión</string>
+
+    <string name="error_email_required">El email es requerido</string>
+    <string name="error_password_required">La contraseña es requerida</string>
+    <string name="error_code_required">El código de recuperación es requerido</string>
+    <string name="error_invalid_code">Código inválido o expirado. Intentá de nuevo.</string>
+    <string name="error_user_not_found">Usuario no encontrado</string>
+    <string name="error_network">Error de red. Verificá tu conexión.</string>
+    <string name="error_generic">Ocurrió un error. Intentá de nuevo.</string>
 </resources>

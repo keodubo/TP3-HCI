@@ -36,10 +36,10 @@ interface ComprartirApi {
     suspend fun verifyAccount(@Body request: VerifyAccountRequest): UserDto
 
     @POST("users/forgot-password")
-    suspend fun forgotPassword(@Body request: ForgotPasswordRequest)
+    suspend fun forgotPassword(@Query("email") email: String)
 
     @POST("users/reset-password")
-    suspend fun resetPassword(@Body request: ResetPasswordRequest): AuthResponse
+    suspend fun resetPassword(@Body request: ResetPasswordRequest)
 
     @POST("users/change-password")
     suspend fun changePassword(@Body request: ChangePasswordRequest)
@@ -302,8 +302,7 @@ data class ForgotPasswordRequest(
 
 @Serializable
 data class ResetPasswordRequest(
-    val email: String,
-    @SerialName("reset_token") val resetToken: String,
+    val code: String,
     val password: String,
 )
 

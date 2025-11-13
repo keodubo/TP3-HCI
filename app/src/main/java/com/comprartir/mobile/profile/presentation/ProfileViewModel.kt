@@ -3,6 +3,7 @@ package com.comprartir.mobile.profile.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.comprartir.mobile.R
+import com.comprartir.mobile.auth.data.AuthRepository
 import com.comprartir.mobile.profile.data.ProfileRepository
 import com.comprartir.mobile.profile.data.UserProfile
 import com.comprartir.mobile.profile.domain.AppLanguage
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val repository: ProfileRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileUiState())
@@ -205,6 +207,19 @@ class ProfileViewModel @Inject constructor(
         }
         
         return errors
+    }
+
+    fun onLogout(onComplete: () -> Unit) {
+        viewModelScope.launch {
+            runCatching {
+                authRepository.signOut()
+            }.onSuccess {
+                onComplete()
+            }.onFailure {
+                // Silently fail, but still navigate to login
+                onComplete()
+            }
+        }
     }
 }
 

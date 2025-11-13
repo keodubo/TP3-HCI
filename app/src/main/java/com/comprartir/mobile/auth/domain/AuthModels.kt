@@ -25,3 +25,21 @@ data class PasswordUpdateState(
     val isLoading: Boolean = false,
     val errorMessageRes: Int? = null,
 )
+
+data class ForgotPasswordState(
+    val email: String = "",
+    val isLoading: Boolean = false,
+    val isSuccess: Boolean = false,
+    val errorMessageRes: Int? = null,
+)
+
+data class ResetPasswordState(
+    val email: String = "",
+    val code: String = "",
+    val newPassword: String = "",
+    val confirmPassword: String = "",
+    val isLoading: Boolean = false,
+    val isSuccess: Boolean = false,
+    val errorMessageRes: Int? = null,
+)
+

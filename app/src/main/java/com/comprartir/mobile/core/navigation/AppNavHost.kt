@@ -8,6 +8,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.comprartir.mobile.auth.presentation.ForgotPasswordRoute
+import com.comprartir.mobile.auth.presentation.ResetPasswordRoute
 import com.comprartir.mobile.auth.presentation.UpdatePasswordRoute
 import com.comprartir.mobile.feature.auth.login.LoginRoute
 import com.comprartir.mobile.feature.auth.register.RegisterRoute
@@ -37,7 +39,7 @@ fun ComprartirNavHost(
         modifier = modifier,
     ) {
         authGraph(appState, contentPadding)
-        profileGraph(contentPadding)
+        profileGraph(contentPadding, appState)
         productsGraph(appState)
         listsGraph(appState, contentPadding)
         settingsGraph()
@@ -52,7 +54,7 @@ private fun NavGraphBuilder.authGraph(
 ) {
     composable(AppDestination.SignIn.route) {
         LoginRoute(
-            onRecoverPassword = { appState.navigate(NavigationIntent(AppDestination.UpdatePassword)) },
+            onRecoverPassword = { appState.navigate(NavigationIntent(AppDestination.ForgotPassword)) },
             onRegister = { appState.navigate(NavigationIntent(AppDestination.Register)) },
             onSubmit = {
                 println("AppNavHost: onSubmit called, navigating to Dashboard")
@@ -62,6 +64,38 @@ private fun NavGraphBuilder.authGraph(
                 }
                 println("AppNavHost: Navigation to Dashboard completed")
             },
+        )
+    }
+    composable(AppDestination.ForgotPassword.route) {
+        ForgotPasswordRoute(
+            onNavigateToLogin = { appState.navigate(NavigationIntent(AppDestination.SignIn)) },
+            onNavigateToResetPassword = { email ->
+                val encodedEmail = Uri.encode(email)
+                val route = "${AppDestination.ResetPassword.route}?email=$encodedEmail"
+                appState.navController.navigate(route) {
+                    popUpTo(AppDestination.ForgotPassword.route) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+        )
+    }
+    composable(
+        route = AppDestination.ResetPassword.route + "?email={email}",
+        arguments = listOf(
+            navArgument("email") {
+                type = NavType.StringType
+                defaultValue = ""
+            },
+        ),
+    ) {
+        ResetPasswordRoute(
+            email = it.arguments?.getString("email"),
+            onNavigateToLogin = {
+                appState.navController.navigate(AppDestination.SignIn.route) {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
         )
     }
     composable(AppDestination.Dashboard.route) {
@@ -110,9 +144,17 @@ private fun NavGraphBuilder.authGraph(
     }
 }
 
-private fun NavGraphBuilder.profileGraph(contentPadding: PaddingValues) {
+private fun NavGraphBuilder.profileGraph(contentPadding: PaddingValues, appState: ComprartirAppState) {
     composable(AppDestination.Profile.route) {
-        ProfileRoute(contentPadding = contentPadding)
+        ProfileRoute(
+            contentPadding = contentPadding,
+            onLogout = {
+                appState.navController.navigate(AppDestination.SignIn.route) {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+        )
     }
 }
 

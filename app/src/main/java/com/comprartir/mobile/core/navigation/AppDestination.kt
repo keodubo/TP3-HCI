@@ -4,6 +4,8 @@ enum class AppDestination(val route: String) {
     Register("auth/register"),
     Verify("auth/verify"),
     UpdatePassword("auth/updatePassword"),
+    ForgotPassword("auth/forgotPassword"),
+    ResetPassword("auth/resetPassword"),
     SignIn("auth/signIn"),
     Dashboard("home/dashboard"),
     Profile("profile/manage"),
