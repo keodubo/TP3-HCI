@@ -3,25 +3,23 @@ package com.comprartir.mobile.feature.home.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.comprartir.mobile.auth.data.AuthRepository
+import com.comprartir.mobile.feature.home.domain.GetHomeListsUseCase
 import com.comprartir.mobile.feature.home.model.ActivityUi
 import com.comprartir.mobile.feature.home.model.HomeUiState
-import com.comprartir.mobile.feature.home.model.RecentListUi
-import com.comprartir.mobile.feature.home.model.SharedListUi
-import com.comprartir.mobile.lists.data.ShoppingListsRepository as ListsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    @Suppress("unused")
-    private val listsRepository: ListsRepository,
+    private val getHomeListsUseCase: GetHomeListsUseCase,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
 
@@ -29,76 +27,48 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        refresh()
+        observeLists()
+    }
+
+    private fun observeLists() {
+        viewModelScope.launch {
+            combine(
+                getHomeListsUseCase(),
+                authRepository.currentUser,
+            ) { listsData, user ->
+                HomeUiState(
+                    userName = user?.displayName.orEmpty(),
+                    recentLists = listsData.recentLists,
+                    sharedLists = listsData.sharedLists,
+                    recentActivity = sampleActivity(), // Activity still using sample data
+                    isLoading = false,
+                    error = null,
+                )
+            }
+                .catch { throwable ->
+                    _uiState.update { current ->
+                        current.copy(isLoading = false, error = throwable.message ?: "Error desconocido")
+                    }
+                }
+                .collect { newState ->
+                    _uiState.value = newState
+                }
+        }
     }
 
     fun refresh() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                // TODO: Replace with listsRepository.observeLists() once backend integration is ready.
-                delay(500)
-                val userName = authRepository.currentUser.firstOrNull()?.displayName.orEmpty()
-                _uiState.update { current ->
-                    current.copy(
-                        userName = userName,
-                        recentLists = sampleRecentLists(),
-                        sharedLists = sampleSharedLists(),
-                        recentActivity = sampleActivity(),
-                        isLoading = false,
-                    )
-                }
+                getHomeListsUseCase.refresh()
+                // The flow will automatically update with new data
             } catch (throwable: Throwable) {
                 _uiState.update { current ->
-                    current.copy(isLoading = false, error = throwable.message)
+                    current.copy(isLoading = false, error = throwable.message ?: "Error al actualizar")
                 }
             }
         }
     }
-
-    private fun sampleRecentLists(): List<RecentListUi> = listOf(
-        RecentListUi(
-            id = "recent-1",
-            name = "Compras semanales",
-            date = "Hace 2 días",
-            itemCount = 18,
-            status = "En progreso",
-            isShared = true,
-        ),
-        RecentListUi(
-            id = "recent-2",
-            name = "Frutas y verduras",
-            date = "Ayer",
-            itemCount = 9,
-            status = "Completada",
-            isShared = false,
-        ),
-        RecentListUi(
-            id = "recent-3",
-            name = "Fiesta sábado",
-            date = "Hace 4 días",
-            itemCount = 24,
-            status = "Pendiente",
-            isShared = true,
-        ),
-    )
-
-    private fun sampleSharedLists(): List<SharedListUi> = listOf(
-        SharedListUi(
-            id = "shared-1",
-            name = "Mudanza Abril",
-            ownerName = "Rocío García",
-            lastUpdated = "Actualizada hace 1 h",
-            avatarUrl = null,
-        ),
-        SharedListUi(
-            id = "shared-2",
-            name = "Club de lectura",
-            ownerName = "Federico Díaz",
-            lastUpdated = "Actualizada ayer",
-            avatarUrl = null,
-        ),
-    )
 
     private fun sampleActivity(): List<ActivityUi> = listOf(
         ActivityUi(

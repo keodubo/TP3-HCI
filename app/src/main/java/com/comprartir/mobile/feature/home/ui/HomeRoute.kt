@@ -30,7 +30,14 @@ fun HomeRoute(
                 )
             )
         },
-        onSharedListClick = { onNavigate(NavigationIntent(AppDestination.Lists)) },
+        onSharedListClick = { listId ->
+            onNavigate(
+                NavigationIntent(
+                    destination = AppDestination.ListDetails,
+                    arguments = mapOf("listId" to listId),
+                )
+            )
+        },
         onRefresh = viewModel::refresh,
         windowSizeClass = windowSizeClass,
         contentPadding = contentPadding,
