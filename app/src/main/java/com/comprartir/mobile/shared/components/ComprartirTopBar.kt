@@ -115,13 +115,13 @@ fun ComprartirTopBar(
                     Surface(
                         modifier = Modifier.size(36.dp),
                         shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
+                        color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Person,
                             contentDescription = stringResource(R.string.title_profile),
                             modifier = Modifier.padding(8.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }

@@ -37,7 +37,7 @@ fun ComprartirNavHost(
         modifier = modifier,
     ) {
         authGraph(appState, contentPadding)
-        profileGraph()
+        profileGraph(contentPadding)
         productsGraph(appState)
         listsGraph(appState, contentPadding)
         settingsGraph()
@@ -110,9 +110,9 @@ private fun NavGraphBuilder.authGraph(
     }
 }
 
-private fun NavGraphBuilder.profileGraph() {
+private fun NavGraphBuilder.profileGraph(contentPadding: PaddingValues) {
     composable(AppDestination.Profile.route) {
-        ProfileRoute()
+        ProfileRoute(contentPadding = contentPadding)
     }
 }
 

@@ -3,6 +3,8 @@ package com.comprartir.mobile.profile.presentation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -24,6 +27,7 @@ import com.comprartir.mobile.profile.domain.ProfileField
 
 @Composable
 fun ProfileRoute(
+    contentPadding: PaddingValues = PaddingValues(),
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -41,6 +45,7 @@ fun ProfileRoute(
     ProfileScreen(
         state = state,
         snackbarHostState = snackbarHostState,
+        contentPadding = contentPadding,
         onEditClick = viewModel::onEditClicked,
         onCancelClick = viewModel::onCancelEdit,
         onSaveClick = viewModel::onSaveClicked,
@@ -57,6 +62,7 @@ fun ProfileRoute(
 fun ProfileScreen(
     state: ProfileUiState,
     snackbarHostState: SnackbarHostState,
+    contentPadding: PaddingValues,
     onEditClick: () -> Unit,
     onCancelClick: () -> Unit,
     onSaveClick: () -> Unit,
@@ -72,45 +78,54 @@ fun ProfileScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(spacing.large),
+            .background(MaterialTheme.colorScheme.background),
     ) {
         if (state.isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
             )
         } else {
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                val isWideScreen = maxWidth > 600.dp
-                
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(contentPadding)
+                    .padding(
+                        horizontal = spacing.medium,
+                        vertical = spacing.medium,
                     ),
-                    elevation = CardDefaults.cardElevation(
-                        defaultElevation = 4.dp,
-                    ),
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                            .padding(spacing.xl),
-                        verticalArrangement = Arrangement.spacedBy(spacing.large),
+                verticalArrangement = Arrangement.spacedBy(spacing.medium),
+            ) {
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val isWideScreen = maxWidth > 600.dp
+                    
+                    OutlinedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.outlinedCardColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     ) {
-                        // Header with title
-                        Text(
-                            text = stringResource(R.string.title_profile),
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        
-                        if (isWideScreen) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(spacing.large),
+                            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+                        ) {
+                            // Header with title
+                            Text(
+                                text = stringResource(R.string.title_profile),
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            
+                            if (isWideScreen) {
                             // Wide screen: Avatar on left, fields on right
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(spacing.xl),
+                                horizontalArrangement = Arrangement.spacedBy(spacing.large),
                             ) {
                                 // Avatar section
                                 ProfileAvatarSection(
@@ -118,13 +133,13 @@ fun ProfileScreen(
                                     isEditing = state.isEditing,
                                     onChangePhotoClick = onChangePhotoClick,
                                     onRemoveBackgroundClick = onRemoveBackgroundClick,
-                                    modifier = Modifier.width(200.dp),
+                                    modifier = Modifier.width(180.dp),
                                 )
                                 
                                 // Fields section
                                 Column(
                                     modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(spacing.large),
+                                    verticalArrangement = Arrangement.spacedBy(spacing.medium),
                                 ) {
                                     ProfileFields(
                                         state = state,
@@ -156,15 +171,16 @@ fun ProfileScreen(
                         
                         Spacer(modifier = Modifier.height(spacing.small))
                         
-                        // Action buttons
-                        ProfileActionButtons(
-                            isEditing = state.isEditing,
-                            isSaving = state.isSaving,
-                            canSave = state.hasUnsavedChanges && state.fieldErrors.isEmpty(),
-                            onEditClick = onEditClick,
-                            onSaveClick = onSaveClick,
-                            onCancelClick = onCancelClick,
-                        )
+                            // Action buttons
+                            ProfileActionButtons(
+                                isEditing = state.isEditing,
+                                isSaving = state.isSaving,
+                                canSave = state.hasUnsavedChanges && state.fieldErrors.isEmpty(),
+                                onEditClick = onEditClick,
+                                onSaveClick = onSaveClick,
+                                onCancelClick = onCancelClick,
+                            )
+                        }
                     }
                 }
             }

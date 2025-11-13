@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.ArrowDropDown
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -45,7 +46,7 @@ fun ProfileAvatarSection(
         // Avatar
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(100.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center,
@@ -55,7 +56,7 @@ fun ProfileAvatarSection(
             Icon(
                 imageVector = Icons.Filled.Person,
                 contentDescription = stringResource(R.string.profile_avatar_cd),
-                modifier = Modifier.size(60.dp),
+                modifier = Modifier.size(50.dp),
                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
@@ -286,6 +287,12 @@ fun ProfileActionButtons(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(999.dp),
             ) {
+                Icon(
+                    imageVector = Icons.Outlined.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(stringResource(R.string.profile_edit_button))
             }
         }
