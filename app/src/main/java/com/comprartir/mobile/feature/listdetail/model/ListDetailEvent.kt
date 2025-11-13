@@ -13,4 +13,12 @@ sealed interface ListDetailEvent {
     data class ShareEmailChanged(val value: String) : ListDetailEvent
     data object LinkCopied : ListDetailEvent
     data object Retry : ListDetailEvent
+    data object ShowEditDialog : ListDetailEvent
+    data class EditListNameChanged(val value: String) : ListDetailEvent
+    data class EditListDescriptionChanged(val value: String) : ListDetailEvent
+    data object ConfirmEditList : ListDetailEvent
+    data object DismissEditDialog : ListDetailEvent
+    data object ShowDeleteDialog : ListDetailEvent
+    data object ConfirmDeleteList : ListDetailEvent
+    data object DismissDeleteDialog : ListDetailEvent
 }

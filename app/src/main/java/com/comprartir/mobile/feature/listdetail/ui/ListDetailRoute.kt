@@ -44,6 +44,9 @@ fun ListDetailRoute(
                 is ListDetailEffect.ShowMessage -> {
                     snackbarHostState.showSnackbar(context.getString(effect.messageRes))
                 }
+                ListDetailEffect.NavigateBack -> {
+                    onBack()
+                }
             }
         }
     }

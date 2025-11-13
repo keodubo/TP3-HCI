@@ -195,6 +195,7 @@
     <string name="lists_type_shared">Compartidas</string>
     <string name="lists_type_personal">Personales</string>
     <string name="lists_empty_title">Aún no tienes listas</string>
+    <string name="lists_empty_subtitle">Creá tu primera lista usando el botón "New list"</string>
     <string name="lists_empty_message">Crea tu primera lista para comenzar a organizar tus compras.</string>
     <string name="lists_empty_action">Crear lista</string>
     <string name="lists_open_list">Abrir</string>

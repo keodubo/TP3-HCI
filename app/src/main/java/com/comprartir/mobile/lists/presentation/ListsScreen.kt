@@ -56,11 +56,16 @@ fun ListsRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     
-    // Auto-open create dialog if navigated with openCreate=true
+    // Usar rememberSaveable para recordar si ya manejamos el openCreate
+    // Esto evita que se reabra el diálogo al volver del detalle de una lista
+    val hasHandledOpenCreate = androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    
+    // Auto-open create dialog SOLO UNA VEZ si navigated con openCreate=true
     androidx.compose.runtime.LaunchedEffect(openCreateDialog) {
-        if (openCreateDialog && !state.createListState.isVisible) {
-            android.util.Log.d("ListsRoute", "🔥 AUTO-OPENING create dialog from navigation parameter")
+        if (openCreateDialog && !hasHandledOpenCreate.value && !state.createListState.isVisible) {
+            android.util.Log.d("ListsRoute", "🔥 AUTO-OPENING create dialog from navigation parameter (FIRST TIME)")
             viewModel.showCreateDialog()
+            hasHandledOpenCreate.value = true
         }
     }
     
@@ -185,6 +190,30 @@ fun ListsScreen(
                     }) {
                         Text(text = stringResource(id = R.string.common_retry))
                     }
+                }
+            }
+
+            if (!state.isLoading && state.errorMessage == null && state.lists.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(spacing.large),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.lists_empty_title),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = stringResource(id = R.string.lists_empty_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = spacing.small)
+                    )
                 }
             }
 

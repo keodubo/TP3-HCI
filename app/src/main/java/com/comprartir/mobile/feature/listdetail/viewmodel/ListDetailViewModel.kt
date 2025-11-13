@@ -7,6 +7,8 @@ import com.comprartir.mobile.R
 import com.comprartir.mobile.feature.listdetail.data.ListDetailItem
 import com.comprartir.mobile.feature.listdetail.data.ListDetailRepository
 import com.comprartir.mobile.feature.listdetail.model.AddProductUiState
+import com.comprartir.mobile.feature.listdetail.model.DeleteListDialogState
+import com.comprartir.mobile.feature.listdetail.model.EditListDialogState
 import com.comprartir.mobile.feature.listdetail.model.ListDetailEffect
 import com.comprartir.mobile.feature.listdetail.model.ListDetailEvent
 import com.comprartir.mobile.feature.listdetail.model.ListDetailUiState
@@ -26,6 +28,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class ListDetailViewModel @Inject constructor(
     private val repository: ListDetailRepository,
+    private val shoppingListsRepository: com.comprartir.mobile.lists.data.ShoppingListsRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -62,6 +65,14 @@ class ListDetailViewModel @Inject constructor(
             is ListDetailEvent.ShareEmailChanged -> _state.update { it.copy(shareState = it.shareState.copy(email = event.value)) }
             ListDetailEvent.LinkCopied -> emitMessage(R.string.list_detail_link_copied)
             ListDetailEvent.Retry -> observeList(force = true)
+            ListDetailEvent.ShowEditDialog -> showEditDialog()
+            is ListDetailEvent.EditListNameChanged -> _state.update { it.copy(editListState = it.editListState.copy(name = event.value, errorMessageRes = null)) }
+            is ListDetailEvent.EditListDescriptionChanged -> _state.update { it.copy(editListState = it.editListState.copy(description = event.value)) }
+            ListDetailEvent.ConfirmEditList -> confirmEditList()
+            ListDetailEvent.DismissEditDialog -> _state.update { it.copy(editListState = EditListDialogState()) }
+            ListDetailEvent.ShowDeleteDialog -> showDeleteDialog()
+            ListDetailEvent.ConfirmDeleteList -> confirmDeleteList()
+            ListDetailEvent.DismissDeleteDialog -> _state.update { it.copy(deleteListState = DeleteListDialogState()) }
         }
     }
 
@@ -156,6 +167,70 @@ class ListDetailViewModel @Inject constructor(
     private fun emitMessage(messageRes: Int) {
         viewModelScope.launch {
             _effects.emit(ListDetailEffect.ShowMessage(messageRes))
+        }
+    }
+
+    private fun showEditDialog() {
+        val currentTitle = _state.value.title
+        _state.update {
+            it.copy(
+                editListState = EditListDialogState(
+                    isVisible = true,
+                    name = currentTitle,
+                    description = "",
+                )
+            )
+        }
+    }
+
+    private fun confirmEditList() {
+        val currentState = _state.value.editListState
+        if (currentState.isSubmitting || currentState.name.isBlank()) {
+            if (currentState.name.isBlank()) {
+                _state.update { it.copy(editListState = it.editListState.copy(errorMessageRes = R.string.lists_create_dialog_name_error)) }
+            }
+            return
+        }
+
+        _state.update { it.copy(editListState = it.editListState.copy(isSubmitting = true, errorMessageRes = null)) }
+
+        viewModelScope.launch {
+            runCatching {
+                shoppingListsRepository.updateList(
+                    listId = listId,
+                    name = currentState.name.trim(),
+                    description = currentState.description.trim().ifBlank { null }
+                )
+            }.onSuccess {
+                _state.update { it.copy(editListState = EditListDialogState()) }
+            }.onFailure {
+                _state.update { it.copy(editListState = it.editListState.copy(isSubmitting = false, errorMessageRes = R.string.error_updating_list)) }
+            }
+        }
+    }
+
+    private fun showDeleteDialog() {
+        _state.update {
+            it.copy(deleteListState = DeleteListDialogState(isVisible = true))
+        }
+    }
+
+    private fun confirmDeleteList() {
+        val currentState = _state.value.deleteListState
+        if (currentState.isDeleting) return
+
+        _state.update { it.copy(deleteListState = it.deleteListState.copy(isDeleting = true)) }
+
+        viewModelScope.launch {
+            runCatching {
+                shoppingListsRepository.deleteList(listId)
+            }.onSuccess {
+                _state.update { it.copy(deleteListState = DeleteListDialogState()) }
+                _effects.emit(ListDetailEffect.NavigateBack)
+            }.onFailure {
+                _state.update { it.copy(deleteListState = it.deleteListState.copy(isDeleting = false)) }
+                emitMessage(R.string.error_deleting_list)
+            }
         }
     }
 

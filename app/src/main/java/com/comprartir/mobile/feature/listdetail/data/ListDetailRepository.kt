@@ -1,10 +1,12 @@
 package com.comprartir.mobile.feature.listdetail.data
 
+import com.comprartir.mobile.lists.data.ShoppingListsRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlin.random.Random
@@ -35,12 +37,21 @@ data class ListDetailItem(
 )
 
 @Singleton
-class FakeListDetailRepository @Inject constructor() : ListDetailRepository {
+class FakeListDetailRepository @Inject constructor(
+    private val shoppingListsRepository: ShoppingListsRepository,
+) : ListDetailRepository {
 
     private val lists = mutableMapOf<String, MutableStateFlow<ListDetailData>>()
 
-    override fun observeList(listId: String): Flow<ListDetailData> = ensureList(listId)
-        .onStart { delay(400) }
+    override fun observeList(listId: String): Flow<ListDetailData> = combine(
+        shoppingListsRepository.observeList(listId),
+        ensureList(listId),
+    ) { realList, localState ->
+        // Usar el nombre real de la lista si está disponible, sino usar el estado local
+        localState.copy(
+            title = realList?.name ?: localState.title,
+        )
+    }.onStart { delay(400) }
 
     override suspend fun toggleItem(listId: String, itemId: String, completed: Boolean) {
         delay(120)
@@ -99,7 +110,7 @@ class FakeListDetailRepository @Inject constructor() : ListDetailRepository {
             MutableStateFlow(
                 ListDetailData(
                     id = listId,
-                    title = "Lista #$listId",
+                    title = "Lista sin nombre",
                     subtitle = "Actualizada hace 2 h",
                     shareLink = "https://comprartir.app/lists/$listId",
                     items = emptyList(),

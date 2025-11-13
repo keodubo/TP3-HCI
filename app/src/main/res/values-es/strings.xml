@@ -194,6 +194,7 @@
     <string name="lists_type_shared">Compartidas</string>
     <string name="lists_type_personal">Personales</string>
     <string name="lists_empty_title">Todavía no tenés listas</string>
+    <string name="lists_empty_subtitle">Creá tu primera lista usando el botón "Nueva lista"</string>
     <string name="lists_empty_message">Creá tu primera lista para comenzar.</string>
     <string name="lists_empty_action">Crear lista</string>
     <string name="lists_open_list">Abrir</string>

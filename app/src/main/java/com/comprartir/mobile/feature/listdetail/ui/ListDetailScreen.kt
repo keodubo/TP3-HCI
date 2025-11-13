@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FilterList
@@ -96,6 +97,8 @@ fun ListDetailScreen(
             ListDetailTopBar(
                 title = state.title.ifBlank { stringResource(id = R.string.lists_default_title) },
                 onBack = onBack,
+                onEdit = { onEvent(ListDetailEvent.ShowEditDialog) },
+                onDelete = { onEvent(ListDetailEvent.ShowDeleteDialog) },
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -106,7 +109,7 @@ fun ListDetailScreen(
             end = innerPadding.calculateEndPadding(layoutDirection) +
                 contentPadding.calculateEndPadding(layoutDirection),
             top = innerPadding.calculateTopPadding() +
-                contentPadding.calculateTopPadding() + spacing.large,
+                contentPadding.calculateTopPadding() + spacing.small,
             bottom = innerPadding.calculateBottomPadding() +
                 contentPadding.calculateBottomPadding() + spacing.large,
         )
@@ -215,6 +218,37 @@ fun ListDetailScreen(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         }
+
+        if (state.editListState.isVisible) {
+            com.comprartir.mobile.feature.lists.ui.components.EditListDialog(
+                state = com.comprartir.mobile.lists.presentation.EditListUiState(
+                    isVisible = state.editListState.isVisible,
+                    listId = state.listId,
+                    name = state.editListState.name,
+                    description = state.editListState.description,
+                    isSubmitting = state.editListState.isSubmitting,
+                    errorMessageRes = state.editListState.errorMessageRes,
+                ),
+                onDismiss = { onEvent(ListDetailEvent.DismissEditDialog) },
+                onNameChange = { onEvent(ListDetailEvent.EditListNameChanged(it)) },
+                onDescriptionChange = { onEvent(ListDetailEvent.EditListDescriptionChanged(it)) },
+                onRecurringChange = { },
+                onConfirm = { onEvent(ListDetailEvent.ConfirmEditList) },
+            )
+        }
+
+        if (state.deleteListState.isVisible) {
+            com.comprartir.mobile.feature.lists.ui.components.DeleteListDialog(
+                state = com.comprartir.mobile.lists.presentation.DeleteListUiState(
+                    isVisible = state.deleteListState.isVisible,
+                    listId = state.listId,
+                    listName = state.title,
+                    isDeleting = state.deleteListState.isDeleting,
+                ),
+                onDismiss = { onEvent(ListDetailEvent.DismissDeleteDialog) },
+                onConfirm = { onEvent(ListDetailEvent.ConfirmDeleteList) },
+            )
+        }
     }
 }
 
@@ -222,6 +256,8 @@ fun ListDetailScreen(
 private fun ListDetailTopBar(
     title: String,
     onBack: () -> Unit,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {},
 ) {
     val spacing = LocalSpacing.current
     Surface(
@@ -244,6 +280,28 @@ private fun ListDetailTopBar(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
             )
+            IconButton(
+                onClick = onEdit,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = stringResource(id = R.string.lists_edit),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = stringResource(id = R.string.lists_delete),
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
     Divider(

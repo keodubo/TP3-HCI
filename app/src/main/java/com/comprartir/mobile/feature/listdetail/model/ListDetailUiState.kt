@@ -13,6 +13,8 @@ data class ListDetailUiState(
     @StringRes val errorMessageRes: Int? = null,
     val addProductState: AddProductUiState = AddProductUiState(),
     val shareState: ShareUiState = ShareUiState(),
+    val editListState: EditListDialogState = EditListDialogState(),
+    val deleteListState: DeleteListDialogState = DeleteListDialogState(),
 ) {
     val totalItems: Int get() = items.size
     val completedItems: Int get() = items.count { it.isCompleted }
@@ -43,4 +45,19 @@ data class AddProductUiState(
 data class ShareUiState(
     val email: String = "",
     val link: String = "",
+)
+
+data class EditListDialogState(
+    val isVisible: Boolean = false,
+    val name: String = "",
+    val description: String = "",
+    val isSubmitting: Boolean = false,
+    @StringRes val errorMessageRes: Int? = null,
+) {
+    val canSubmit: Boolean = name.isNotBlank() && !isSubmitting
+}
+
+data class DeleteListDialogState(
+    val isVisible: Boolean = false,
+    val isDeleting: Boolean = false,
 )
