@@ -1,5 +1,6 @@
 package com.comprartir.mobile.lists.presentation
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.comprartir.mobile.lists.data.ShoppingList
@@ -161,12 +162,179 @@ class ListsViewModel @Inject constructor(
         }
     }
 
-    companion object {
-        private const val TAG = "ListsViewModel"
-    }
-
     fun clearError() {
         _state.update { it.copy(errorMessage = null) }
+    }
+
+    // Edit list functions
+    fun showEditDialog(list: ShoppingList) {
+        android.util.Log.d(TAG, "showEditDialog: Opening edit dialog for list ${list.id} - '${list.name}'")
+        _state.update { 
+            it.copy(
+                editListState = EditListUiState(
+                    isVisible = true,
+                    listId = list.id,
+                    name = list.name,
+                    description = list.description.orEmpty(),
+                    isRecurring = list.isRecurring
+                )
+            ) 
+        }
+    }
+
+    fun dismissEditDialog() {
+        android.util.Log.d(TAG, "dismissEditDialog: Closing edit dialog")
+        _state.update { it.copy(editListState = EditListUiState()) }
+    }
+
+    fun onEditListNameChanged(name: String) {
+        _state.update { 
+            it.copy(
+                editListState = it.editListState.copy(
+                    name = name,
+                    errorMessageRes = null
+                )
+            )
+        }
+    }
+
+    fun onEditListDescriptionChanged(description: String) {
+        _state.update { 
+            it.copy(
+                editListState = it.editListState.copy(description = description)
+            )
+        }
+    }
+
+    fun onEditListRecurringChanged(isRecurring: Boolean) {
+        _state.update { 
+            it.copy(
+                editListState = it.editListState.copy(isRecurring = isRecurring)
+            )
+        }
+    }
+
+    fun confirmEditList() {
+        val currentState = state.value.editListState
+        
+        if (currentState.isSubmitting) {
+            android.util.Log.w(TAG, "confirmEditList: Already submitting, ignoring")
+            return
+        }
+        
+        if (currentState.name.isBlank()) {
+            android.util.Log.w(TAG, "confirmEditList: Name is blank")
+            _state.update {
+                it.copy(
+                    editListState = it.editListState.copy(
+                        errorMessageRes = R.string.lists_create_dialog_name_error
+                    )
+                )
+            }
+            return
+        }
+
+        android.util.Log.d(TAG, "confirmEditList: Starting update - listId=${currentState.listId}, name='${currentState.name}'")
+        
+        _state.update { 
+            it.copy(
+                editListState = it.editListState.copy(
+                    isSubmitting = true,
+                    errorMessageRes = null
+                )
+            )
+        }
+
+        viewModelScope.launch {
+            runCatching { 
+                android.util.Log.d(TAG, "confirmEditList: Calling repository.updateList...")
+                repository.updateList(
+                    listId = currentState.listId,
+                    name = currentState.name.trim(),
+                    description = currentState.description.trim().ifBlank { null }
+                )
+                android.util.Log.d(TAG, "confirmEditList: List updated successfully!")
+            }
+                .onSuccess {
+                    android.util.Log.d(TAG, "confirmEditList: Success! Closing dialog and refreshing...")
+                    dismissEditDialog()
+                    refresh()
+                }
+                .onFailure { throwable ->
+                    android.util.Log.e(TAG, "confirmEditList: FAILED - ${throwable.message}", throwable)
+                    _state.update { current -> 
+                        current.copy(
+                            editListState = current.editListState.copy(
+                                isSubmitting = false,
+                                errorMessageRes = R.string.error_updating_list
+                            ),
+                            errorMessage = throwable.message
+                        ) 
+                    }
+                }
+        }
+    }
+
+    // Delete list functions
+    fun showDeleteDialog(list: ShoppingList) {
+        android.util.Log.d(TAG, "showDeleteDialog: Opening delete dialog for list ${list.id} - '${list.name}'")
+        _state.update { 
+            it.copy(
+                deleteListState = DeleteListUiState(
+                    isVisible = true,
+                    listId = list.id,
+                    listName = list.name
+                )
+            ) 
+        }
+    }
+
+    fun dismissDeleteDialog() {
+        android.util.Log.d(TAG, "dismissDeleteDialog: Closing delete dialog")
+        _state.update { it.copy(deleteListState = DeleteListUiState()) }
+    }
+
+    fun confirmDeleteList() {
+        val currentState = state.value.deleteListState
+        
+        if (currentState.isDeleting) {
+            android.util.Log.w(TAG, "confirmDeleteList: Already deleting, ignoring")
+            return
+        }
+
+        android.util.Log.d(TAG, "confirmDeleteList: Starting deletion - listId=${currentState.listId}")
+        
+        _state.update { 
+            it.copy(
+                deleteListState = it.deleteListState.copy(isDeleting = true)
+            )
+        }
+
+        viewModelScope.launch {
+            runCatching { 
+                android.util.Log.d(TAG, "confirmDeleteList: Calling repository.deleteList...")
+                repository.deleteList(currentState.listId)
+                android.util.Log.d(TAG, "confirmDeleteList: List deleted successfully!")
+            }
+                .onSuccess {
+                    android.util.Log.d(TAG, "confirmDeleteList: Success! Closing dialog and refreshing...")
+                    dismissDeleteDialog()
+                    refresh()
+                }
+                .onFailure { throwable ->
+                    android.util.Log.e(TAG, "confirmDeleteList: FAILED - ${throwable.message}", throwable)
+                    _state.update { current -> 
+                        current.copy(
+                            deleteListState = current.deleteListState.copy(isDeleting = false),
+                            errorMessage = "No se pudo eliminar la lista: ${throwable.message}"
+                        ) 
+                    }
+                }
+        }
+    }
+
+    companion object {
+        private const val TAG = "ListsViewModel"
     }
 }
 
@@ -175,4 +343,25 @@ data class ListsUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val createListState: CreateListUiState = CreateListUiState(),
+    val editListState: EditListUiState = EditListUiState(),
+    val deleteListState: DeleteListUiState = DeleteListUiState(),
+)
+
+data class EditListUiState(
+    val isVisible: Boolean = false,
+    val listId: String = "",
+    val name: String = "",
+    val description: String = "",
+    val isRecurring: Boolean = false,
+    val isSubmitting: Boolean = false,
+    @StringRes val errorMessageRes: Int? = null,
+) {
+    val canSubmit: Boolean = name.isNotBlank() && !isSubmitting
+}
+
+data class DeleteListUiState(
+    val isVisible: Boolean = false,
+    val listId: String = "",
+    val listName: String = "",
+    val isDeleting: Boolean = false,
 )

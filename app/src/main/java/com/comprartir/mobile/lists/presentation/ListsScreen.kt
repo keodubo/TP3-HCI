@@ -7,16 +7,23 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -28,6 +35,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.comprartir.mobile.R
@@ -35,6 +44,9 @@ import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.core.navigation.AppDestination
 import com.comprartir.mobile.core.navigation.NavigationIntent
 import com.comprartir.mobile.feature.lists.ui.components.CreateListDialog
+import com.comprartir.mobile.feature.lists.ui.components.EditListDialog
+import com.comprartir.mobile.feature.lists.ui.components.DeleteListDialog
+import com.comprartir.mobile.lists.data.ShoppingList
 
 @Composable
 fun ListsRoute(
@@ -65,6 +77,15 @@ fun ListsRoute(
         onCreateListDescriptionChanged = viewModel::onCreateListDescriptionChanged,
         onCreateListRecurringChanged = viewModel::onCreateListRecurringChanged,
         onConfirmCreateList = viewModel::confirmCreateList,
+        onShowEditDialog = viewModel::showEditDialog,
+        onDismissEditDialog = viewModel::dismissEditDialog,
+        onEditListNameChanged = viewModel::onEditListNameChanged,
+        onEditListDescriptionChanged = viewModel::onEditListDescriptionChanged,
+        onEditListRecurringChanged = viewModel::onEditListRecurringChanged,
+        onConfirmEditList = viewModel::confirmEditList,
+        onShowDeleteDialog = viewModel::showDeleteDialog,
+        onDismissDeleteDialog = viewModel::dismissDeleteDialog,
+        onConfirmDeleteList = viewModel::confirmDeleteList,
         onListSelected = { listId ->
             onNavigate(NavigationIntent(AppDestination.ListDetails, mapOf("listId" to listId)))
         },
@@ -86,6 +107,15 @@ fun ListsScreen(
     onCreateListDescriptionChanged: (String) -> Unit,
     onCreateListRecurringChanged: (Boolean) -> Unit,
     onConfirmCreateList: () -> Unit,
+    onShowEditDialog: (ShoppingList) -> Unit,
+    onDismissEditDialog: () -> Unit,
+    onEditListNameChanged: (String) -> Unit,
+    onEditListDescriptionChanged: (String) -> Unit,
+    onEditListRecurringChanged: (Boolean) -> Unit,
+    onConfirmEditList: () -> Unit,
+    onShowDeleteDialog: (ShoppingList) -> Unit,
+    onDismissDeleteDialog: () -> Unit,
+    onConfirmDeleteList: () -> Unit,
     onListSelected: (String) -> Unit,
     onShareList: (String) -> Unit,
     onRefresh: () -> Unit,
@@ -160,28 +190,16 @@ fun ListsScreen(
 
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(spacing.small)
+                verticalArrangement = Arrangement.spacedBy(spacing.medium)
             ) {
                 items(state.lists, key = { it.id }) { list ->
-                    Card(onClick = { onListSelected(list.id) }) {
-                        Column(modifier = Modifier.padding(spacing.medium)) {
-                            Text(
-                                text = list.name.ifBlank { stringResource(id = R.string.lists_default_title) },
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            if (!list.description.isNullOrBlank()) {
-                                Text(
-                                    text = list.description,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Spacer(modifier = Modifier.padding(spacing.small))
-                            Button(onClick = { onShareList(list.id) }) {
-                                Text(text = stringResource(id = R.string.lists_share))
-                            }
-                        }
-                    }
+                    ShoppingListCard(
+                        list = list,
+                        onListClick = { onListSelected(list.id) },
+                        onEditClick = { onShowEditDialog(list) },
+                        onDeleteClick = { onShowDeleteDialog(list) },
+                        onShareClick = { onShareList(list.id) },
+                    )
                 }
             }
         }
@@ -209,5 +227,123 @@ fun ListsScreen(
                 onConfirmCreateList()
             },
         )
+
+        EditListDialog(
+            state = state.editListState,
+            onNameChange = onEditListNameChanged,
+            onDescriptionChange = onEditListDescriptionChanged,
+            onRecurringChange = onEditListRecurringChanged,
+            onDismiss = onDismissEditDialog,
+            onConfirm = onConfirmEditList,
+        )
+
+        DeleteListDialog(
+            state = state.deleteListState,
+            onDismiss = onDismissDeleteDialog,
+            onConfirm = onConfirmDeleteList,
+        )
+    }
+}
+
+@Composable
+private fun ShoppingListCard(
+    list: ShoppingList,
+    onListClick: () -> Unit,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onShareClick: () -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    
+    Card(
+        onClick = onListClick,
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 4.dp,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(spacing.small),
+        ) {
+            // Header: Name
+            Text(
+                text = list.name.ifBlank { stringResource(id = R.string.lists_default_title) },
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            
+            // Secondary info row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Left: item count or description
+                val itemCountText = if (list.items.isEmpty()) {
+                    stringResource(id = R.string.lists_no_items)
+                } else {
+                    stringResource(id = R.string.lists_items_count, list.items.size)
+                }
+                
+                Text(
+                    text = itemCountText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                
+                // Right: action buttons
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(spacing.tiny),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    FilledTonalIconButton(
+                        onClick = { onShareClick() },
+                        modifier = Modifier.size(36.dp),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        ),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = stringResource(id = R.string.lists_share),
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                    
+                    FilledTonalIconButton(
+                        onClick = { onEditClick() },
+                        modifier = Modifier.size(36.dp),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        ),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(id = R.string.lists_edit),
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                    
+                    FilledTonalIconButton(
+                        onClick = { onDeleteClick() },
+                        modifier = Modifier.size(36.dp),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = stringResource(id = R.string.lists_delete),
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+            }
+        }
     }
 }

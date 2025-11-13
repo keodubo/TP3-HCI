@@ -214,6 +214,17 @@
     <string name="lists_create_dialog_name_error">Ingresa un nombre para la lista.</string>
     <string name="dialog_cancel">Cancelar</string>
     <string name="error_creating_list">No pudimos crear la lista. Intenta de nuevo.</string>
+    <string name="error_updating_list">Failed to update list. Please try again.</string>
+    <string name="error_deleting_list">Failed to delete list. Please try again.</string>
+    <string name="lists_edit">Edit</string>
+    <string name="lists_delete">Delete</string>
+    <string name="lists_edit_dialog_title">Edit List</string>
+    <string name="lists_edit_dialog_confirm">Save</string>
+    <string name="lists_delete_dialog_title">Delete List?</string>
+    <string name="lists_delete_dialog_message">Are you sure you want to delete \'%1$s\'? This action cannot be undone.</string>
+    <string name="lists_delete_dialog_confirm">Delete</string>
+    <string name="lists_items_count">%1$d items</string>
+    <string name="lists_no_items">Empty list</string>
     <string name="list_detail_filters_title">Filtros</string>
     <string name="list_detail_hide_completed">Ocultar completados</string>
     <string name="list_detail_empty_items">No hay productos cargados.</string>

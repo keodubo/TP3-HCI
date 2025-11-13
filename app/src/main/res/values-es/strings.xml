@@ -231,4 +231,16 @@
     <string name="error_user_not_found">Usuario no encontrado</string>
     <string name="error_network">Error de red. Verificá tu conexión.</string>
     <string name="error_generic">Ocurrió un error. Intentá de nuevo.</string>
+    <string name="error_creating_list">No pudimos crear la lista. Intenta de nuevo.</string>
+    <string name="error_updating_list">No se pudo actualizar la lista. Intenta de nuevo.</string>
+    <string name="error_deleting_list">No se pudo eliminar la lista. Intenta de nuevo.</string>
+    <string name="lists_edit">Editar</string>
+    <string name="lists_delete">Eliminar</string>
+    <string name="lists_edit_dialog_title">Editar Lista</string>
+    <string name="lists_edit_dialog_confirm">Guardar</string>
+    <string name="lists_delete_dialog_title">¿Eliminar Lista?</string>
+    <string name="lists_delete_dialog_message">¿Estás seguro de eliminar \'%1$s\'? Esta acción no se puede deshacer.</string>
+    <string name="lists_delete_dialog_confirm">Eliminar</string>
+    <string name="lists_items_count">%1$d productos</string>
+    <string name="lists_no_items">Lista vacía</string>
 </resources>
