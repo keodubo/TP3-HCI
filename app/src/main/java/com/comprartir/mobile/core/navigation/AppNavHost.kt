@@ -145,9 +145,10 @@ private fun NavGraphBuilder.authGraph(
 }
 
 private fun NavGraphBuilder.profileGraph(contentPadding: PaddingValues, appState: ComprartirAppState) {
-    composable(AppDestination.Profile.route) {
+    composable(AppDestination.Profile.route) { backStackEntry ->
         ProfileRoute(
             contentPadding = contentPadding,
+            navController = appState.navController,
             onChangePasswordClick = {
                 appState.navController.navigate(AppDestination.ChangePassword.route) {
                     launchSingleTop = true
@@ -164,6 +165,13 @@ private fun NavGraphBuilder.profileGraph(contentPadding: PaddingValues, appState
     
     composable(AppDestination.ChangePassword.route) {
         com.comprartir.mobile.profile.presentation.ChangePasswordRoute(
+            onNavigateBackWithSuccess = {
+                // Set result in previous back stack entry's savedStateHandle
+                appState.navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.set("password_changed", true)
+                appState.navController.popBackStack()
+            },
             onNavigateBack = {
                 appState.navController.popBackStack()
             }

@@ -25,6 +25,7 @@ import com.comprartir.mobile.profile.domain.ProfileField
 @Composable
 fun ProfileRoute(
     contentPadding: PaddingValues = PaddingValues(),
+    navController: androidx.navigation.NavController? = null,
     viewModel: ProfileViewModel = hiltViewModel(),
     onChangePasswordClick: () -> Unit = {},
     onLogout: () -> Unit = {},
@@ -32,6 +33,25 @@ fun ProfileRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    
+    // Handle password change success from ChangePasswordScreen
+    LaunchedEffect(navController) {
+        navController?.currentBackStackEntry
+            ?.savedStateHandle
+            ?.getStateFlow("password_changed", false)
+            ?.collect { passwordChanged ->
+                if (passwordChanged) {
+                    // Clear the flag immediately to prevent re-showing on config changes
+                    navController.currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("password_changed", false)
+                    
+                    // Show success message
+                    val message = context.getString(R.string.change_password_success)
+                    snackbarHostState.showSnackbar(message = message)
+                }
+            }
+    }
     
     LaunchedEffect(state.snackbarMessage) {
         state.snackbarMessage?.let { messageRes ->

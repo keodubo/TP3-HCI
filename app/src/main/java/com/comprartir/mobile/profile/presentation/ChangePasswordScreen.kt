@@ -26,6 +26,7 @@ import com.comprartir.mobile.core.designsystem.LocalSpacing
 
 @Composable
 fun ChangePasswordRoute(
+    onNavigateBackWithSuccess: () -> Unit,
     onNavigateBack: () -> Unit,
     viewModel: ChangePasswordViewModel = hiltViewModel(),
 ) {
@@ -35,9 +36,8 @@ fun ChangePasswordRoute(
 
     LaunchedEffect(state.isPasswordChanged) {
         if (state.isPasswordChanged) {
-            val message = context.getString(R.string.change_password_success)
-            snackbarHostState.showSnackbar(message = message)
-            onNavigateBack()
+            // Navigate back with success flag
+            onNavigateBackWithSuccess()
         }
     }
 
