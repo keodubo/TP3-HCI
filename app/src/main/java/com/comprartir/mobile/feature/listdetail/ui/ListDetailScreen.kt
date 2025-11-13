@@ -109,7 +109,7 @@ fun ListDetailScreen(
             end = innerPadding.calculateEndPadding(layoutDirection) +
                 contentPadding.calculateEndPadding(layoutDirection),
             top = innerPadding.calculateTopPadding() +
-                contentPadding.calculateTopPadding() + spacing.small,
+                contentPadding.calculateTopPadding() + 8.dp,
             bottom = innerPadding.calculateBottomPadding() +
                 contentPadding.calculateBottomPadding() + spacing.large,
         )
@@ -329,11 +329,36 @@ private fun ListDetailMainCard(
             verticalArrangement = Arrangement.spacedBy(spacing.medium),
         ) {
             val title = state.title.ifBlank { stringResource(id = R.string.lists_default_title) }
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Row {
+                    IconButton(onClick = { onEvent(com.comprartir.mobile.feature.listdetail.model.ListDetailEvent.ShowEditDialog) }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.lists_edit)
+                        )
+                    }
+                    IconButton(onClick = { onEvent(com.comprartir.mobile.feature.listdetail.model.ListDetailEvent.ShowDeleteDialog) }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Delete,
+                            contentDescription = stringResource(R.string.lists_delete),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
             state.subtitle.takeIf { it.isNotBlank() }?.let {
                 Text(
                     text = it,

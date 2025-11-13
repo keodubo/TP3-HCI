@@ -12,7 +12,7 @@ abstract class ListDetailModule {
     @Binds
     @Singleton
     abstract fun bindListDetailRepository(
-        impl: FakeListDetailRepository,
+        impl: DefaultListDetailRepository,
     ): ListDetailRepository
 }
 
