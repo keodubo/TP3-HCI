@@ -107,7 +107,10 @@ fun ChangePasswordScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(spacing.medium),
+                    .padding(
+                        horizontal = spacing.medium,
+                        vertical = spacing.large,
+                    ),
                 verticalArrangement = Arrangement.spacedBy(spacing.medium),
             ) {
                 Card(
