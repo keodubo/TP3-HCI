@@ -9,11 +9,21 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ShoppingListDao {
-    @Query("SELECT * FROM shopping_lists")
-    fun observeLists(): Flow<List<ShoppingListEntity>>
+    // Note: shared_with is stored as semicolon-separated string (e.g., "user1;user2")
+    // We use LIKE to check if userId appears in the string
+    @Query("""
+        SELECT * FROM shopping_lists 
+        WHERE owner_id = :userId 
+           OR shared_with LIKE '%' || :userId || '%'
+    """)
+    fun observeLists(userId: String): Flow<List<ShoppingListEntity>>
 
-    @Query("SELECT * FROM shopping_lists WHERE id = :listId")
-    fun observeList(listId: String): Flow<ShoppingListEntity?>
+    @Query("""
+        SELECT * FROM shopping_lists 
+        WHERE id = :listId 
+          AND (owner_id = :userId OR shared_with LIKE '%' || :userId || '%')
+    """)
+    fun observeList(listId: String, userId: String): Flow<ShoppingListEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(list: ShoppingListEntity)

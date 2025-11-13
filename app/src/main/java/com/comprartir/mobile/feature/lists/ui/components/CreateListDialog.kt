@@ -35,11 +35,19 @@ fun CreateListDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    if (!state.isVisible) return
+    if (!state.isVisible) {
+        android.util.Log.d("CreateListDialog", "Dialog NOT visible, not rendering")
+        return
+    }
+    
+    android.util.Log.d("CreateListDialog", "Dialog IS visible - name='${state.name}', canSubmit=${state.canSubmit}, isSubmitting=${state.isSubmitting}")
 
     val spacing = LocalSpacing.current
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            android.util.Log.d("CreateListDialog", "onDismissRequest triggered")
+            onDismiss()
+        },
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
@@ -106,11 +114,17 @@ fun CreateListDialog(
                     horizontalArrangement = Arrangement.spacedBy(spacing.small, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    TextButton(onClick = onDismiss) {
+                    TextButton(onClick = {
+                        android.util.Log.d("CreateListDialog", "Cancel button clicked")
+                        onDismiss()
+                    }) {
                         Text(text = stringResource(id = R.string.dialog_cancel))
                     }
                     Button(
-                        onClick = onConfirm,
+                        onClick = {
+                            android.util.Log.d("CreateListDialog", "Confirm button clicked - name='${state.name}', canSubmit=${state.canSubmit}")
+                            onConfirm()
+                        },
                         enabled = state.canSubmit,
                         shape = ComprartirPillShape,
                     ) {

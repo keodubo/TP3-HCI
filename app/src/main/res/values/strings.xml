@@ -77,6 +77,7 @@
     <string name="hint_search_products">Search products</string>
     <string name="empty_product_name">Unnamed product</string>
     <string name="header_assign_categories">Assign categories to products</string>
+    <string name="lists_title">Listas</string>
     <string name="lists_new_name">List name</string>
     <string name="lists_create">Create list</string>
     <string name="lists_share">Share</string>

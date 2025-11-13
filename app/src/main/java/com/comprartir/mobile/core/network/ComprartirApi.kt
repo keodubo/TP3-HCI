@@ -1,6 +1,7 @@
 package com.comprartir.mobile.core.network
 
 import com.comprartir.mobile.core.network.serialization.InstantIsoSerializer
+import com.comprartir.mobile.core.network.serialization.BackendDateSerializer
 import java.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -113,7 +114,7 @@ interface ComprartirApi {
     suspend fun getShoppingList(@Path("id") id: String): ShoppingListDto
 
     @POST("shopping-lists")
-    suspend fun createShoppingList(@Body payload: ShoppingListUpsertRequest): ShoppingListDto
+    suspend fun createShoppingList(@Body payload: ShoppingListCreateRequest): ShoppingListDto
 
     @PUT("shopping-lists/{id}")
     suspend fun updateShoppingList(
@@ -334,8 +335,16 @@ data class UserDto(
 data class UserSummaryDto(
     val id: String,
     val email: String,
-    @SerialName("display_name") val displayName: String,
+    @SerialName("display_name") val displayName: String = "",  // Optional - backend may not send it
+    val name: String? = null,  // Backend sends name/surname instead
+    val surname: String? = null,
     val avatar: String? = null,
+    val metadata: JsonObject? = null,
+    // Backend includes timestamps in user objects
+    @Serializable(with = BackendDateSerializer::class)
+    val createdAt: Instant? = null,
+    @Serializable(with = BackendDateSerializer::class)
+    val updatedAt: Instant? = null,
 )
 // endregion
 
@@ -419,30 +428,39 @@ data class ShoppingListDto(
     val id: String,
     val name: String,
     val description: String? = null,
-    @SerialName("owner_id") val ownerId: String,
+    // Backend returns 'owner' object, not 'owner_id' string
     val owner: UserSummaryDto? = null,
-    @SerialName("shared_users") val sharedUsers: List<UserSummaryDto> = emptyList(),
+    // Backend returns 'sharedWith' not 'shared_users'
+    @SerialName("sharedWith") val sharedWith: List<UserSummaryDto> = emptyList(),
     val metadata: JsonObject? = null,
-    @SerialName("is_recurring") val isRecurring: Boolean = false,
-    val recurring: Boolean? = null,
-    @SerialName("created_at")
-    @Serializable(with = InstantIsoSerializer::class)
+    // Backend uses 'recurring' not 'is_recurring'
+    val recurring: Boolean = false,
+    // Backend date format: "yyyy-MM-dd HH:mm:ss" in camelCase
+    @Serializable(with = BackendDateSerializer::class)
     val createdAt: Instant,
-    @SerialName("updated_at")
-    @Serializable(with = InstantIsoSerializer::class)
+    @Serializable(with = BackendDateSerializer::class)
     val updatedAt: Instant,
-    @SerialName("last_purchased_at")
-    @Serializable(with = InstantIsoSerializer::class)
+    @Serializable(with = BackendDateSerializer::class)
     val lastPurchasedAt: Instant? = null,
     val items: List<ShoppingListItemDto> = emptyList(),
 )
 
+// Request for CREATE shopping list - only includes fields accepted by backend validation
+@Serializable
+data class ShoppingListCreateRequest(
+    val name: String,
+    val description: String,
+    val recurring: Boolean,
+    val metadata: JsonObject? = null,
+)
+
+// Request for UPDATE shopping list - may include additional fields
 @Serializable
 data class ShoppingListUpsertRequest(
     val name: String,
-    val description: String? = null,
+    val description: String = "",
     @SerialName("shared_user_ids") val sharedUserIds: List<String> = emptyList(),
-    @SerialName("is_recurring") val isRecurring: Boolean = false,
+    val recurring: Boolean = false,
     val metadata: JsonObject? = null,
 )
 

@@ -43,21 +43,23 @@ fun ComprartirTopBar(
     featureFlags: FeatureFlags = FeatureFlags.Disabled,
 ) {
     val title = remember(destinationRoute) {
-        when (destinationRoute) {
-            AppDestination.Dashboard.route -> R.string.title_dashboard
-            AppDestination.Lists.route -> R.string.title_lists
-            AppDestination.ListDetails.route -> R.string.title_list_details
-            AppDestination.Products.route -> R.string.title_products
-            AppDestination.Categorize.route -> R.string.title_categorize_products
-            AppDestination.Profile.route -> R.string.title_profile
-            AppDestination.Settings.route -> R.string.title_settings
-            AppDestination.Pantry.route -> R.string.title_pantry
-            AppDestination.SignIn.route -> R.string.title_sign_in
-            AppDestination.Register.route -> R.string.title_register
-            AppDestination.Verify.route -> R.string.title_verify
-            AppDestination.UpdatePassword.route -> R.string.title_update_password
-            AppDestination.ShareList.route -> R.string.title_share_list
-            AppDestination.AcquireProduct.route -> R.string.title_acquire_products
+        when {
+            destinationRoute == AppDestination.Dashboard.route -> R.string.title_dashboard
+            // Lists index: "lists/manage" or "lists/manage?..." -> "Shopping lists"
+            destinationRoute?.startsWith("lists/manage") == true -> R.string.title_lists
+            // List details: "lists/123" where 123 is the listId -> "List Details"
+            destinationRoute?.matches(Regex("lists/\\d+")) == true -> R.string.title_list_details
+            destinationRoute == AppDestination.Products.route -> R.string.title_products
+            destinationRoute == AppDestination.Categorize.route -> R.string.title_categorize_products
+            destinationRoute == AppDestination.Profile.route -> R.string.title_profile
+            destinationRoute == AppDestination.Settings.route -> R.string.title_settings
+            destinationRoute == AppDestination.Pantry.route -> R.string.title_pantry
+            destinationRoute == AppDestination.SignIn.route -> R.string.title_sign_in
+            destinationRoute == AppDestination.Register.route -> R.string.title_register
+            destinationRoute == AppDestination.Verify.route -> R.string.title_verify
+            destinationRoute == AppDestination.UpdatePassword.route -> R.string.title_update_password
+            destinationRoute == AppDestination.ShareList.route -> R.string.title_share_list
+            destinationRoute == AppDestination.AcquireProduct.route -> R.string.title_acquire_products
             else -> R.string.app_name
         }
     }

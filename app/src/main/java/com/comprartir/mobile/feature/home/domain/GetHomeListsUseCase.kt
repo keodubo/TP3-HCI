@@ -34,10 +34,16 @@ class GetHomeListsUseCase @Inject constructor(
     ) { allLists, currentUser ->
         val userId = currentUser?.id.orEmpty()
         val now = Instant.now()
+        
+        android.util.Log.d("GetHomeListsUseCase", "invoke: userId=$userId, allLists.size=${allLists.size}")
+        android.util.Log.d("GetHomeListsUseCase", "invoke: List IDs = ${allLists.map { it.id }}")
+        android.util.Log.d("GetHomeListsUseCase", "invoke: OwnerIds = ${allLists.map { "${it.id}:${it.ownerId}" }}")
 
         // Separate own lists from shared ones
         val ownLists = allLists.filter { it.ownerId == userId }
         val sharedLists = allLists.filter { it.ownerId != userId && it.sharedWith.contains(userId) }
+        
+        android.util.Log.d("GetHomeListsUseCase", "invoke: ownLists=${ownLists.size}, sharedLists=${sharedLists.size}")
 
         // Map to UI models
         val recentListsUi = ownLists

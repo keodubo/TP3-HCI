@@ -2,41 +2,69 @@ package com.comprartir.mobile.lists.presentation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.comprartir.mobile.R
 import com.comprartir.mobile.core.designsystem.LocalSpacing
-import com.comprartir.mobile.core.designsystem.ComprartirOutlinedTextField
 import com.comprartir.mobile.core.navigation.AppDestination
 import com.comprartir.mobile.core.navigation.NavigationIntent
+import com.comprartir.mobile.feature.lists.ui.components.CreateListDialog
 
 @Composable
 fun ListsRoute(
     onNavigate: (NavigationIntent) -> Unit,
     viewModel: ListsViewModel = hiltViewModel(),
+    openCreateDialog: Boolean = false,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    
+    // Auto-open create dialog if navigated with openCreate=true
+    androidx.compose.runtime.LaunchedEffect(openCreateDialog) {
+        if (openCreateDialog && !state.createListState.isVisible) {
+            android.util.Log.d("ListsRoute", "🔥 AUTO-OPENING create dialog from navigation parameter")
+            viewModel.showCreateDialog()
+        }
+    }
+    
+    // Log state changes for debugging
+    androidx.compose.runtime.LaunchedEffect(state.createListState.isVisible) {
+        android.util.Log.d("ListsRoute", "createListState.isVisible changed to: ${state.createListState.isVisible}")
+    }
+    
     ListsScreen(
         state = state,
-        onCreateList = viewModel::createList,
+        onShowCreateDialog = viewModel::showCreateDialog,
+        onDismissCreateDialog = viewModel::dismissCreateDialog,
+        onCreateListNameChanged = viewModel::onCreateListNameChanged,
+        onCreateListDescriptionChanged = viewModel::onCreateListDescriptionChanged,
+        onCreateListRecurringChanged = viewModel::onCreateListRecurringChanged,
+        onConfirmCreateList = viewModel::confirmCreateList,
         onListSelected = { listId ->
             onNavigate(NavigationIntent(AppDestination.ListDetails, mapOf("listId" to listId)))
         },
@@ -52,61 +80,134 @@ fun ListsRoute(
 @Composable
 fun ListsScreen(
     state: ListsUiState,
-    onCreateList: (String) -> Unit,
+    onShowCreateDialog: () -> Unit,
+    onDismissCreateDialog: () -> Unit,
+    onCreateListNameChanged: (String) -> Unit,
+    onCreateListDescriptionChanged: (String) -> Unit,
+    onCreateListRecurringChanged: (Boolean) -> Unit,
+    onConfirmCreateList: () -> Unit,
     onListSelected: (String) -> Unit,
     onShareList: (String) -> Unit,
     onRefresh: () -> Unit,
     onClearError: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
-    var newListName by remember { mutableStateOf("") }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = spacing.large, vertical = spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(spacing.large),
-    ) {
-        ComprartirOutlinedTextField(
-            modifier = Modifier.fillMaxWidth(),
-            value = newListName,
-            onValueChange = { newListName = it },
-            label = { Text(stringResource(id = R.string.lists_new_name)) },
-            isError = state.errorMessage != null,
-            supportingText = state.errorMessage?.let { message ->
-                { Text(text = message, color = MaterialTheme.colorScheme.error) }
-            },
-        )
-        Button(onClick = {
-            if (newListName.isNotBlank()) {
-                onCreateList(newListName)
-                newListName = ""
-            }
-        }, enabled = !state.isLoading) {
-            Text(text = stringResource(id = R.string.lists_create))
-        }
-        if (state.isLoading && state.lists.isEmpty()) {
-            CircularProgressIndicator()
-        }
-        if (state.errorMessage != null && state.lists.isEmpty()) {
-            Button(onClick = {
-                onClearError()
-                onRefresh()
-            }) {
-                Text(text = stringResource(id = R.string.common_retry))
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    android.util.Log.d("ListsScreen", "FAB clicked - opening create dialog")
+                    onShowCreateDialog()
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(id = R.string.lists_create)
+                )
             }
         }
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(spacing.small)) {
-            items(state.lists, key = { it.id }) { list ->
-                Card(onClick = { onListSelected(list.id) }) {
-                    Column(modifier = Modifier.padding(spacing.medium)) {
-                        Text(text = list.name.ifBlank { stringResource(id = R.string.lists_default_title) })
-                        Button(onClick = { onShareList(list.id) }) {
-                            Text(text = stringResource(id = R.string.lists_share))
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = spacing.large, vertical = spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(id = R.string.lists_title),
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Button(onClick = {
+                    android.util.Log.d("ListsScreen", "Header create button clicked - opening create dialog")
+                    onShowCreateDialog()
+                }) {
+                    Text(text = stringResource(id = R.string.lists_create))
+                }
+            }
+
+            if (state.isLoading && state.lists.isEmpty()) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            }
+
+            if (state.errorMessage != null && state.lists.isEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(spacing.small)
+                ) {
+                    Text(
+                        text = state.errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Button(onClick = {
+                        onClearError()
+                        onRefresh()
+                    }) {
+                        Text(text = stringResource(id = R.string.common_retry))
+                    }
+                }
+            }
+
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(spacing.small)
+            ) {
+                items(state.lists, key = { it.id }) { list ->
+                    Card(onClick = { onListSelected(list.id) }) {
+                        Column(modifier = Modifier.padding(spacing.medium)) {
+                            Text(
+                                text = list.name.ifBlank { stringResource(id = R.string.lists_default_title) },
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            if (!list.description.isNullOrBlank()) {
+                                Text(
+                                    text = list.description,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.padding(spacing.small))
+                            Button(onClick = { onShareList(list.id) }) {
+                                Text(text = stringResource(id = R.string.lists_share))
+                            }
                         }
                     }
                 }
             }
         }
+
+        CreateListDialog(
+            state = state.createListState,
+            onNameChange = { newName ->
+                android.util.Log.d("ListsScreen", "CreateListDialog onNameChange: '$newName'")
+                onCreateListNameChanged(newName)
+            },
+            onDescriptionChange = { newDesc ->
+                android.util.Log.d("ListsScreen", "CreateListDialog onDescriptionChange: '$newDesc'")
+                onCreateListDescriptionChanged(newDesc)
+            },
+            onRecurringChange = { recurring ->
+                android.util.Log.d("ListsScreen", "CreateListDialog onRecurringChange: $recurring")
+                onCreateListRecurringChanged(recurring)
+            },
+            onDismiss = {
+                android.util.Log.d("ListsScreen", "CreateListDialog onDismiss called")
+                onDismissCreateDialog()
+            },
+            onConfirm = {
+                android.util.Log.d("ListsScreen", "CreateListDialog onConfirm called")
+                onConfirmCreateList()
+            },
+        )
     }
 }

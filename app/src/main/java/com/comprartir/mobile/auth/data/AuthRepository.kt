@@ -3,7 +3,9 @@ package com.comprartir.mobile.auth.data
 import com.comprartir.mobile.BuildConfig
 import com.comprartir.mobile.core.data.datastore.AuthTokenRepository
 import com.comprartir.mobile.core.data.mapper.toEntity
+import com.comprartir.mobile.core.database.dao.ListItemDao
 import com.comprartir.mobile.core.database.dao.ProfileDao
+import com.comprartir.mobile.core.database.dao.ShoppingListDao
 import com.comprartir.mobile.core.database.dao.UserDao
 import com.comprartir.mobile.core.database.entity.UserEntity
 import com.comprartir.mobile.core.network.AuthResponse
@@ -63,6 +65,8 @@ class DefaultAuthRepository @Inject constructor(
     private val profileDao: ProfileDao,
     private val authTokenRepository: AuthTokenRepository,
     private val okHttpClient: okhttp3.OkHttpClient,
+    private val shoppingListDao: ShoppingListDao,
+    private val listItemDao: ListItemDao,
 ) : AuthRepository {
 
     override val currentUser: Flow<UserAccount?> = userDao.observeCurrentUser()
@@ -151,6 +155,12 @@ class DefaultAuthRepository @Inject constructor(
         authTokenRepository.clearToken()
         userDao.clear()
         profileDao.clear()
+        // Clear all user-scoped data to prevent data leakage between users
+        shoppingListDao.clearAll()
+        listItemDao.clearAll()
+        // Note: Pantry and Products also need clearAll once they implement user scoping
+        // pantryDao.clearAll()
+        // productDao.clearAll()
     }
 
     override suspend fun updatePassword(currentPassword: String, newPassword: String) = withContext(Dispatchers.IO) {

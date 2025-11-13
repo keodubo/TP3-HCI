@@ -11,7 +11,8 @@ class DatabaseTypeConverters {
     fun instantToTimestamp(instant: Instant?): Long? = instant?.toEpochMilli()
 
     @TypeConverter
-    fun fromStringList(value: List<String>?): String? = value?.takeIf { it.isNotEmpty() }?.joinToString(separator = ";")
+    fun fromStringList(value: List<String>?): String = 
+        value?.takeIf { it.isNotEmpty() }?.joinToString(separator = ";") ?: ""
 
     @TypeConverter
     fun toStringList(value: String?): List<String> = value

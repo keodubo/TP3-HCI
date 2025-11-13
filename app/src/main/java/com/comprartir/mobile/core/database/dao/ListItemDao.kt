@@ -12,8 +12,12 @@ interface ListItemDao {
     @Query("SELECT * FROM list_items WHERE list_id = :listId ORDER BY added_at")
     fun observeItems(listId: String): Flow<List<ListItemEntity>>
 
-    @Query("SELECT * FROM list_items")
-    fun observeAllItems(): Flow<List<ListItemEntity>>
+    @Query("""
+        SELECT li.* FROM list_items li
+        INNER JOIN shopping_lists sl ON li.list_id = sl.id
+        WHERE sl.owner_id = :userId OR sl.shared_with LIKE '%' || :userId || '%'
+    """)
+    fun observeAllItems(userId: String): Flow<List<ListItemEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: ListItemEntity)

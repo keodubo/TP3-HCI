@@ -17,7 +17,7 @@ import com.comprartir.mobile.feature.auth.verify.VerifyRoute
 import com.comprartir.mobile.feature.home.ui.HomeRoute
 import com.comprartir.mobile.feature.listdetail.ui.ListDetailRoute
 import com.comprartir.mobile.feature.listdetail.navigation.ListDetailDestination
-import com.comprartir.mobile.feature.lists.navigation.listsScreen
+import com.comprartir.mobile.lists.presentation.ListsRoute
 import com.comprartir.mobile.lists.presentation.ShareListRoute
 import com.comprartir.mobile.pantry.presentation.PantryRoute
 import com.comprartir.mobile.products.presentation.CategorizeProductsRoute
@@ -192,10 +192,22 @@ private fun NavGraphBuilder.listsGraph(
     appState: ComprartirAppState,
     contentPadding: PaddingValues,
 ) {
-    listsScreen(
-        onNavigate = appState::navigate,
-        contentPadding = contentPadding,
-    )
+    composable(
+        route = AppDestination.Lists.route + "?openCreate={openCreate}",
+        arguments = listOf(
+            navArgument("openCreate") {
+                type = NavType.BoolType
+                defaultValue = false
+            },
+        ),
+    ) { backStackEntry ->
+        val openCreate = backStackEntry.arguments?.getBoolean("openCreate") ?: false
+        android.util.Log.d("AppNavHost", "🔥 Lists route - openCreate=$openCreate")
+        ListsRoute(
+            onNavigate = appState::navigate,
+            openCreateDialog = openCreate,
+        )
+    }
     composable(
         route = AppDestination.ListDetails.route,
         arguments = listOf(

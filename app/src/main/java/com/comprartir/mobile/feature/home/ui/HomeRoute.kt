@@ -20,7 +20,10 @@ fun HomeRoute(
     val state: HomeUiState = viewModel.uiState.collectAsStateWithLifecycle().value
     HomeScreen(
         state = state,
-        onCreateList = { onNavigate(NavigationIntent(AppDestination.Lists)) },
+        onCreateList = { 
+            android.util.Log.d("HomeRoute", "🔥 Create list clicked - navigating with openCreate=true")
+            onNavigate(NavigationIntent(AppDestination.Lists, mapOf("openCreate" to "true"))) 
+        },
         onViewAllLists = { onNavigate(NavigationIntent(AppDestination.Lists)) },
         onRecentListClick = { listId ->
             onNavigate(
