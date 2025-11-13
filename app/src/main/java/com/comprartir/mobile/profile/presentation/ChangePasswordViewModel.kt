@@ -99,13 +99,22 @@ class ChangePasswordViewModel @Inject constructor(
                 }
             } catch (http: HttpException) {
                 val errorMessage = when (http.code()) {
-                    401 -> R.string.change_password_error_incorrect
+                    400 -> R.string.change_password_error_incorrect // Bad request - likely wrong current password
+                    401 -> R.string.change_password_error_incorrect // Unauthorized
                     else -> R.string.change_password_error_generic
                 }
                 _state.update { 
                     it.copy(
                         isLoading = false,
                         generalError = errorMessage,
+                    )
+                }
+            } catch (e: IllegalArgumentException) {
+                // Handle validation errors from repository
+                _state.update { 
+                    it.copy(
+                        isLoading = false,
+                        generalError = R.string.change_password_error_generic,
                     )
                 }
             } catch (e: Exception) {

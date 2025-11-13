@@ -1,12 +1,12 @@
 package com.comprartir.mobile.auth.data
 
+import com.comprartir.mobile.BuildConfig
 import com.comprartir.mobile.core.data.datastore.AuthTokenRepository
 import com.comprartir.mobile.core.data.mapper.toEntity
 import com.comprartir.mobile.core.database.dao.ProfileDao
 import com.comprartir.mobile.core.database.dao.UserDao
 import com.comprartir.mobile.core.database.entity.UserEntity
 import com.comprartir.mobile.core.network.AuthResponse
-import com.comprartir.mobile.core.network.ChangePasswordRequest
 import com.comprartir.mobile.core.network.ComprartirApi
 import com.comprartir.mobile.core.network.LoginRequest
 import com.comprartir.mobile.core.network.RegisterRequest
@@ -18,7 +18,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.Serializable
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
 import retrofit2.HttpException
 
 data class UserAccount(
@@ -27,6 +29,18 @@ data class UserAccount(
     val displayName: String,
     val photoUrl: String?,
     val isVerified: Boolean,
+)
+
+/**
+ * Internal DTO for change password request.
+ * The backend expects camelCase field names (currentPassword, newPassword),
+ * so we don't use @SerialName annotations here. The property names will be
+ * serialized as-is by kotlinx.serialization.
+ */
+@Serializable
+internal data class ChangePasswordBody(
+    val currentPassword: String,
+    val newPassword: String,
 )
 
 interface AuthRepository {
@@ -48,6 +62,7 @@ class DefaultAuthRepository @Inject constructor(
     private val userDao: UserDao,
     private val profileDao: ProfileDao,
     private val authTokenRepository: AuthTokenRepository,
+    private val okHttpClient: okhttp3.OkHttpClient,
 ) : AuthRepository {
 
     override val currentUser: Flow<UserAccount?> = userDao.observeCurrentUser()
@@ -140,17 +155,80 @@ class DefaultAuthRepository @Inject constructor(
 
     override suspend fun updatePassword(currentPassword: String, newPassword: String) = withContext(Dispatchers.IO) {
         try {
-            api.changePassword(
-                ChangePasswordRequest(
-                    currentPassword = currentPassword,
-                    newPassword = newPassword,
-                )
-            )
-        } catch (http: HttpException) {
-            if (http.code() == 401) {
-                authTokenRepository.clearToken()
+            // The backend expects camelCase JSON fields (currentPassword, newPassword),
+            // but the ChangePasswordRequest DTO in the API package uses @SerialName with snake_case.
+            // We bypass the Retrofit interface and use OkHttp directly to send the correct JSON.
+            
+            // Log the request for debugging (without logging actual passwords)
+            println("AuthRepository: Attempting to change password")
+            println("AuthRepository: Validating - currentPassword length: ${currentPassword.length}, newPassword length: ${newPassword.length}")
+            
+            if (currentPassword.length < 6) {
+                throw IllegalArgumentException("Current password must be at least 6 characters")
             }
+            if (newPassword.length < 6) {
+                throw IllegalArgumentException("New password must be at least 6 characters")
+            }
+            
+            // Build the JSON manually to ensure correct field names (camelCase)
+            // Escape quotes in passwords to prevent JSON injection
+            val escapedCurrentPassword = currentPassword.replace("\"", "\\\"").replace("\\", "\\\\")
+            val escapedNewPassword = newPassword.replace("\"", "\\\"").replace("\\", "\\\\")
+            val jsonBody = """{"currentPassword":"$escapedCurrentPassword","newPassword":"$escapedNewPassword"}"""
+            
+            println("AuthRepository: Sending request with body structure: {currentPassword: <hidden>, newPassword: <hidden>}")
+            
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val requestBody = okhttp3.RequestBody.create(mediaType, jsonBody)
+            
+            // Get the token for authentication
+            val token = authTokenRepository.currentToken()
+            if (token == null) {
+                println("AuthRepository: No authentication token found")
+                throw IllegalStateException("Not authenticated")
+            }
+            
+            // Get base URL from BuildConfig
+            val baseUrl = BuildConfig.COMPRARTIR_API_BASE_URL.let { base ->
+                if (base.endsWith("/")) base.dropLast(1) else base
+            }
+            
+            val request = okhttp3.Request.Builder()
+                .url("$baseUrl/users/change-password")
+                .post(requestBody)
+                .addHeader("Authorization", "Bearer $token")
+                .addHeader("Content-Type", "application/json")
+                .build()
+            
+            val response = okHttpClient.newCall(request).execute()
+            
+            println("AuthRepository: Received response - HTTP ${response.code}")
+            
+            if (!response.isSuccessful) {
+                val errorBody = response.body?.string()
+                println("AuthRepository: Error response body: $errorBody")
+                
+                if (response.code == 401) {
+                    println("AuthRepository: Unauthorized - clearing token")
+                    authTokenRepository.clearToken()
+                }
+                
+                throw HttpException(
+                    retrofit2.Response.error<Any>(
+                        response.code,
+                        okhttp3.ResponseBody.create(null, errorBody ?: "")
+                    )
+                )
+            }
+            
+            println("AuthRepository: Password changed successfully")
+        } catch (http: HttpException) {
+            println("AuthRepository: HTTP exception during password change: ${http.code()}")
             throw http
+        } catch (e: Exception) {
+            println("AuthRepository: Exception during password change: ${e.message}")
+            e.printStackTrace()
+            throw e
         }
     }
 
