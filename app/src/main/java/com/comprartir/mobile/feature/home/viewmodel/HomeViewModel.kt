@@ -40,7 +40,7 @@ class HomeViewModel @Inject constructor(
                     userName = user?.displayName.orEmpty(),
                     recentLists = listsData.recentLists,
                     sharedLists = listsData.sharedLists,
-                    recentActivity = sampleActivity(), // Activity still using sample data
+                    recentActivity = emptyList(), // Real activity not implemented yet
                     isLoading = false,
                     error = null,
                 )
@@ -70,24 +70,5 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun sampleActivity(): List<ActivityUi> = listOf(
-        ActivityUi(
-            id = "activity-1",
-            description = "Marcaste 4 productos como adquiridos",
-            timestamp = "Hoy · 10:24",
-            iconType = "check",
-        ),
-        ActivityUi(
-            id = "activity-2",
-            description = "Rocío agregó \"Yerba mate\" a Mudanza Abril",
-            timestamp = "Ayer · 18:02",
-            iconType = "share",
-        ),
-        ActivityUi(
-            id = "activity-3",
-            description = "Se creó la lista \"Frutas y verduras\"",
-            timestamp = "Esta semana",
-            iconType = "list",
-        ),
-    )
+    // Activity data removed - no mock data shown
 }

@@ -93,6 +93,10 @@ private class AuthTokenInterceptor(
         }
         val response = chain.proceed(requestWithAuth)
         if (response.code == 401) {
+            // Clear token immediately on 401 Unauthorized
+            // This prevents further requests with invalid token
+            // User will be redirected to login by the navigation logic
+            android.util.Log.w("AuthTokenInterceptor", "401 Unauthorized - clearing token")
             runBlocking { authTokenRepository.clearToken() }
         }
         return response

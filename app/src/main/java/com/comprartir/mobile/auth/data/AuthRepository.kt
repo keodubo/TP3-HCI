@@ -92,6 +92,19 @@ class DefaultAuthRepository @Inject constructor(
             // Log but don't fail - user can still verify with code
             e.printStackTrace()
         }
+
+        // IMPORTANT: Auto-login after successful registration
+        // This ensures new users get a valid token and can make authenticated requests
+        try {
+            println("AuthRepository: Auto-login after registration for $email")
+            signIn(email, password)
+            println("AuthRepository: Auto-login successful, user now has valid token")
+        } catch (e: Exception) {
+            println("AuthRepository: Auto-login failed after registration: ${e.message}")
+            // If auto-login fails, user will need to login manually
+            // But registration itself was successful
+            e.printStackTrace()
+        }
     }
 
     override suspend fun verify(email: String, code: String) = withContext(Dispatchers.IO) {

@@ -39,6 +39,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -191,64 +192,76 @@ private fun HomeHeroCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(200.dp),
+            .heightIn(min = 160.dp),
         shape = CardDefaults.shape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.brand.copy(alpha = 0.2f)),
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(horizontal = spacing.large, vertical = spacing.medium),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.large),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium),
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.logo_comprartir),
-                contentDescription = stringResource(id = R.string.app_name),
-                modifier = Modifier.size(96.dp),
-            )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(spacing.small),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(spacing.medium),
             ) {
-                Text(
-                    text = stringResource(id = R.string.home_welcome_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
+                Image(
+                    painter = painterResource(id = R.drawable.logo_comprartir),
+                    contentDescription = stringResource(id = R.string.app_name),
+                    modifier = Modifier.size(80.dp),
                 )
-                val subtitle = if (userName.isBlank()) {
-                    stringResource(id = R.string.home_welcome_subtitle)
-                } else {
-                    stringResource(id = R.string.home_welcome_subtitle_with_name, userName)
-                }
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.textMuted,
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(spacing.small),
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Button(
-                        onClick = onCreateList,
-                        shape = ComprartirPillShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.brand),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Add,
-                            contentDescription = stringResource(id = R.string.home_new_list),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = stringResource(id = R.string.home_new_list))
+                    Text(
+                        text = stringResource(id = R.string.home_welcome_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    val subtitle = if (userName.isBlank()) {
+                        stringResource(id = R.string.home_welcome_subtitle)
+                    } else {
+                        stringResource(id = R.string.home_welcome_subtitle_with_name, userName)
                     }
-                    OutlinedButton(
-                        onClick = onViewAllLists,
-                        shape = ComprartirPillShape,
-                    ) {
-                        Text(text = stringResource(id = R.string.home_view_all))
-                    }
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.textMuted,
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(spacing.small),
+            ) {
+                Button(
+                    onClick = onCreateList,
+                    shape = ComprartirPillShape,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.brand),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Add,
+                        contentDescription = stringResource(id = R.string.home_new_list),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = stringResource(id = R.string.home_new_list))
+                }
+                FilledTonalButton(
+                    onClick = onViewAllLists,
+                    shape = ComprartirPillShape,
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = stringResource(id = R.string.home_view_all))
                 }
             }
         }

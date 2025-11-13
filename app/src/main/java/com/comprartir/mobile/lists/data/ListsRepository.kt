@@ -172,7 +172,10 @@ class DefaultShoppingListsRepository @Inject constructor(
                 Log.e(TAG, "createList: ❌ HTTP ${e.code()} ERROR")
                 Log.e(TAG, "createList: Error body: $errorBody")
                 Log.e(TAG, "createList: Full exception: ${e.message()}", e)
-                throw Exception("HTTP ${e.code()}: $errorBody", e)
+                when (e.code()) {
+                    401 -> throw Exception("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.", e)
+                    else -> throw Exception("HTTP ${e.code()}: $errorBody", e)
+                }
             } catch (e: kotlinx.serialization.SerializationException) {
                 Log.e(TAG, "createList: ❌ Serialization error: ${e.message}", e)
                 Log.e(TAG, "createList: This might be a mismatch between backend response and DTO")
@@ -351,8 +354,15 @@ class DefaultShoppingListsRepository @Inject constructor(
                 }
             }
             Log.d(TAG, "refreshListsInternal: ✅ All lists saved to Room successfully!")
+        } catch (e: retrofit2.HttpException) {
+            Log.w(TAG, "Failed to refresh shopping lists - HTTP ${e.code()}", e)
+            when (e.code()) {
+                401 -> throw Exception("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.", e)
+                else -> throw e
+            }
         } catch (throwable: Throwable) {
             Log.w(TAG, "Failed to refresh shopping lists", throwable)
+            throw throwable
         }
     }
 

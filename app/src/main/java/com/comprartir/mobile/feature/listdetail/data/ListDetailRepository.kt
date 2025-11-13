@@ -99,20 +99,13 @@ class FakeListDetailRepository @Inject constructor() : ListDetailRepository {
             MutableStateFlow(
                 ListDetailData(
                     id = listId,
-                    title = "Compra semanal",
+                    title = "Lista #$listId",
                     subtitle = "Actualizada hace 2 h",
                     shareLink = "https://comprartir.app/lists/$listId",
-                    items = sampleItems(),
+                    items = emptyList(),
                 )
             )
         }
     }
-
-    private fun sampleItems(): List<ListDetailItem> = listOf(
-        ListDetailItem(id = "1", name = "Leche descremada", quantity = "2", unit = "L", notes = "Ideal para café", isCompleted = true),
-        ListDetailItem(id = "2", name = "Huevos", quantity = "12", unit = "u", notes = null, isCompleted = false),
-        ListDetailItem(id = "3", name = "Pan integral", quantity = "1", unit = "paq", notes = "Marca favorita", isCompleted = false),
-        ListDetailItem(id = "4", name = "Queso", quantity = "300", unit = "g", notes = null, isCompleted = false),
-    )
 }
 

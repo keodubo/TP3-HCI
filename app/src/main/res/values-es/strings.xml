@@ -93,7 +93,7 @@
     <string name="home_welcome_subtitle">Organizá tus listas y mantené todo sincronizado.</string>
     <string name="home_welcome_subtitle_with_name">Organizá tus listas, %1$s.</string>
     <string name="home_new_list">Nueva lista</string>
-    <string name="home_view_all">Ver todas</string>
+    <string name="home_view_all">Listas</string>
     <string name="home_recent_lists">Listas recientes</string>
     <string name="home_shared_with_me">Compartidos conmigo</string>
     <string name="home_recent_activity">Actividad reciente</string>

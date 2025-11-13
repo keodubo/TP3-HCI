@@ -94,7 +94,7 @@
     <string name="home_welcome_subtitle">Plan your shopping lists and keep everything organized.</string>
     <string name="home_welcome_subtitle_with_name">Plan your shopping lists, %1$s.</string>
     <string name="home_new_list">New list</string>
-    <string name="home_view_all">View all</string>
+    <string name="home_view_all">Listas</string>
     <string name="home_recent_lists">Recent lists</string>
     <string name="home_shared_with_me">Shared with me</string>
     <string name="home_recent_activity">Recent activity</string>
