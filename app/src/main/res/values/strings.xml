@@ -141,6 +141,23 @@
     <string name="profile_loading">Loading profile…</string>
     <string name="profile_avatar_cd">Profile avatar</string>
     <string name="profile_edit_mode_cd">Edit profile button</string>
+    <string name="profile_change_password_button">Change password</string>
+    
+    <!-- Change Password Screen -->
+    <string name="title_change_password">Change Password</string>
+    <string name="change_password_current">Current password</string>
+    <string name="change_password_new">New password</string>
+    <string name="change_password_confirm">Confirm new password</string>
+    <string name="change_password_save_button">Save password</string>
+    <string name="change_password_cancel_button">Cancel</string>
+    <string name="change_password_success">Password changed successfully</string>
+    <string name="change_password_error_current_empty">Current password is required</string>
+    <string name="change_password_error_new_empty">New password is required</string>
+    <string name="change_password_error_new_too_short">New password must be at least 6 characters</string>
+    <string name="change_password_error_confirm_empty">Password confirmation is required</string>
+    <string name="change_password_error_mismatch">Passwords do not match</string>
+    <string name="change_password_error_incorrect">Current password is incorrect</string>
+    <string name="change_password_error_generic">Error changing password. Please try again.</string>
     
     <!-- Language options -->
     <string name="language_system">System</string>

@@ -85,7 +85,7 @@ class LoginViewModelTest {
             user?.isVerified == true
         }
 
-        override suspend fun register(email: String, password: String) {
+        override suspend fun register(email: String, password: String, name: String, surname: String) {
             // No-op for tests
         }
 
@@ -108,6 +108,14 @@ class LoginViewModelTest {
         }
 
         override suspend fun updatePassword(currentPassword: String, newPassword: String) {
+            // No-op for tests
+        }
+
+        override suspend fun sendPasswordRecoveryCode(email: String) {
+            // No-op for tests
+        }
+
+        override suspend fun resetPassword(email: String, resetToken: String, newPassword: String) {
             // No-op for tests
         }
     }

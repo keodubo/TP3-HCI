@@ -141,6 +141,23 @@
     <string name="profile_loading">Cargando perfil…</string>
     <string name="profile_avatar_cd">Avatar del perfil</string>
     <string name="profile_edit_mode_cd">Botón de editar perfil</string>
+    <string name="profile_change_password_button">Modificar contraseña</string>
+    
+    <!-- Change Password Screen -->
+    <string name="title_change_password">Cambiar Contraseña</string>
+    <string name="change_password_current">Contraseña actual</string>
+    <string name="change_password_new">Nueva contraseña</string>
+    <string name="change_password_confirm">Confirmar nueva contraseña</string>
+    <string name="change_password_save_button">Guardar contraseña</string>
+    <string name="change_password_cancel_button">Cancelar</string>
+    <string name="change_password_success">Contraseña modificada correctamente</string>
+    <string name="change_password_error_current_empty">La contraseña actual es requerida</string>
+    <string name="change_password_error_new_empty">La nueva contraseña es requerida</string>
+    <string name="change_password_error_new_too_short">La nueva contraseña debe tener al menos 6 caracteres</string>
+    <string name="change_password_error_confirm_empty">La confirmación de contraseña es requerida</string>
+    <string name="change_password_error_mismatch">Las contraseñas no coinciden</string>
+    <string name="change_password_error_incorrect">La contraseña actual es incorrecta</string>
+    <string name="change_password_error_generic">Error al cambiar la contraseña. Por favor, intentá de nuevo.</string>
     
     <!-- Language options -->
     <string name="language_system">Sistema</string>

@@ -26,6 +26,7 @@ import com.comprartir.mobile.profile.domain.ProfileField
 fun ProfileRoute(
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: ProfileViewModel = hiltViewModel(),
+    onChangePasswordClick: () -> Unit = {},
     onLogout: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -53,6 +54,7 @@ fun ProfileRoute(
         onThemeChanged = viewModel::onThemeChanged,
         onChangePhotoClick = { /* TODO: Implement photo picker */ },
         onRemoveBackgroundClick = { /* TODO: Implement when backend supports */ },
+        onChangePasswordClick = onChangePasswordClick,
         onLogoutClick = { viewModel.onLogout(onLogout) },
     )
 }
@@ -71,6 +73,7 @@ fun ProfileScreen(
     onThemeChanged: (AppTheme) -> Unit,
     onChangePhotoClick: () -> Unit,
     onRemoveBackgroundClick: () -> Unit,
+    onChangePasswordClick: () -> Unit,
     onLogoutClick: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
@@ -184,8 +187,23 @@ fun ProfileScreen(
                     }
                 }
 
-                // Logout button at the bottom
+                // Security section
                 Spacer(modifier = Modifier.height(spacing.medium))
+
+                OutlinedButton(
+                    onClick = onChangePasswordClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(999.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary,
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                ) {
+                    Text(text = stringResource(R.string.profile_change_password_button))
+                }
+
+                // Logout button at the bottom
+                Spacer(modifier = Modifier.height(spacing.small))
 
                 OutlinedButton(
                     onClick = onLogoutClick,

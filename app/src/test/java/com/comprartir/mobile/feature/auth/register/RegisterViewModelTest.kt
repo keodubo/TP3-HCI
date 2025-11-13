@@ -136,7 +136,7 @@ class RegisterViewModelTest {
         override val currentUser: Flow<UserAccount?> = userFlow
         override val isAuthenticated: Flow<Boolean> = MutableStateFlow(false)
 
-        override suspend fun register(email: String, password: String) {
+        override suspend fun register(email: String, password: String, name: String, surname: String) {
             if (shouldFailWithConflict) {
                 val responseBody = "{\"error\":\"Conflict\"}".toResponseBody("application/json".toMediaType())
                 throw HttpException(Response.error<Any>(409, responseBody))
@@ -151,5 +151,9 @@ class RegisterViewModelTest {
         override suspend fun signOut() = Unit
 
         override suspend fun updatePassword(currentPassword: String, newPassword: String) = Unit
+
+        override suspend fun sendPasswordRecoveryCode(email: String) = Unit
+
+        override suspend fun resetPassword(email: String, resetToken: String, newPassword: String) = Unit
     }
 }

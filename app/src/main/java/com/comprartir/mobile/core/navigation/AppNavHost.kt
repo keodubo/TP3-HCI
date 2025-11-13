@@ -148,11 +148,24 @@ private fun NavGraphBuilder.profileGraph(contentPadding: PaddingValues, appState
     composable(AppDestination.Profile.route) {
         ProfileRoute(
             contentPadding = contentPadding,
+            onChangePasswordClick = {
+                appState.navController.navigate(AppDestination.ChangePassword.route) {
+                    launchSingleTop = true
+                }
+            },
             onLogout = {
                 appState.navController.navigate(AppDestination.SignIn.route) {
                     popUpTo(0) { inclusive = true }
                     launchSingleTop = true
                 }
+            }
+        )
+    }
+    
+    composable(AppDestination.ChangePassword.route) {
+        com.comprartir.mobile.profile.presentation.ChangePasswordRoute(
+            onNavigateBack = {
+                appState.navController.popBackStack()
             }
         )
     }

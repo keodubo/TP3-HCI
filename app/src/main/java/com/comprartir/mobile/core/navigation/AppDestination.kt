@@ -9,6 +9,7 @@ enum class AppDestination(val route: String) {
     SignIn("auth/signIn"),
     Dashboard("home/dashboard"),
     Profile("profile/manage"),
+    ChangePassword("profile/changePassword"),
     Products("products/manage"),
     Lists("lists/manage"),
     ListDetails("lists/{listId}"),
