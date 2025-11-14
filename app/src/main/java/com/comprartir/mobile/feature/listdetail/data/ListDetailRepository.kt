@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.update
 interface ListDetailRepository {
     fun observeList(listId: String): Flow<ListDetailData>
     fun observeCategories(): Flow<List<com.comprartir.mobile.products.data.Category>>
+    suspend fun createCategory(name: String): com.comprartir.mobile.products.data.Category
     suspend fun toggleItem(listId: String, itemId: String, completed: Boolean)
     suspend fun deleteItem(listId: String, itemId: String): ListDetailItem?
     suspend fun restoreItem(listId: String, item: ListDetailItem)
@@ -58,6 +59,15 @@ class FakeListDetailRepository() : ListDetailRepository {
 
     override fun observeCategories(): Flow<List<com.comprartir.mobile.products.data.Category>> =
         flowOf(emptyList())
+
+    override suspend fun createCategory(name: String): com.comprartir.mobile.products.data.Category {
+        return com.comprartir.mobile.products.data.Category(
+            id = "fake",
+            name = name,
+            description = null,
+            color = null,
+        )
+    }
 
     override suspend fun toggleItem(listId: String, itemId: String, completed: Boolean) {
         flow.update { current ->
@@ -193,6 +203,9 @@ class DefaultListDetailRepository @Inject constructor(
 
     override fun observeCategories(): Flow<List<com.comprartir.mobile.products.data.Category>> =
         productsRepository.observeCategories()
+
+    override suspend fun createCategory(name: String): com.comprartir.mobile.products.data.Category =
+        productsRepository.createCategory(name)
 
     override fun observeList(listId: String): Flow<ListDetailData> =
         shoppingListsRepository.observeList(listId).map { shoppingList ->

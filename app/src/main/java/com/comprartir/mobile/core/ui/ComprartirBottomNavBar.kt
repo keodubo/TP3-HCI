@@ -40,6 +40,7 @@ import com.comprartir.mobile.core.designsystem.ComprartirTheme
 import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.core.designsystem.theme.ColorTokens
 import com.comprartir.mobile.core.navigation.AppDestination
+import com.comprartir.mobile.core.navigation.isDestinationSelected
 
 data class BottomNavItem(
     val destination: AppDestination,
@@ -83,7 +84,7 @@ fun ComprartirBottomNavBar(
             ) {
                 items.forEach { item ->
                     val label = stringResource(id = item.labelRes)
-                    val selected = currentRoute == item.destination.route
+                    val selected = isDestinationSelected(currentRoute, item.destination)
                     BottomNavPill(
                         label = label,
                         icon = item.icon,

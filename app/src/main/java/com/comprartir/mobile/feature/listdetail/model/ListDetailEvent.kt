@@ -30,4 +30,8 @@ sealed interface ListDetailEvent {
     data class EditProductUnitChanged(val value: String) : ListDetailEvent
     data class EditProductCategoryChanged(val categoryId: String?) : ListDetailEvent
     data object ConfirmEditProduct : ListDetailEvent
+    data class ShowCreateCategoryDialog(val target: CategorySelectionTarget) : ListDetailEvent
+    data object DismissCreateCategoryDialog : ListDetailEvent
+    data class CreateCategoryNameChanged(val value: String) : ListDetailEvent
+    data object ConfirmCreateCategory : ListDetailEvent
 }

@@ -23,6 +23,7 @@ import com.comprartir.mobile.R
 import com.comprartir.mobile.core.ui.BottomNavItem
 import com.comprartir.mobile.core.ui.ComprartirBottomNavBar
 import com.comprartir.mobile.core.ui.primaryNavigationItems
+import com.comprartir.mobile.core.navigation.isDestinationSelected
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +61,7 @@ fun ResponsiveAppScaffold(
                 NavigationRail(modifier = Modifier.fillMaxHeight()) {
                     navigationItems.forEach { item ->
                         NavigationRailItem(
-                            selected = currentRoute == item.destination.route,
+                            selected = isDestinationSelected(currentRoute, item.destination),
                             onClick = { onNavigate(item.destination) },
                             icon = { Icon(item.icon, contentDescription = stringResource(id = item.labelRes)) },
                             label = { Text(stringResource(id = item.labelRes)) },

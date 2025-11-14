@@ -11,6 +11,7 @@ enum class AppDestination(val route: String) {
     Profile("profile/manage"),
     ChangePassword("profile/changePassword"),
     Products("products/manage"),
+    Categories("categories/manage"),
     Lists("lists/manage"),
     ListDetails("lists/{listId}"),
     ShareList("lists/share"),

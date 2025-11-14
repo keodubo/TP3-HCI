@@ -42,7 +42,7 @@ interface ProductsRepository {
     fun observeCatalog(): Flow<List<Product>>
     fun observeCategories(): Flow<List<Category>>
     suspend fun refresh()
-    suspend fun createCategory(name: String, description: String?)
+    suspend fun createCategory(name: String, description: String? = null): Category
     suspend fun updateCategory(categoryId: String, name: String, description: String?)
     suspend fun deleteCategory(categoryId: String)
     suspend fun upsertProduct(product: Product): Product
@@ -83,10 +83,12 @@ class DefaultProductsRepository @Inject constructor(
         }
     }
 
-    override suspend fun createCategory(name: String, description: String?) {
-        withContext(Dispatchers.IO) {
-            api.createCategory(CategoryUpsertRequest(name = name, description = description))
-            refreshCategoriesInternal()
+    override suspend fun createCategory(name: String, description: String?): Category {
+        return withContext(Dispatchers.IO) {
+            val created = api.createCategory(CategoryUpsertRequest(name = name, description = description))
+            val entity = created.toEntity()
+            categoryDao.upsertAll(listOf(entity))
+            entity.toDomainModel()
         }
     }
 

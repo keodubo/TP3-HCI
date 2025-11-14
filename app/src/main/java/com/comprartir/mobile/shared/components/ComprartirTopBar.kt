@@ -51,6 +51,7 @@ fun ComprartirTopBar(
             destinationRoute?.matches(Regex("lists/\\d+")) == true -> R.string.title_list_details
             destinationRoute == AppDestination.Products.route -> R.string.title_products
             destinationRoute == AppDestination.Categorize.route -> R.string.title_categorize_products
+            destinationRoute == AppDestination.Categories.route -> R.string.title_categories
             destinationRoute == AppDestination.Profile.route -> R.string.title_profile
             destinationRoute == AppDestination.Settings.route -> R.string.title_settings
             destinationRoute == AppDestination.Pantry.route -> R.string.title_pantry

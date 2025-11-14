@@ -3,6 +3,11 @@ package com.comprartir.mobile.feature.listdetail.model
 import androidx.annotation.StringRes
 import com.comprartir.mobile.feature.listdetail.data.ListDetailItem
 
+enum class CategorySelectionTarget {
+    AddProduct,
+    EditProduct,
+}
+
 data class ListDetailUiState(
     val listId: String,
     val title: String = "",
@@ -19,6 +24,7 @@ data class ListDetailUiState(
     val deleteListState: DeleteListDialogState = DeleteListDialogState(),
     val categories: List<CategoryUi> = emptyList(),
     val editProductState: EditProductDialogState = EditProductDialogState(),
+    val createCategoryState: CreateCategoryDialogState = CreateCategoryDialogState(),
 ) {
     val totalItems: Int get() = items.size
     val completedItems: Int get() = items.count { it.isCompleted }
@@ -103,3 +109,13 @@ data class CategoryUi(
     val name: String? = null,
     @StringRes val nameRes: Int? = null,
 )
+
+data class CreateCategoryDialogState(
+    val isVisible: Boolean = false,
+    val name: String = "",
+    val isSubmitting: Boolean = false,
+    val target: CategorySelectionTarget = CategorySelectionTarget.AddProduct,
+    @StringRes val errorMessageRes: Int? = null,
+) {
+    val canSubmit: Boolean = name.isNotBlank() && !isSubmitting
+}

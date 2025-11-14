@@ -3,6 +3,7 @@
     <string name="app_name">Comprartir</string>
     <string name="title_dashboard">Home</string>
     <string name="title_lists">Shopping Lists</string>
+    <string name="title_categories">Categories</string>
     <string name="title_list_details">List Details</string>
     <string name="title_products">Products</string>
     <string name="title_categorize_products">Categorize Products</string>
@@ -237,6 +238,10 @@
     <string name="list_detail_add_button">Agregar</string>
     <string name="list_detail_category_label">Categoría</string>
     <string name="list_detail_category_none">Sin categoría</string>
+    <string name="list_detail_category_create_new">+ Nueva categoría…</string>
+    <string name="list_detail_category_dialog_title">Nueva categoría</string>
+    <string name="list_detail_category_name_error">Ingresa un nombre para la categoría.</string>
+    <string name="list_detail_category_created_success">Categoría creada</string>
     <string name="list_detail_share_title">Compartir</string>
     <string name="list_detail_share_email">Invitar por email</string>
     <string name="list_detail_share_copy">Copiar enlace</string>
@@ -258,6 +263,19 @@
     <string name="list_detail_edit_product_title">Editar producto</string>
     <string name="list_detail_edit_product_save">Guardar</string>
     <string name="list_detail_edit_product_cancel">Cancelar</string>
+    <string name="categories_new">Nueva categoría</string>
+    <string name="categories_edit">Editar categoría</string>
+    <string name="categories_save">Guardar</string>
+    <string name="categories_cancel">Cancelar</string>
+    <string name="categories_empty">Todavía no agregaste categorías.</string>
+    <string name="categories_name_error">Ingresa un nombre para la categoría.</string>
+    <string name="categories_created">Categoría creada correctamente</string>
+    <string name="categories_updated">Categoría actualizada</string>
+    <string name="categories_delete">Eliminar categoría</string>
+    <string name="categories_delete_title">Eliminar categoría</string>
+    <string name="categories_delete_message">¿Eliminar la categoría %1$s?</string>
+    <string name="categories_delete_confirm">Eliminar</string>
+    <string name="categories_deleted">Categoría eliminada</string>
     <string name="action_undo">Deshacer</string>
 
     <!-- Password Recovery -->

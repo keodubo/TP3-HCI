@@ -8,10 +8,12 @@ import com.comprartir.mobile.feature.listdetail.data.AddItemResult
 import com.comprartir.mobile.feature.listdetail.data.ListDetailItem
 import com.comprartir.mobile.feature.listdetail.data.ListDetailRepository
 import com.comprartir.mobile.feature.listdetail.model.AddProductUiState
+import com.comprartir.mobile.feature.listdetail.model.CategorySelectionTarget
 import com.comprartir.mobile.feature.listdetail.model.CategoryUi
 import com.comprartir.mobile.feature.listdetail.model.DeleteListDialogState
 import com.comprartir.mobile.feature.listdetail.model.EditListDialogState
 import com.comprartir.mobile.feature.listdetail.model.EditProductDialogState
+import com.comprartir.mobile.feature.listdetail.model.CreateCategoryDialogState
 import com.comprartir.mobile.feature.listdetail.model.ListDetailEffect
 import com.comprartir.mobile.feature.listdetail.model.ListDetailEvent
 import com.comprartir.mobile.feature.listdetail.model.ListDetailUiState
@@ -86,6 +88,10 @@ class ListDetailViewModel @Inject constructor(
             is ListDetailEvent.EditProductUnitChanged -> updateEditProductState { it.copy(unit = event.value) }
             is ListDetailEvent.EditProductCategoryChanged -> updateEditProductState { it.copy(categoryId = event.categoryId, categoryChanged = true) }
             ListDetailEvent.ConfirmEditProduct -> confirmEditProduct()
+            is ListDetailEvent.ShowCreateCategoryDialog -> showCreateCategoryDialog(event.target)
+            ListDetailEvent.DismissCreateCategoryDialog -> dismissCreateCategoryDialog()
+            is ListDetailEvent.CreateCategoryNameChanged -> updateCreateCategoryState { it.copy(name = event.value, errorMessageRes = null) }
+            ListDetailEvent.ConfirmCreateCategory -> confirmCreateCategory()
         }
     }
 
@@ -205,7 +211,8 @@ class ListDetailViewModel @Inject constructor(
     private fun observeCategories() {
         viewModelScope.launch {
             repository.observeCategories().collectLatest { categories ->
-                val options = categories
+                val options = listOf(CategoryUi(id = null, nameRes = R.string.list_detail_category_none)) +
+                    categories
                     .sortedBy { it.name.lowercase() }
                     .map { CategoryUi(id = it.id, name = it.name) }
                 _state.update { current ->
@@ -341,6 +348,54 @@ class ListDetailViewModel @Inject constructor(
                 val errorMessage = error.message ?: "No pudimos actualizar el producto."
                 viewModelScope.launch { _effects.emit(ListDetailEffect.ShowError(errorMessage)) }
             }
+        }
+    }
+
+    private fun showCreateCategoryDialog(target: CategorySelectionTarget) {
+        _state.update {
+            it.copy(createCategoryState = CreateCategoryDialogState(isVisible = true, target = target))
+        }
+    }
+
+    private fun dismissCreateCategoryDialog() {
+        _state.update { it.copy(createCategoryState = CreateCategoryDialogState()) }
+    }
+
+    private fun updateCreateCategoryState(transform: (CreateCategoryDialogState) -> CreateCategoryDialogState) {
+        _state.update { it.copy(createCategoryState = transform(it.createCategoryState)) }
+    }
+
+    private fun confirmCreateCategory() {
+        val dialogState = _state.value.createCategoryState
+        if (dialogState.name.isBlank()) {
+            updateCreateCategoryState { it.copy(errorMessageRes = R.string.list_detail_category_name_error) }
+            return
+        }
+        if (dialogState.isSubmitting) return
+
+        updateCreateCategoryState { it.copy(isSubmitting = true, errorMessageRes = null) }
+
+        viewModelScope.launch {
+            runCatching { repository.createCategory(dialogState.name.trim()) }
+                .onSuccess { category ->
+                    when (dialogState.target) {
+                        CategorySelectionTarget.AddProduct -> updateAddProductState {
+                            it.copy(categoryId = category.id, categoryChanged = true)
+                        }
+                        CategorySelectionTarget.EditProduct -> updateEditProductState {
+                            it.copy(categoryId = category.id, categoryChanged = true)
+                        }
+                    }
+                    _state.update { it.copy(createCategoryState = CreateCategoryDialogState()) }
+                    emitMessage(R.string.list_detail_category_created_success)
+                }
+                .onFailure { error ->
+                    updateCreateCategoryState { it.copy(isSubmitting = false) }
+                    val message = error.message ?: "No pudimos crear la categoría."
+                    viewModelScope.launch {
+                        _effects.emit(ListDetailEffect.ShowError(message))
+                    }
+                }
         }
     }
 

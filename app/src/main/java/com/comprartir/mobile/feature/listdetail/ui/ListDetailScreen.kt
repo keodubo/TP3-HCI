@@ -83,11 +83,13 @@ import com.comprartir.mobile.core.designsystem.surfaceCard
 import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.core.designsystem.theme.ColorTokens
 import com.comprartir.mobile.feature.listdetail.model.AddProductUiState
+import com.comprartir.mobile.feature.listdetail.model.CategorySelectionTarget
 import com.comprartir.mobile.feature.listdetail.model.CategoryUi
+import com.comprartir.mobile.feature.listdetail.model.CreateCategoryDialogState
+import com.comprartir.mobile.feature.listdetail.model.EditProductDialogState
 import com.comprartir.mobile.feature.listdetail.model.ListDetailEvent
 import com.comprartir.mobile.feature.listdetail.model.ListDetailUiState
 import com.comprartir.mobile.feature.listdetail.model.ListItemUi
-import com.comprartir.mobile.feature.listdetail.model.EditProductDialogState
 import androidx.compose.animation.core.animateFloatAsState
 
 @Composable
@@ -161,11 +163,12 @@ fun ListDetailScreen(
                         ) {
                             AddProductPanel(
                                 state = state.addProductState,
-                                categories = listOf(CategoryUi(id = null, nameRes = R.string.list_detail_category_none)) + state.categories,
+                                categories = state.categories,
                                 onNameChange = { onEvent(ListDetailEvent.AddProductNameChanged(it)) },
                                 onQuantityChange = { onEvent(ListDetailEvent.AddProductQuantityChanged(it)) },
                                 onUnitChange = { onEvent(ListDetailEvent.AddProductUnitChanged(it)) },
                                 onCategorySelected = { onEvent(ListDetailEvent.AddProductCategoryChanged(it)) },
+                                onCreateCategory = { onEvent(ListDetailEvent.ShowCreateCategoryDialog(CategorySelectionTarget.AddProduct)) },
                                 onSubmit = { onEvent(ListDetailEvent.SubmitNewProduct) },
                             )
                             SharePanel(
@@ -201,11 +204,12 @@ fun ListDetailScreen(
                 item {
                     AddProductPanel(
                         state = state.addProductState,
-                        categories = listOf(CategoryUi(id = null, nameRes = R.string.list_detail_category_none)) + state.categories,
+                        categories = state.categories,
                         onNameChange = { onEvent(ListDetailEvent.AddProductNameChanged(it)) },
                         onQuantityChange = { onEvent(ListDetailEvent.AddProductQuantityChanged(it)) },
                         onUnitChange = { onEvent(ListDetailEvent.AddProductUnitChanged(it)) },
                         onCategorySelected = { onEvent(ListDetailEvent.AddProductCategoryChanged(it)) },
+                        onCreateCategory = { onEvent(ListDetailEvent.ShowCreateCategoryDialog(CategorySelectionTarget.AddProduct)) },
                         onSubmit = { onEvent(ListDetailEvent.SubmitNewProduct) },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -274,13 +278,22 @@ fun ListDetailScreen(
         if (state.editProductState.isVisible) {
             EditProductDialog(
                 state = state.editProductState,
-                categories = listOf(CategoryUi(id = null, nameRes = R.string.list_detail_category_none)) + state.categories,
+                categories = state.categories,
                 onNameChange = { onEvent(ListDetailEvent.EditProductNameChanged(it)) },
                 onQuantityChange = { onEvent(ListDetailEvent.EditProductQuantityChanged(it)) },
                 onUnitChange = { onEvent(ListDetailEvent.EditProductUnitChanged(it)) },
                 onCategorySelected = { onEvent(ListDetailEvent.EditProductCategoryChanged(it)) },
+                onCreateCategory = { onEvent(ListDetailEvent.ShowCreateCategoryDialog(CategorySelectionTarget.EditProduct)) },
                 onDismiss = { onEvent(ListDetailEvent.DismissEditProductDialog) },
                 onConfirm = { onEvent(ListDetailEvent.ConfirmEditProduct) },
+            )
+        }
+        if (state.createCategoryState.isVisible) {
+            CreateCategoryDialog(
+                state = state.createCategoryState,
+                onNameChange = { onEvent(ListDetailEvent.CreateCategoryNameChanged(it)) },
+                onDismiss = { onEvent(ListDetailEvent.DismissCreateCategoryDialog) },
+                onConfirm = { onEvent(ListDetailEvent.ConfirmCreateCategory) },
             )
         }
     }
@@ -526,9 +539,7 @@ private fun ListDetailFilterCard(
                     }
                     CategoryDropdownField(
                         label = stringResource(id = R.string.list_detail_filter_category_label),
-                        categories = listOf(
-                            CategoryUi(id = null, nameRes = R.string.list_detail_filter_category_all),
-                        ) + categories,
+                        categories = listOf(CategoryUi(id = null, nameRes = R.string.list_detail_filter_category_all)) + categories.filter { it.id != null },
                         selectedCategoryId = selectedCategoryId,
                         onCategorySelected = onCategorySelected,
                         containerColor = ColorTokens.PurpleDeep,
@@ -675,6 +686,7 @@ private fun AddProductPanel(
     onQuantityChange: (String) -> Unit,
     onUnitChange: (String) -> Unit,
     onCategorySelected: (String?) -> Unit,
+    onCreateCategory: () -> Unit,
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -729,6 +741,8 @@ private fun AddProductPanel(
                 categories = categories,
                 selectedCategoryId = state.categoryId,
                 onCategorySelected = onCategorySelected,
+                showCreateOption = true,
+                onCreateCategory = onCreateCategory,
             )
             state.errorMessageRes?.let { res ->
                 Text(
@@ -756,6 +770,7 @@ private fun EditProductDialog(
     onQuantityChange: (String) -> Unit,
     onUnitChange: (String) -> Unit,
     onCategorySelected: (String?) -> Unit,
+    onCreateCategory: () -> Unit,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
@@ -805,6 +820,49 @@ private fun EditProductDialog(
                     categories = categories,
                     selectedCategoryId = state.categoryId,
                     onCategorySelected = onCategorySelected,
+                    showCreateOption = true,
+                    onCreateCategory = onCreateCategory,
+                )
+                state.errorMessageRes?.let { res ->
+                    Text(
+                        text = stringResource(id = res),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        },
+    )
+}
+
+@Composable
+private fun CreateCategoryDialog(
+    state: CreateCategoryDialogState,
+    onNameChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(id = R.string.list_detail_category_dialog_title)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = state.canSubmit) {
+                Text(text = stringResource(id = R.string.list_detail_edit_product_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.list_detail_edit_product_cancel))
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(LocalSpacing.current.medium)) {
+                OutlinedTextField(
+                    value = state.name,
+                    onValueChange = onNameChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(text = stringResource(id = R.string.list_detail_category_label)) },
+                    singleLine = true,
                 )
                 state.errorMessageRes?.let { res ->
                     Text(
@@ -828,6 +886,8 @@ private fun CategoryDropdownField(
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surface,
     textColor: Color = MaterialTheme.colorScheme.onSurface,
+    showCreateOption: Boolean = false,
+    onCreateCategory: (() -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selected = categories.firstOrNull { it.id == selectedCategoryId }
@@ -870,6 +930,16 @@ private fun CategoryDropdownField(
                     onClick = {
                         expanded = false
                         onCategorySelected(category.id)
+                    },
+                )
+            }
+            if (showCreateOption && onCreateCategory != null) {
+                Divider()
+                DropdownMenuItem(
+                    text = { Text(text = stringResource(id = R.string.list_detail_category_create_new), color = textColor) },
+                    onClick = {
+                        expanded = false
+                        onCreateCategory()
                     },
                 )
             }

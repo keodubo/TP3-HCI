@@ -20,6 +20,7 @@ import com.comprartir.mobile.feature.listdetail.navigation.ListDetailDestination
 import com.comprartir.mobile.lists.presentation.ListsRoute
 import com.comprartir.mobile.lists.presentation.ShareListRoute
 import com.comprartir.mobile.pantry.presentation.PantryRoute
+import com.comprartir.mobile.categories.ui.CategoriesRoute
 import com.comprartir.mobile.products.presentation.CategorizeProductsRoute
 import com.comprartir.mobile.products.presentation.ProductsRoute
 import com.comprartir.mobile.profile.presentation.ProfileRoute
@@ -185,6 +186,9 @@ private fun NavGraphBuilder.productsGraph(appState: ComprartirAppState) {
     }
     composable(AppDestination.Categorize.route) {
         CategorizeProductsRoute(onNavigate = appState::navigate)
+    }
+    composable(AppDestination.Categories.route) {
+        CategoriesRoute()
     }
 }
 
