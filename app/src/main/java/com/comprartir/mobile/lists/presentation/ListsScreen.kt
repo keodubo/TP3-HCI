@@ -1,6 +1,7 @@
 package com.comprartir.mobile.lists.presentation
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -23,7 +24,6 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -127,23 +127,14 @@ fun ListsScreen(
     onClearError: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
-
-    Scaffold(
-        floatingActionButton = {
-            AddFab(
-                onClick = onShowCreateDialog,
-                contentDescription = stringResource(id = R.string.lists_empty_action),
-                modifier = Modifier
-                    .padding(contentPadding)
-                    .padding(spacing.large),
-            )
-        },
-    ) { scaffoldPadding ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(contentPadding)
-                .padding(scaffoldPadding)
                 .padding(
                     start = spacing.large,
                     end = spacing.large,
@@ -204,45 +195,56 @@ fun ListsScreen(
 
         }
 
-        CreateListDialog(
-            state = state.createListState,
-            onNameChange = { newName ->
-                android.util.Log.d("ListsScreen", "CreateListDialog onNameChange: '$newName'")
-                onCreateListNameChanged(newName)
-            },
-            onDescriptionChange = { newDesc ->
-                android.util.Log.d("ListsScreen", "CreateListDialog onDescriptionChange: '$newDesc'")
-                onCreateListDescriptionChanged(newDesc)
-            },
-            onRecurringChange = { recurring ->
-                android.util.Log.d("ListsScreen", "CreateListDialog onRecurringChange: $recurring")
-                onCreateListRecurringChanged(recurring)
-            },
-            onDismiss = {
-                android.util.Log.d("ListsScreen", "CreateListDialog onDismiss called")
-                onDismissCreateDialog()
-            },
-            onConfirm = {
-                android.util.Log.d("ListsScreen", "CreateListDialog onConfirm called")
-                onConfirmCreateList()
-            },
-        )
-
-        EditListDialog(
-            state = state.editListState,
-            onNameChange = onEditListNameChanged,
-            onDescriptionChange = onEditListDescriptionChanged,
-            onRecurringChange = onEditListRecurringChanged,
-            onDismiss = onDismissEditDialog,
-            onConfirm = onConfirmEditList,
-        )
-
-        DeleteListDialog(
-            state = state.deleteListState,
-            onDismiss = onDismissDeleteDialog,
-            onConfirm = onConfirmDeleteList,
+        AddFab(
+            onClick = onShowCreateDialog,
+            contentDescription = stringResource(id = R.string.lists_empty_action),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(
+                    end = spacing.large,
+                    bottom = spacing.large,
+                ),
         )
     }
+
+    CreateListDialog(
+        state = state.createListState,
+        onNameChange = { newName ->
+            android.util.Log.d("ListsScreen", "CreateListDialog onNameChange: '$newName'")
+            onCreateListNameChanged(newName)
+        },
+        onDescriptionChange = { newDesc ->
+            android.util.Log.d("ListsScreen", "CreateListDialog onDescriptionChange: '$newDesc'")
+            onCreateListDescriptionChanged(newDesc)
+        },
+        onRecurringChange = { recurring ->
+            android.util.Log.d("ListsScreen", "CreateListDialog onRecurringChange: $recurring")
+            onCreateListRecurringChanged(recurring)
+        },
+        onDismiss = {
+            android.util.Log.d("ListsScreen", "CreateListDialog onDismiss called")
+            onDismissCreateDialog()
+        },
+        onConfirm = {
+            android.util.Log.d("ListsScreen", "CreateListDialog onConfirm called")
+            onConfirmCreateList()
+        },
+    )
+
+    EditListDialog(
+        state = state.editListState,
+        onNameChange = onEditListNameChanged,
+        onDescriptionChange = onEditListDescriptionChanged,
+        onRecurringChange = onEditListRecurringChanged,
+        onDismiss = onDismissEditDialog,
+        onConfirm = onConfirmEditList,
+    )
+
+    DeleteListDialog(
+        state = state.deleteListState,
+        onDismiss = onDismissDeleteDialog,
+        onConfirm = onConfirmDeleteList,
+    )
 }
 
 @Composable

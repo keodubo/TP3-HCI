@@ -1,6 +1,5 @@
 package com.comprartir.mobile.shared.components
 
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -18,7 +17,7 @@ fun AddFab(
 ) {
     FloatingActionButton(
         onClick = onClick,
-        modifier = modifier.navigationBarsPadding(),
+        modifier = modifier,
         containerColor = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
         shape = CircleShape,

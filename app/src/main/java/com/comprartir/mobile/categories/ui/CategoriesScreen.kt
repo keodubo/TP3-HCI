@@ -107,15 +107,6 @@ fun CategoriesScreen(
                 },
             )
         },
-        floatingActionButton = {
-            AddFab(
-                onClick = { onEvent(CategoriesEvent.ShowCreateDialog) },
-                contentDescription = stringResource(id = R.string.categories_new),
-                modifier = Modifier
-                    .padding(contentPadding)
-                    .padding(spacing.large),
-            )
-        },
         snackbarHost = {
             SnackbarHost(
                 hostState = snackbarHostState,
@@ -125,37 +116,63 @@ fun CategoriesScreen(
             )
         },
     ) { paddingValues ->
-        val contentModifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding)
-            .padding(paddingValues)
-            .padding(
-                start = spacing.large,
-                end = spacing.large,
-                top = spacing.medium,
-            )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(contentPadding),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        start = spacing.large,
+                        end = spacing.large,
+                        top = spacing.medium,
+                    ),
+                verticalArrangement = Arrangement.Top,
+            ) {
 
-        when {
-            state.isLoading -> {
-                Box(modifier = contentModifier, contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+            if (state.isLoading && state.categories.isEmpty()) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
             }
-            state.categories.isEmpty() -> {
+
+            if (!state.isLoading && state.categories.isEmpty()) {
                 EmptyStateMessage(
                     title = stringResource(id = R.string.categories_empty_title),
                     subtitle = stringResource(id = R.string.categories_empty_subtitle),
-                    modifier = contentModifier,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                 )
             }
-            else -> {
-                CategoryList(
-                    categories = state.categories,
-                    onEdit = { category -> onEvent(CategoriesEvent.ShowEditDialog(category.id)) },
-                    onDelete = { category -> onEvent(CategoriesEvent.RequestDelete(category.id)) },
-                    modifier = contentModifier,
-                )
+
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(spacing.medium),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
+                items(state.categories, key = { it.id }) { category ->
+                    CategoryItemRow(
+                        category = category,
+                        onEdit = { onEvent(CategoriesEvent.ShowEditDialog(category.id)) },
+                        onDelete = { onEvent(CategoriesEvent.RequestDelete(category.id)) },
+                    )
+                }
             }
+
+            }
+
+            AddFab(
+                onClick = { onEvent(CategoriesEvent.ShowCreateDialog) },
+                contentDescription = stringResource(id = R.string.categories_new),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(
+                        end = spacing.large,
+                        bottom = spacing.large,
+                    ),
+            )
         }
 
         if (state.dialogState.isVisible) {
@@ -172,29 +189,6 @@ fun CategoriesScreen(
                 state = state.deleteState,
                 onDismiss = { onEvent(CategoriesEvent.DismissDelete) },
                 onConfirm = { onEvent(CategoriesEvent.ConfirmDelete) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun CategoryList(
-    categories: List<CategoryItemUi>,
-    onEdit: (CategoryItemUi) -> Unit,
-    onDelete: (CategoryItemUi) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val spacing = LocalSpacing.current
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(spacing.large),
-        verticalArrangement = Arrangement.spacedBy(spacing.medium),
-    ) {
-        items(categories, key = { it.id }) { category ->
-            CategoryItemRow(
-                category = category,
-                onEdit = { onEdit(category) },
-                onDelete = { onDelete(category) },
             )
         }
     }
