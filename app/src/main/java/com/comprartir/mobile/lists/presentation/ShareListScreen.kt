@@ -117,8 +117,10 @@ fun ShareListScreen(
                 .padding(spacing.large),
             verticalArrangement = Arrangement.spacedBy(spacing.large),
         ) {
+            val heading = state.listName.takeIf { it.isNotBlank() }
+                ?: stringResource(id = R.string.share_list_heading, state.listId.ifBlank { "N/A" })
             Text(
-                text = stringResource(id = R.string.share_list_heading, state.listId.ifBlank { "N/A" }),
+                text = heading,
                 style = MaterialTheme.typography.headlineSmall,
             )
             Text(

@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun ListDetailRoute(
     onBack: () -> Unit,
-    onOpenShareManagement: (String) -> Unit,
+    onOpenShareManagement: (String, String) -> Unit,
     windowSizeClass: WindowSizeClass? = null,
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: ListDetailViewModel = hiltViewModel(),

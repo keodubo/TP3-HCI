@@ -393,7 +393,7 @@ class DefaultShoppingListsRepository @Inject constructor(
     }
 
     override suspend fun fetchSharedUsers(listId: String): List<SharedUser> = withContext(Dispatchers.IO) {
-        api.getSharedUsers(listId).data.map { it.toSharedUser() }
+        api.getSharedUsers(listId).map { it.toSharedUser() }
     }
 
     override suspend fun revokeShare(listId: String, userId: String) {

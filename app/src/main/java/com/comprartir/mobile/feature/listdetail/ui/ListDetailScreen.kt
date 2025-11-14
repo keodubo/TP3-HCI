@@ -97,7 +97,7 @@ fun ListDetailScreen(
     state: ListDetailUiState,
     onEvent: (ListDetailEvent) -> Unit,
     onBack: () -> Unit,
-    onOpenShareManagement: (String) -> Unit,
+    onOpenShareManagement: (String, String) -> Unit,
     snackbarHostState: SnackbarHostState,
     isTabletLayout: Boolean,
     contentPadding: PaddingValues = PaddingValues(),
@@ -186,7 +186,7 @@ fun ListDetailScreen(
                                 },
                                 onManage = {
                                     if (state.listId.isNotBlank()) {
-                                        onOpenShareManagement(state.listId)
+                                        onOpenShareManagement(state.listId, state.title)
                                     }
                                 },
                             )
@@ -239,7 +239,7 @@ fun ListDetailScreen(
                         },
                         onManage = {
                             if (state.listId.isNotBlank()) {
-                                onOpenShareManagement(state.listId)
+                                onOpenShareManagement(state.listId, state.title)
                             }
                         },
                         modifier = Modifier

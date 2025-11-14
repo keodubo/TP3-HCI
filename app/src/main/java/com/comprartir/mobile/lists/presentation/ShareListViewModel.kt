@@ -27,11 +27,13 @@ class ShareListViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val listId: String = savedStateHandle.get<String>("listId") ?: ""
+    private val listNameArg: String = savedStateHandle.get<String>("listName") ?: ""
 
     private val _state = MutableStateFlow(
         ShareListUiState(
             listId = listId,
             shareLink = if (listId.isNotBlank()) shoppingListsRepository.getShareLink(listId) else "",
+            listName = listNameArg,
         )
     )
     val state: StateFlow<ShareListUiState> = _state.asStateFlow()
@@ -176,6 +178,7 @@ class ShareListViewModel @Inject constructor(
 
 data class ShareListUiState(
     val listId: String = "",
+    val listName: String = "",
     val shareLink: String = "",
     val inviteEmail: String = "",
     val isInviting: Boolean = false,

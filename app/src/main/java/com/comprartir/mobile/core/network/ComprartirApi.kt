@@ -155,7 +155,7 @@ interface ComprartirApi {
     ): ShoppingListDto
 
     @GET("shopping-lists/{id}/shared-users")
-    suspend fun getSharedUsers(@Path("id") id: String): ApiListResponse<UserSummaryDto>
+    suspend fun getSharedUsers(@Path("id") id: String): List<UserSummaryDto>
 
     @DELETE("shopping-lists/{id}/share/{userId}")
     suspend fun revokeListShare(
@@ -226,7 +226,7 @@ interface ComprartirApi {
     ): PantryDto
 
     @GET("pantries/{id}/shared-users")
-    suspend fun getPantrySharedUsers(@Path("id") id: String): ApiListResponse<UserSummaryDto>
+    suspend fun getPantrySharedUsers(@Path("id") id: String): List<UserSummaryDto>
 
     @DELETE("pantries/{id}/share/{userId}")
     suspend fun revokePantryShare(

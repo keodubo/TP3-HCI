@@ -227,9 +227,10 @@ private fun NavGraphBuilder.listsGraph(
     ) {
         ListDetailRoute(
             onBack = appState::onBack,
-            onOpenShareManagement = { listId ->
+            onOpenShareManagement = { listId, listName ->
                 if (listId.isNotBlank()) {
-                    appState.navController.navigate("${AppDestination.ShareList.route}?listId=$listId")
+                    val encodedName = Uri.encode(listName)
+                    appState.navController.navigate("${AppDestination.ShareList.route}?listId=$listId&listName=$encodedName")
                 }
             },
             windowSizeClass = appState.windowSizeClass,
@@ -237,9 +238,13 @@ private fun NavGraphBuilder.listsGraph(
         )
     }
     composable(
-        route = AppDestination.ShareList.route + "?listId={listId}",
+        route = AppDestination.ShareList.route + "?listId={listId}&listName={listName}",
         arguments = listOf(
             navArgument("listId") {
+                type = NavType.StringType
+                defaultValue = ""
+            },
+            navArgument("listName") {
                 type = NavType.StringType
                 defaultValue = ""
             },
