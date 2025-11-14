@@ -288,6 +288,19 @@ private fun ShoppingListCard(
                     ?: stringResource(id = R.string.lists_no_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            
+            // Products count
+            val totalItems = list.items.size
+            val acquiredItems = list.items.count { it.isAcquired }
+            Text(
+                text = "$acquiredItems de $totalItems productos",
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                color = if (totalItems > 0 && acquiredItems == totalItems) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
                 modifier = Modifier.padding(bottom = spacing.small)
             )
             

@@ -1,5 +1,6 @@
 package com.comprartir.mobile.feature.listdetail.data
 
+import com.comprartir.mobile.lists.data.ItemAlreadyExistsException
 import com.comprartir.mobile.lists.data.ShoppingListsRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,7 +15,8 @@ interface ListDetailRepository {
     suspend fun toggleItem(listId: String, itemId: String, completed: Boolean)
     suspend fun deleteItem(listId: String, itemId: String): ListDetailItem?
     suspend fun restoreItem(listId: String, item: ListDetailItem)
-    suspend fun addItem(listId: String, name: String, quantity: String, unit: String?): ListDetailItem
+    suspend fun addItem(listId: String, name: String, quantity: String, unit: String?): AddItemResult
+    suspend fun updateItem(listId: String, itemId: String, name: String, quantity: String, unit: String?): ListDetailItem
 }
 
 /**
@@ -59,10 +61,24 @@ class FakeListDetailRepository() : ListDetailRepository {
         flow.update { current -> current.copy(items = listOf(item) + current.items) }
     }
 
-    override suspend fun addItem(listId: String, name: String, quantity: String, unit: String?): ListDetailItem {
+    override suspend fun addItem(listId: String, name: String, quantity: String, unit: String?): AddItemResult {
         val newItem = ListDetailItem(id = java.util.UUID.randomUUID().toString(), productId = java.util.UUID.randomUUID().toString(), name = name, quantity = quantity.ifBlank { "1" }, unit = unit, notes = null, isCompleted = false)
         flow.update { current -> current.copy(items = current.items + newItem) }
-        return newItem
+        return AddItemResult.Added(newItem)
+    }
+
+    override suspend fun updateItem(listId: String, itemId: String, name: String, quantity: String, unit: String?): ListDetailItem {
+        var updated: ListDetailItem? = null
+        flow.update { current ->
+            current.copy(items = current.items.map { item ->
+                if (item.id == itemId) {
+                    item.copy(name = name, quantity = quantity, unit = unit).also { updated = it }
+                } else {
+                    item
+                }
+            })
+        }
+        return updated ?: throw IllegalStateException("Item not found")
     }
 }
 
@@ -82,6 +98,21 @@ data class ListDetailItem(
     val unit: String?,
     val notes: String?,
     val isCompleted: Boolean,
+)
+
+sealed interface AddItemResult {
+    data class Added(val item: ListDetailItem) : AddItemResult
+    data class AlreadyExists(val item: ListDetailItem) : AddItemResult
+}
+
+private fun com.comprartir.mobile.lists.data.ListItem.toDetailItem(): ListDetailItem = ListDetailItem(
+    id = id,
+    productId = productId,
+    name = name,
+    quantity = quantity.toString(),
+    unit = unit,
+    notes = notes,
+    isCompleted = isAcquired,
 )
 
 @Singleton
@@ -117,17 +148,7 @@ class DefaultListDetailRepository @Inject constructor(
             } else {
                 val now = java.time.Instant.now()
                 val subtitle = "Actualizada ${formatRelativeTime(shoppingList.updatedAt, now).lowercase()}"
-                val items = shoppingList.items.map { item ->
-                    ListDetailItem(
-                        id = item.id,
-                        productId = item.productId,
-                        name = item.name,
-                        quantity = item.quantity.toString(),
-                        unit = item.unit,
-                        notes = item.notes,
-                        isCompleted = item.isAcquired,
-                    )
-                }
+                val items = shoppingList.items.map { it.toDetailItem() }
                 ListDetailData(
                     id = shoppingList.id,
                     title = shoppingList.name,
@@ -165,14 +186,21 @@ class DefaultListDetailRepository @Inject constructor(
         shoppingListsRepository.addItem(listId = listId, productId = item.productId, quantity = quantityDouble, unit = item.unit)
     }
 
-    override suspend fun addItem(listId: String, name: String, quantity: String, unit: String?): ListDetailItem {
+    override suspend fun addItem(listId: String, name: String, quantity: String, unit: String?): AddItemResult {
         val qty = quantity.toDoubleOrNull() ?: 1.0
 
-        // Try to find product by name in catalog
+        android.util.Log.d("ListDetailRepository", "addItem: START - name=$name, qty=$qty, unit=$unit")
+
+        // Try to find existing product in catalog by name
         val catalog = productsRepository.observeCatalog().firstOrNull().orEmpty()
-        var product = catalog.find { it.name.equals(name, ignoreCase = true) }
-        if (product == null) {
-            // Create a minimal product and upsert it
+        val existingProduct = catalog.find { it.name.equals(name, ignoreCase = true) }
+        
+        val product = if (existingProduct != null) {
+            android.util.Log.d("ListDetailRepository", "addItem: Using existing product: id=${existingProduct.id}")
+            existingProduct
+        } else {
+            // Create product in catalog - upsertProduct now returns Product with valid ID
+            android.util.Log.d("ListDetailRepository", "addItem: Creating new product...")
             val newProduct = com.comprartir.mobile.products.data.Product(
                 id = "",
                 name = name,
@@ -182,41 +210,122 @@ class DefaultListDetailRepository @Inject constructor(
                 defaultQuantity = qty,
                 isFavorite = false,
             )
-            productsRepository.upsertProduct(newProduct)
-            // refresh catalog snapshot
-            product = productsRepository.observeCatalog().firstOrNull().orEmpty().find { it.name.equals(name, ignoreCase = true) }
+            val createdProduct = productsRepository.upsertProduct(newProduct)
+            android.util.Log.d("ListDetailRepository", "addItem: Product created/found with id=${createdProduct.id}")
+            createdProduct
         }
 
-        val productId = product?.id ?: name
+        // Validate product ID is numeric
+        if (product.id.isBlank() || product.id.toIntOrNull() == null) {
+            android.util.Log.e("ListDetailRepository", "addItem: INVALID product ID: '${product.id}'")
+            throw IllegalStateException("Product ID must be a valid number, got: '${product.id}'")
+        }
 
-        shoppingListsRepository.addItem(listId = listId, productId = productId, quantity = qty, unit = unit)
+        android.util.Log.d("ListDetailRepository", "addItem: Adding item to list with productId=${product.id}")
 
-        // Try to fetch latest list and return the added item if possible
-        val updated = shoppingListsRepository.observeList(listId).firstOrNull()
-        val added = updated?.items?.find { it.productId == productId && it.quantity == qty }
+        val fallbackItem = ListDetailItem(
+            id = "",
+            productId = product.id,
+            name = name,
+            quantity = qty.toString(),
+            unit = unit,
+            notes = null,
+            isCompleted = false,
+        )
 
-        return if (added != null) {
-            ListDetailItem(
-                id = added.id,
-                productId = added.productId,
-                name = added.name,
-                quantity = added.quantity.toString(),
-                unit = added.unit,
-                notes = added.notes,
-                isCompleted = added.isAcquired,
+        return try {
+            // Add item to shopping list (this is the key operation)
+            shoppingListsRepository.addItem(listId = listId, productId = product.id, quantity = qty, unit = unit)
+
+            android.util.Log.d("ListDetailRepository", "addItem: Item added successfully, refreshing list items")
+            shoppingListsRepository.refreshListItems(listId)
+
+            val added = shoppingListsRepository.observeList(listId).firstOrNull()
+                ?.items
+                ?.find { it.productId == product.id && it.quantity == qty }
+            val detail = added?.toDetailItem() ?: fallbackItem
+            AddItemResult.Added(detail)
+        } catch (duplicate: ItemAlreadyExistsException) {
+            android.util.Log.w("ListDetailRepository", "addItem: Product already exists in list", duplicate)
+            shoppingListsRepository.refreshListItems(listId)
+            val existing = shoppingListsRepository.observeList(listId).firstOrNull()
+                ?.items
+                ?.find { it.productId == product.id }
+            val detail = existing?.toDetailItem() ?: fallbackItem
+            AddItemResult.AlreadyExists(detail)
+        }
+    }
+
+    override suspend fun updateItem(listId: String, itemId: String, name: String, quantity: String, unit: String?): ListDetailItem {
+        val qty = quantity.toDoubleOrNull() ?: 1.0
+
+        // Find existing product by name or get the current product ID from the item
+        val currentList = shoppingListsRepository.observeList(listId).firstOrNull()
+        val currentItem = currentList?.items?.find { it.id == itemId }
+        
+        val product = if (currentItem != null && currentItem.name == name) {
+            // Name unchanged, use existing product
+            com.comprartir.mobile.products.data.Product(
+                id = currentItem.productId,
+                name = currentItem.name,
+                description = null,
+                category = null,
+                unit = currentItem.unit,
+                defaultQuantity = currentItem.quantity,
+                isFavorite = false,
             )
         } else {
-            // Fallback: return a constructed item
+            // Name changed, find or create product
+            val catalog = productsRepository.observeCatalog().firstOrNull().orEmpty()
+            val existingProduct = catalog.find { it.name.equals(name, ignoreCase = true) }
+            
+            if (existingProduct != null) {
+                existingProduct
+            } else {
+                // Create new product - upsertProduct returns Product with valid ID
+                val newProduct = com.comprartir.mobile.products.data.Product(
+                    id = "",
+                    name = name,
+                    description = null,
+                    category = null,
+                    unit = unit,
+                    defaultQuantity = qty,
+                    isFavorite = false,
+                )
+                productsRepository.upsertProduct(newProduct)
+            }
+        }
+
+        // Update the item in the shopping list
+        shoppingListsRepository.updateItem(listId = listId, itemId = itemId, productId = product.id, quantity = qty, unit = unit)
+
+        // Refresh list items to ensure Room is up to date
+        shoppingListsRepository.refreshListItems(listId)
+        
+        val updated = shoppingListsRepository.observeList(listId).firstOrNull()
+        val updatedItem = updated?.items?.find { it.id == itemId }
+
+        return if (updatedItem != null) {
             ListDetailItem(
-                id = java.util.UUID.randomUUID().toString(),
-                productId = productId,
+                id = updatedItem.id,
+                productId = updatedItem.productId,
+                name = updatedItem.name,
+                quantity = updatedItem.quantity.toString(),
+                unit = updatedItem.unit,
+                notes = updatedItem.notes,
+                isCompleted = updatedItem.isAcquired,
+            )
+        } else {
+            // Construct item with the data we know
+            ListDetailItem(
+                id = itemId,
+                productId = product.id,
                 name = name,
                 quantity = qty.toString(),
                 unit = unit,
-                notes = null,
-                isCompleted = false,
+                notes = currentItem?.notes,
+                isCompleted = currentItem?.isAcquired ?: false,
             )
         }
     }
 }
-

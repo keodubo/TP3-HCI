@@ -195,7 +195,7 @@
     <string name="lists_type_shared">Compartidas</string>
     <string name="lists_type_personal">Personales</string>
     <string name="lists_empty_title">Aún no tienes listas</string>
-    <string name="lists_empty_subtitle">Creá tu primera lista usando el botón "New list"</string>
+    <string name="lists_empty_subtitle">Creá tu primera lista usando el botón "+"</string>
     <string name="lists_empty_message">Crea tu primera lista para comenzar a organizar tus compras.</string>
     <string name="lists_empty_action">Crear lista</string>
     <string name="lists_no_description">No description</string>
@@ -247,6 +247,8 @@
     <string name="list_detail_error_restore">No pudimos restaurar el producto.</string>
     <string name="list_detail_error_add">No pudimos agregar el producto.</string>
     <string name="list_detail_add_name_error">Ingresa un nombre para continuar.</string>
+    <string name="list_detail_product_added_success">Producto agregado exitosamente</string>
+    <string name="list_detail_product_already_exists">Ya se agregó este producto</string>
     <string name="action_undo">Deshacer</string>
 
     <!-- Password Recovery -->

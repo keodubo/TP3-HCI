@@ -47,6 +47,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -101,7 +104,12 @@ fun ListDetailScreen(
                 onDelete = { onEvent(ListDetailEvent.ShowDeleteDialog) },
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
+            )
+        },
     ) { innerPadding ->
         val combinedPadding = PaddingValues(
             start = innerPadding.calculateStartPadding(layoutDirection) +

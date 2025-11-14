@@ -59,15 +59,19 @@ data class ListItem(
     val updatedAt: Instant,
 )
 
+class ItemAlreadyExistsException(message: String? = null, cause: Throwable? = null) : Exception(message, cause)
+
 interface ShoppingListsRepository {
     fun observeLists(): Flow<List<ShoppingList>>
     fun observeList(listId: String): Flow<ShoppingList?>
     suspend fun refresh()
+    suspend fun refreshListItems(listId: String)
     suspend fun createList(name: String, description: String? = null, isRecurring: Boolean = false)
     suspend fun updateList(listId: String, name: String, description: String?)
     suspend fun deleteList(listId: String)
     suspend fun toggleAcquired(listId: String, itemId: String, isAcquired: Boolean)
     suspend fun addItem(listId: String, productId: String, quantity: Double, unit: String? = null)
+    suspend fun updateItem(listId: String, itemId: String, productId: String, quantity: Double, unit: String? = null)
     suspend fun deleteItem(listId: String, itemId: String)
     suspend fun purchaseList(listId: String)
     suspend fun resetList(listId: String)
@@ -144,6 +148,21 @@ class DefaultShoppingListsRepository @Inject constructor(
     override suspend fun refresh() {
         Log.d(TAG, "refresh: Manual refresh requested")
         withContext(Dispatchers.IO) { refreshListsInternal() }
+    }
+
+    override suspend fun refreshListItems(listId: String) {
+        withContext(Dispatchers.IO) {
+            try {
+                val items = fetchListItemsFromApi(listId)
+                listItemDao.deleteByList(listId)
+                if (items.isNotEmpty()) {
+                    listItemDao.upsertAll(items.map { it.toEntity(listId) })
+                }
+            } catch (throwable: Throwable) {
+                Log.w(TAG, "refreshListItems: Failed to refresh items for list $listId", throwable)
+                throw throwable
+            }
+        }
     }
 
     override suspend fun createList(name: String, description: String?, isRecurring: Boolean) {
@@ -258,15 +277,65 @@ class DefaultShoppingListsRepository @Inject constructor(
 
     override suspend fun addItem(listId: String, productId: String, quantity: Double, unit: String?) {
         withContext(Dispatchers.IO) {
-            val response = api.addListItem(
-                listId = listId,
-                payload = ShoppingListItemUpsertRequest(
-                    productId = productId,
-                    quantity = quantity,
-                    unit = unit,
-                ),
-            )
-            listItemDao.upsert(response.toEntity(listId))
+            try {
+                Log.d(TAG, "addItem: START - listId=$listId, productId=$productId, quantity=$quantity, unit=$unit")
+                
+                val productIdInt = productId.toIntOrNull()
+                if (productIdInt == null) {
+                    Log.e(TAG, "addItem: FAILED - Product ID '$productId' cannot be converted to Int")
+                    throw IllegalArgumentException("Product ID must be a valid number: '$productId'")
+                }
+                Log.d(TAG, "addItem: Product ID validated: $productIdInt")
+                
+                val response = api.addListItem(
+                    listId = listId,
+                    payload = com.comprartir.mobile.core.network.ShoppingListItemUpsertRequest(
+                        product = com.comprartir.mobile.core.network.ProductRef(id = productIdInt),
+                        quantity = quantity,
+                        unit = unit,
+                    ),
+                )
+                val itemDto = response.item ?: throw IllegalStateException("La API no devolvió el item creado")
+                Log.d(TAG, "addItem: SUCCESS - Item added with id=${itemDto.id}")
+                listItemDao.upsert(itemDto.toEntity(listId))
+            } catch (e: retrofit2.HttpException) {
+                Log.e(TAG, "addItem: HTTP ${e.code()} - ${e.message()}", e)
+                when (e.code()) {
+                    400 -> throw Exception("Datos inválidos. Verifica que el producto existe y los campos sean correctos.")
+                    404 -> throw Exception("Lista o producto no encontrado.")
+                    409 -> throw ItemAlreadyExistsException("Este producto ya está en la lista.", e)
+                    else -> throw Exception("Error al agregar producto: ${e.message()}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "addItem: Error - ${e.message}", e)
+                throw e
+            }
+        }
+    }
+
+    override suspend fun updateItem(listId: String, itemId: String, productId: String, quantity: Double, unit: String?) {
+        withContext(Dispatchers.IO) {
+            try {
+                val productIdInt = productId.toIntOrNull() 
+                    ?: throw IllegalArgumentException("Product ID must be a valid number: $productId")
+                
+                val response = api.updateListItem(
+                    listId = listId,
+                    itemId = itemId,
+                    payload = com.comprartir.mobile.core.network.ShoppingListItemUpsertRequest(
+                        product = com.comprartir.mobile.core.network.ProductRef(id = productIdInt),
+                        quantity = quantity,
+                        unit = unit,
+                    ),
+                )
+                listItemDao.upsert(response.toEntity(listId))
+            } catch (e: retrofit2.HttpException) {
+                when (e.code()) {
+                    400 -> throw Exception("Datos inválidos al actualizar el producto.")
+                    404 -> throw Exception("Producto o lista no encontrado.")
+                    else -> throw Exception("Error al actualizar producto: ${e.message()}")
+                }
+            }
         }
     }
 
@@ -354,9 +423,12 @@ class DefaultShoppingListsRepository @Inject constructor(
                 val entity = list.toEntity()
                 Log.d(TAG, "refreshListsInternal: List ${list.id}: name='${list.name}', owner.id=${list.owner?.id}, entity.ownerId=${entity.ownerId}")
                 shoppingListDao.upsert(entity)
-                if (list.items.isNotEmpty()) {
-                    listItemDao.upsertAll(list.items.map { it.toEntity(list.id) })
-                    Log.d(TAG, "refreshListsInternal: Saved ${list.items.size} items for list ${list.id}")
+                val items = fetchListItemsFromApi(list.id)
+                if (items.isNotEmpty()) {
+                    listItemDao.upsertAll(items.map { it.toEntity(list.id) })
+                    Log.d(TAG, "refreshListsInternal: Saved ${items.size} items for list ${list.id}")
+                } else {
+                    Log.d(TAG, "refreshListsInternal: List ${list.id} returned 0 items")
                 }
             }
             Log.d(TAG, "refreshListsInternal: ✅ All lists saved to Room successfully!")
@@ -402,4 +474,13 @@ class DefaultShoppingListsRepository @Inject constructor(
     companion object {
         private const val TAG = "ShoppingListsRepo"
     }
+
+    private suspend fun fetchListItemsFromApi(listId: String): List<com.comprartir.mobile.core.network.ShoppingListItemDto> =
+        fetchAllPages { page, perPage ->
+            api.getShoppingListItems(
+                listId = listId,
+                page = page,
+                perPage = perPage,
+            )
+        }
 }

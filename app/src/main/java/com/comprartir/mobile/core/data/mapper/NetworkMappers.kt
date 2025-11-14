@@ -49,17 +49,21 @@ fun CategoryDto.toEntity(): CategoryEntity = CategoryEntity(
     updatedAt = updatedAt ?: Instant.now(),
 )
 
-fun ProductDto.toEntity(): ProductEntity = ProductEntity(
-    id = id,
-    name = name,
-    description = description,
-    categoryId = category?.id ?: categoryId,
-    unit = unit,
-    defaultQuantity = defaultQuantity,
-    isFavorite = isFavorite,
-    createdAt = createdAt,
-    updatedAt = updatedAt,
-)
+fun ProductDto.toEntity(): ProductEntity {
+    val created = createdAt ?: Instant.now()
+    val updated = updatedAt ?: created
+    return ProductEntity(
+        id = id,
+        name = name,
+        description = description,
+        categoryId = category?.id ?: categoryId,
+        unit = unit,
+        defaultQuantity = defaultQuantity,
+        isFavorite = isFavorite,
+        createdAt = created,
+        updatedAt = updated,
+    )
+}
 
 fun ShoppingListDto.toEntity(): ShoppingListEntity = ShoppingListEntity(
     id = id,
@@ -74,21 +78,27 @@ fun ShoppingListDto.toEntity(): ShoppingListEntity = ShoppingListEntity(
     lastPurchasedAt = lastPurchasedAt,
 )
 
-fun ShoppingListItemDto.toEntity(listId: String): ListItemEntity = ListItemEntity(
-    id = id,
-    listId = listId,
-    productId = productId,
-    productName = productName,
-    quantity = quantity,
-    unit = unit,
-    isAcquired = purchased || (isAcquired == true),
-    notes = metadata.stringOrNull("notes"),
-    addedBy = metadata.stringOrNull("added_by"),
-    addedAt = createdAt ?: Instant.now(),
-    updatedAt = updatedAt ?: createdAt ?: Instant.now(),
-    categoryId = categoryId,
-    pantryId = pantryId,
-)
+fun ShoppingListItemDto.toEntity(listId: String): ListItemEntity {
+    val resolvedProductId = productId?.takeIf { it.isNotBlank() }
+        ?: product?.id?.takeIf { it.isNotBlank() }
+        ?: throw IllegalStateException("Missing product id for list item $id")
+
+    return ListItemEntity(
+        id = id,
+        listId = listId,
+        productId = resolvedProductId,
+        productName = productName ?: product?.name,
+        quantity = quantity,
+        unit = unit?.takeIf { it.isNotBlank() },
+        isAcquired = purchased || (isAcquired == true),
+        notes = metadata.stringOrNull("notes"),
+        addedBy = metadata.stringOrNull("added_by"),
+        addedAt = createdAt ?: Instant.now(),
+        updatedAt = updatedAt ?: createdAt ?: Instant.now(),
+        categoryId = categoryId ?: product?.category?.id,
+        pantryId = pantryId,
+    )
+}
 
 fun PantryItemDto.toEntity(): PantryItemEntity = PantryItemEntity(
     id = id,

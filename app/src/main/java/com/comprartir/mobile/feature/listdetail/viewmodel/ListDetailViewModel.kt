@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.comprartir.mobile.R
+import com.comprartir.mobile.feature.listdetail.data.AddItemResult
 import com.comprartir.mobile.feature.listdetail.data.ListDetailItem
 import com.comprartir.mobile.feature.listdetail.data.ListDetailRepository
 import com.comprartir.mobile.feature.listdetail.model.AddProductUiState
@@ -152,10 +153,27 @@ class ListDetailViewModel @Inject constructor(
                     quantity = current.quantity.ifBlank { "1" },
                     unit = current.unit.trim().ifBlank { null },
                 )
-            }.onSuccess {
-                updateAddProductState { AddProductUiState() }
-            }.onFailure {
-                updateAddProductState { it.copy(isSubmitting = false, errorMessageRes = R.string.list_detail_error_add) }
+            }.onSuccess { result ->
+                when (result) {
+                    is AddItemResult.Added -> {
+                        updateAddProductState { AddProductUiState() }
+                        emitMessage(R.string.list_detail_product_added_success)
+                    }
+                    is AddItemResult.AlreadyExists -> {
+                        updateAddProductState { AddProductUiState() }
+                        emitMessage(R.string.list_detail_product_already_exists)
+                    }
+                }
+            }.onFailure { error ->
+                android.util.Log.e("ListDetailViewModel", "Error adding product: ${error.message}", error)
+                // Show specific error message if available
+                val errorMessage = error.message ?: "No pudimos agregar el producto."
+                _state.update { it.copy(errorMessageRes = R.string.list_detail_error_add) }
+                updateAddProductState { it.copy(isSubmitting = false, errorMessageRes = null) }
+                // Emit error as a toast/snackbar effect
+                viewModelScope.launch {
+                    _effects.emit(ListDetailEffect.ShowError(errorMessage))
+                }
             }
         }
     }

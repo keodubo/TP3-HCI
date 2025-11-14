@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 sealed interface ListDetailEffect {
     data class ShowUndoDelete(val item: ListItemUi) : ListDetailEffect
     data class ShowMessage(@StringRes val messageRes: Int) : ListDetailEffect
+    data class ShowError(val message: String) : ListDetailEffect
     data object NavigateBack : ListDetailEffect
 }
 

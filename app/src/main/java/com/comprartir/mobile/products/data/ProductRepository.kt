@@ -45,7 +45,7 @@ interface ProductsRepository {
     suspend fun createCategory(name: String, description: String?)
     suspend fun updateCategory(categoryId: String, name: String, description: String?)
     suspend fun deleteCategory(categoryId: String)
-    suspend fun upsertProduct(product: Product)
+    suspend fun upsertProduct(product: Product): Product
     suspend fun deleteProduct(productId: String)
     suspend fun assignCategory(productId: String, categoryId: String)
 }
@@ -104,22 +104,66 @@ class DefaultProductsRepository @Inject constructor(
         }
     }
 
-    override suspend fun upsertProduct(product: Product) {
-        withContext(Dispatchers.IO) {
-            val request = ProductUpsertRequest(
-                name = product.name,
-                description = product.description,
-                categoryId = product.category?.id,
-                unit = product.unit,
-                defaultQuantity = product.defaultQuantity,
-            )
-            val response = if (product.id.isBlank()) {
-                api.createProduct(request)
-            } else {
-                api.updateProduct(product.id, request)
-            }
-            productDao.upsert(response.toEntity())
+    override suspend fun upsertProduct(product: Product): Product = withContext(Dispatchers.IO) {
+        val categoryRef = product.category?.id?.toIntOrNull()?.let { 
+            com.comprartir.mobile.core.network.CategoryRef(id = it) 
         }
+        
+        val request = com.comprartir.mobile.core.network.ProductUpsertRequest(
+            name = product.name,
+            category = categoryRef,
+            metadata = null,
+        )
+        
+        val response = if (product.id.isBlank()) {
+            try {
+                Log.d(TAG, "Creating new product: ${product.name}")
+                api.createProduct(request)
+            } catch (e: retrofit2.HttpException) {
+                if (e.code() == 409) {
+                    // Product already exists, refresh and find it
+                    Log.d(TAG, "Product '${product.name}' already exists (409), searching for it...")
+                    refreshProductsInternal()
+                    val existing = productDao.getByName(product.name)
+                    if (existing != null) {
+                        Log.d(TAG, "Found existing product with id=${existing.id}")
+                        // Return the existing product DTO
+                        api.getProduct(existing.id)
+                    } else {
+                        // Fallback: search via API
+                        Log.d(TAG, "Searching product via API...")
+                        val products = api.getProducts(page = 1, perPage = 50)
+                        val found = products.data.firstOrNull { it.name.equals(product.name, ignoreCase = true) }
+                        if (found != null) {
+                            Log.d(TAG, "Found product via API: id=${found.id}")
+                            found
+                        } else {
+                            throw Exception("El producto '${product.name}' ya existe pero no se pudo encontrar.")
+                        }
+                    }
+                } else {
+                    Log.e(TAG, "HTTP ${e.code()} error creating product", e)
+                    throw Exception("Error al crear producto: ${e.message()}")
+                }
+            }
+        } else {
+            Log.d(TAG, "Updating product: ${product.id}")
+            api.updateProduct(product.id, request)
+        }
+        
+        productDao.upsert(response.toEntity())
+        Log.d(TAG, "Product saved to local DB: id=${response.id}, name=${response.name}")
+        
+        // Return the domain Product with valid ID
+        Product(
+            id = response.id,
+            name = response.name,
+            description = response.description,
+            category = response.category?.let { Category(id = it.id, name = it.name, description = it.description, color = null) },
+            unit = response.unit,
+            defaultQuantity = response.defaultQuantity,
+            isFavorite = response.isFavorite,
+        )
     }
 
     override suspend fun deleteProduct(productId: String) {
@@ -136,12 +180,15 @@ class DefaultProductsRepository @Inject constructor(
     override suspend fun assignCategory(productId: String, categoryId: String) {
         withContext(Dispatchers.IO) {
             val existing = productDao.getById(productId) ?: return@withContext
-            val request = ProductUpsertRequest(
+            
+            val categoryRef = categoryId.toIntOrNull()?.let { 
+                com.comprartir.mobile.core.network.CategoryRef(id = it) 
+            }
+            
+            val request = com.comprartir.mobile.core.network.ProductUpsertRequest(
                 name = existing.name,
-                description = existing.description,
-                categoryId = categoryId,
-                unit = existing.unit,
-                defaultQuantity = existing.defaultQuantity,
+                category = categoryRef,
+                metadata = null,
             )
             val updated = api.updateProduct(productId, request)
             productDao.upsert(updated.toEntity())

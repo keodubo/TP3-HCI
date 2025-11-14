@@ -5,6 +5,7 @@ import com.comprartir.mobile.core.network.serialization.BackendDateSerializer
 import java.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 import kotlinx.serialization.json.JsonObject
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -169,7 +170,7 @@ interface ComprartirApi {
     suspend fun addListItem(
         @Path("listId") listId: String,
         @Body payload: ShoppingListItemUpsertRequest,
-    ): ShoppingListItemDto
+    ): AddListItemResponse
 
     @PUT("shopping-lists/{listId}/items/{itemId}")
     suspend fun updateListItem(
@@ -377,11 +378,11 @@ data class CategoryDto(
     val name: String,
     val description: String? = null,
     val metadata: JsonObject? = null,
-    @SerialName("created_at")
-    @Serializable(with = InstantIsoSerializer::class)
+    @JsonNames("createdAt", "created_at")
+    @Serializable(with = BackendDateSerializer::class)
     val createdAt: Instant? = null,
-    @SerialName("updated_at")
-    @Serializable(with = InstantIsoSerializer::class)
+    @JsonNames("updatedAt", "updated_at")
+    @Serializable(with = BackendDateSerializer::class)
     val updatedAt: Instant? = null,
 )
 
@@ -403,21 +404,23 @@ data class ProductDto(
     val unit: String? = null,
     @SerialName("default_quantity") val defaultQuantity: Double = 1.0,
     @SerialName("is_favorite") val isFavorite: Boolean = false,
-    @SerialName("created_at")
-    @Serializable(with = InstantIsoSerializer::class)
-    val createdAt: Instant,
-    @SerialName("updated_at")
-    @Serializable(with = InstantIsoSerializer::class)
-    val updatedAt: Instant,
+    @JsonNames("createdAt", "created_at")
+    @Serializable(with = BackendDateSerializer::class)
+    val createdAt: Instant? = null,
+    @JsonNames("updatedAt", "updated_at")
+    @Serializable(with = BackendDateSerializer::class)
+    val updatedAt: Instant? = null,
+)
+
+@Serializable
+data class CategoryRef(
+    val id: Int,
 )
 
 @Serializable
 data class ProductUpsertRequest(
     val name: String,
-    val description: String? = null,
-    @SerialName("category_id") val categoryId: String? = null,
-    val unit: String? = null,
-    @SerialName("default_quantity") val defaultQuantity: Double = 1.0,
+    val category: CategoryRef? = null,
     val metadata: JsonObject? = null,
 )
 // endregion
@@ -467,26 +470,40 @@ data class ShoppingListUpsertRequest(
 @Serializable
 data class ShoppingListItemDto(
     val id: String,
-    @SerialName("product_id") val productId: String,
+    val product: ProductDto? = null,
+    @SerialName("product_id") val productId: String? = null,
     @SerialName("product_name") val productName: String? = null,
-    val quantity: Double,
+    val quantity: Double = 1.0,
     val unit: String? = null,
-    @SerialName("purchased") val purchased: Boolean = false,
+    val purchased: Boolean = false,
     @SerialName("is_acquired") val isAcquired: Boolean? = null,
     @SerialName("category_id") val categoryId: String? = null,
     @SerialName("pantry_id") val pantryId: String? = null,
     val metadata: JsonObject? = null,
-    @SerialName("created_at")
-    @Serializable(with = InstantIsoSerializer::class)
+    @JsonNames("createdAt", "created_at")
+    @Serializable(with = BackendDateSerializer::class)
     val createdAt: Instant? = null,
-    @SerialName("updated_at")
-    @Serializable(with = InstantIsoSerializer::class)
+    @JsonNames("updatedAt", "updated_at")
+    @Serializable(with = BackendDateSerializer::class)
     val updatedAt: Instant? = null,
+    @JsonNames("lastPurchasedAt", "last_purchased_at")
+    @Serializable(with = BackendDateSerializer::class)
+    val lastPurchasedAt: Instant? = null,
+)
+
+@Serializable
+data class AddListItemResponse(
+    val item: ShoppingListItemDto? = null,
+)
+
+@Serializable
+data class ProductRef(
+    val id: Int,
 )
 
 @Serializable
 data class ShoppingListItemUpsertRequest(
-    @SerialName("product_id") val productId: String,
+    val product: ProductRef,
     val quantity: Double,
     val unit: String? = null,
     val metadata: JsonObject? = null,
@@ -536,16 +553,16 @@ data class PantryDto(
     val id: String,
     val name: String,
     val description: String? = null,
-    @SerialName("owner_id") val ownerId: String,
+    @SerialName("owner_id") val ownerId: String = "",
     val owner: UserSummaryDto? = null,
     @SerialName("shared_users") val sharedUsers: List<UserSummaryDto> = emptyList(),
     val metadata: JsonObject? = null,
-    @SerialName("created_at")
-    @Serializable(with = InstantIsoSerializer::class)
-    val createdAt: Instant,
-    @SerialName("updated_at")
-    @Serializable(with = InstantIsoSerializer::class)
-    val updatedAt: Instant,
+    @JsonNames("createdAt", "created_at")
+    @Serializable(with = BackendDateSerializer::class)
+    val createdAt: Instant? = null,
+    @JsonNames("updatedAt", "updated_at")
+    @Serializable(with = BackendDateSerializer::class)
+    val updatedAt: Instant? = null,
     val items: List<PantryItemDto> = emptyList(),
 )
 
@@ -570,11 +587,11 @@ data class PantryItemDto(
     @SerialName("expiration_date")
     @Serializable(with = InstantIsoSerializer::class)
     val expirationDate: Instant? = null,
-    @SerialName("created_at")
-    @Serializable(with = InstantIsoSerializer::class)
+    @JsonNames("createdAt", "created_at")
+    @Serializable(with = BackendDateSerializer::class)
     val createdAt: Instant? = null,
-    @SerialName("updated_at")
-    @Serializable(with = InstantIsoSerializer::class)
+    @JsonNames("updatedAt", "updated_at")
+    @Serializable(with = BackendDateSerializer::class)
     val updatedAt: Instant? = null,
 )
 

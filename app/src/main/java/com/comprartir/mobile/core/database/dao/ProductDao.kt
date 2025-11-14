@@ -21,6 +21,9 @@ interface ProductDao {
     @Query("SELECT * FROM products WHERE id = :productId LIMIT 1")
     suspend fun getById(productId: String): ProductEntity?
 
+    @Query("SELECT * FROM products WHERE LOWER(name) = LOWER(:name) LIMIT 1")
+    suspend fun getByName(name: String): ProductEntity?
+
     @Query("DELETE FROM products WHERE id = :productId")
     suspend fun delete(productId: String)
 
