@@ -41,7 +41,7 @@ fun ComprartirNavHost(
     ) {
         authGraph(appState, contentPadding)
         profileGraph(contentPadding, appState)
-        productsGraph(appState)
+        productsGraph(appState, contentPadding)
         listsGraph(appState, contentPadding)
         settingsGraph()
         pantryGraph(appState)
@@ -180,7 +180,10 @@ private fun NavGraphBuilder.profileGraph(contentPadding: PaddingValues, appState
     }
 }
 
-private fun NavGraphBuilder.productsGraph(appState: ComprartirAppState) {
+private fun NavGraphBuilder.productsGraph(
+    appState: ComprartirAppState,
+    contentPadding: PaddingValues,
+) {
     composable(AppDestination.Products.route) {
         ProductsRoute(onNavigate = appState::navigate)
     }
@@ -188,7 +191,7 @@ private fun NavGraphBuilder.productsGraph(appState: ComprartirAppState) {
         CategorizeProductsRoute(onNavigate = appState::navigate)
     }
     composable(AppDestination.Categories.route) {
-        CategoriesRoute()
+        CategoriesRoute(contentPadding = contentPadding)
     }
 }
 

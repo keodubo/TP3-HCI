@@ -60,6 +60,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun CategoriesRoute(
     onBackClick: () -> Unit = {},
+    contentPadding: PaddingValues = PaddingValues(),
     viewModel: CategoriesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -82,6 +83,7 @@ fun CategoriesRoute(
         onEvent = viewModel::onEvent,
         snackbarHostState = snackbarHostState,
         onBackClick = onBackClick,
+        contentPadding = contentPadding,
     )
 }
 
@@ -92,6 +94,7 @@ fun CategoriesScreen(
     onEvent: (CategoriesEvent) -> Unit,
     snackbarHostState: SnackbarHostState,
     onBackClick: () -> Unit = {},
+    contentPadding: PaddingValues = PaddingValues(),
 ) {
     val spacing = LocalSpacing.current
     Scaffold(
@@ -107,6 +110,9 @@ fun CategoriesScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .padding(end = spacing.large, bottom = spacing.large),
                 onClick = { onEvent(CategoriesEvent.ShowCreateDialog) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -117,12 +123,15 @@ fun CategoriesScreen(
         snackbarHost = {
             SnackbarHost(
                 hostState = snackbarHostState,
-                modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars),
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .windowInsetsPadding(WindowInsets.navigationBars),
             )
         },
     ) { paddingValues ->
         val contentModifier = Modifier
             .fillMaxSize()
+            .padding(contentPadding)
             .padding(paddingValues)
 
         when {
