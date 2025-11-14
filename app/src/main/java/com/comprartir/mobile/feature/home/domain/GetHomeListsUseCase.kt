@@ -54,7 +54,7 @@ class GetHomeListsUseCase @Inject constructor(
         val sharedListsUi = sharedLists
             .sortedByDescending { it.updatedAt }
             .take(5)
-            .map { it.toSharedListUi(now, userId) }
+            .map { it.toSharedListUi(now) }
 
         HomeListsData(
             recentLists = recentListsUi,
@@ -97,7 +97,7 @@ class GetHomeListsUseCase @Inject constructor(
         )
     }
 
-    private fun ShoppingList.toSharedListUi(now: Instant, currentUserId: String): SharedListUi {
+    private fun ShoppingList.toSharedListUi(now: Instant): SharedListUi {
         // For shared lists, we might need to fetch owner details
         // For now, we use ownerId as placeholder (could be enhanced with user service)
         val ownerName = if (ownerId.isNotEmpty()) {

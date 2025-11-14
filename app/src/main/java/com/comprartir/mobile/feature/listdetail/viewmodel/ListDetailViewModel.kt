@@ -1,5 +1,7 @@
 package com.comprartir.mobile.feature.listdetail.viewmodel
 
+import android.content.Context
+import android.util.Patterns
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,15 +12,17 @@ import com.comprartir.mobile.feature.listdetail.data.ListDetailRepository
 import com.comprartir.mobile.feature.listdetail.model.AddProductUiState
 import com.comprartir.mobile.feature.listdetail.model.CategorySelectionTarget
 import com.comprartir.mobile.feature.listdetail.model.CategoryUi
+import com.comprartir.mobile.feature.listdetail.model.CreateCategoryDialogState
 import com.comprartir.mobile.feature.listdetail.model.DeleteListDialogState
 import com.comprartir.mobile.feature.listdetail.model.EditListDialogState
 import com.comprartir.mobile.feature.listdetail.model.EditProductDialogState
-import com.comprartir.mobile.feature.listdetail.model.CreateCategoryDialogState
 import com.comprartir.mobile.feature.listdetail.model.ListDetailEffect
 import com.comprartir.mobile.feature.listdetail.model.ListDetailEvent
 import com.comprartir.mobile.feature.listdetail.model.ListDetailUiState
 import com.comprartir.mobile.feature.listdetail.model.ListItemUi
+import com.comprartir.mobile.feature.listdetail.model.ShareUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,17 +33,31 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+import retrofit2.HttpException
 
 @HiltViewModel
 class ListDetailViewModel @Inject constructor(
     private val repository: ListDetailRepository,
     private val shoppingListsRepository: com.comprartir.mobile.lists.data.ShoppingListsRepository,
     savedStateHandle: SavedStateHandle,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val listId: String = savedStateHandle["listId"] ?: ""
 
-    private val _state = MutableStateFlow(ListDetailUiState(listId = listId))
+    private val initialShareLink = if (listId.isNotBlank()) {
+        shoppingListsRepository.getShareLink(listId)
+    } else {
+        ""
+    }
+
+    private val _state = MutableStateFlow(
+        ListDetailUiState(
+            listId = listId,
+            shareState = ShareUiState(link = initialShareLink),
+        )
+    )
     val state: StateFlow<ListDetailUiState> = _state.asStateFlow()
 
     private val _effects = MutableSharedFlow<ListDetailEffect>()
@@ -70,6 +88,7 @@ class ListDetailViewModel @Inject constructor(
             is ListDetailEvent.AddProductCategoryChanged -> updateAddProductState { it.copy(categoryId = event.value, categoryChanged = true) }
             ListDetailEvent.SubmitNewProduct -> addNewProduct()
             is ListDetailEvent.ShareEmailChanged -> _state.update { it.copy(shareState = it.shareState.copy(email = event.value)) }
+            ListDetailEvent.SubmitShareInvite -> inviteUserToList()
             ListDetailEvent.LinkCopied -> emitMessage(R.string.list_detail_link_copied)
             ListDetailEvent.Retry -> observeList(force = true)
             ListDetailEvent.ShowEditDialog -> showEditDialog()
@@ -106,7 +125,9 @@ class ListDetailViewModel @Inject constructor(
                         title = detail.title,
                         subtitle = detail.subtitle,
                         items = detail.items,
-                        shareState = current.shareState.copy(link = detail.shareLink),
+                        shareState = current.shareState.copy(
+                            link = detail.shareLink.ifBlank { current.shareState.link },
+                        ),
                         isLoading = false,
                         errorMessageRes = null,
                     )
@@ -195,6 +216,44 @@ class ListDetailViewModel @Inject constructor(
                     _effects.emit(ListDetailEffect.ShowError(errorMessage))
                 }
             }
+        }
+    }
+
+    private fun inviteUserToList() {
+        if (listId.isBlank()) {
+            emitMessage(R.string.list_detail_share_error)
+            return
+        }
+        val email = state.value.shareState.email.trim()
+        if (email.isBlank()) {
+            emitMessage(R.string.list_detail_share_email_required)
+            return
+        }
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            emitMessage(R.string.list_detail_share_email_invalid)
+            return
+        }
+        _state.update { it.copy(shareState = it.shareState.copy(isInviting = true)) }
+        viewModelScope.launch {
+            runCatching { shoppingListsRepository.shareList(listId, email) }
+                .onSuccess { result ->
+                    _state.update { current ->
+                        current.copy(
+                            shareState = current.shareState.copy(
+                                email = "",
+                                link = result.shareLink.ifBlank { current.shareState.link },
+                                isInviting = false,
+                            )
+                        )
+                    }
+                    emitMessage(R.string.list_detail_share_invite_success)
+                }
+                .onFailure { throwable ->
+                    _state.update { it.copy(shareState = it.shareState.copy(isInviting = false)) }
+                    val fallback = context.getString(R.string.list_detail_share_error)
+                    val message = throwable.toReadableMessage(fallback)
+                    _effects.emit(ListDetailEffect.ShowError(message))
+                }
         }
     }
 
@@ -409,5 +468,25 @@ class ListDetailViewModel @Inject constructor(
             notes = notes,
             categoryId = categoryId,
         )
+    }
+
+    private fun Throwable.toReadableMessage(fallback: String): String {
+        if (this is HttpException) {
+            val rawBody = try {
+                response()?.errorBody()?.string()
+            } catch (exception: Exception) {
+                null
+            }
+            if (!rawBody.isNullOrBlank()) {
+                return try {
+                    val json = JSONObject(rawBody)
+                    val msg = json.optString("message")
+                    if (msg.isNotBlank()) msg else rawBody
+                } catch (_: Exception) {
+                    rawBody
+                }
+            }
+        }
+        return message?.takeIf { it.isNotBlank() } ?: fallback
     }
 }

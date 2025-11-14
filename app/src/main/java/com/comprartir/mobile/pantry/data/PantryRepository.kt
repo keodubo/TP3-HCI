@@ -115,7 +115,7 @@ class DefaultPantryRepository @Inject constructor(
 
     override suspend fun sharePantry(pantryId: String, email: String) {
         withContext(Dispatchers.IO) {
-            api.sharePantry(pantryId, SharePantryRequest(recipients = listOf(email)))
+            api.sharePantry(pantryId, SharePantryRequest(email = email))
         }
     }
 

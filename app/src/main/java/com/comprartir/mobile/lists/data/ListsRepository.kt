@@ -1,6 +1,7 @@
 package com.comprartir.mobile.lists.data
 
 import android.util.Log
+import com.comprartir.mobile.BuildConfig
 import com.comprartir.mobile.auth.data.AuthRepository
 import com.comprartir.mobile.core.data.mapper.toEntity
 import com.comprartir.mobile.core.database.dao.ListItemDao
@@ -10,14 +11,19 @@ import com.comprartir.mobile.core.database.entity.ShoppingListEntity
 import com.comprartir.mobile.core.network.ComprartirApi
 import com.comprartir.mobile.core.network.MoveListToPantryRequest
 import com.comprartir.mobile.core.network.ShareListRequest
+import com.comprartir.mobile.core.network.ShoppingListCreateRequest
 import com.comprartir.mobile.core.network.ShoppingListItemPatchRequest
 import com.comprartir.mobile.core.network.ShoppingListItemUpsertRequest
 import com.comprartir.mobile.core.network.ShoppingListPurchaseRequest
-import com.comprartir.mobile.core.network.ShoppingListCreateRequest
 import com.comprartir.mobile.core.network.ShoppingListUpsertRequest
+import com.comprartir.mobile.core.network.ShoppingListDto
+import com.comprartir.mobile.core.network.UserSummaryDto
 import com.comprartir.mobile.core.network.fetchAllPages
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -43,6 +49,7 @@ data class ShoppingList(
     val updatedAt: Instant,
     val lastPurchasedAt: Instant?,
     val items: List<ListItem>,
+    val shareLink: String = ShareLinkFormatter.build(id),
 )
 
 data class ListItem(
@@ -57,6 +64,18 @@ data class ListItem(
     val notes: String?,
     val addedAt: Instant,
     val updatedAt: Instant,
+)
+
+data class SharedUser(
+    val id: String,
+    val email: String,
+    val displayName: String,
+    val avatarUrl: String?,
+)
+
+data class ShareListResult(
+    val shareLink: String,
+    val sharedUsers: List<SharedUser>,
 )
 
 class ItemAlreadyExistsException(message: String? = null, cause: Throwable? = null) : Exception(message, cause)
@@ -76,9 +95,10 @@ interface ShoppingListsRepository {
     suspend fun purchaseList(listId: String)
     suspend fun resetList(listId: String)
     suspend fun moveListToPantry(listId: String, pantryId: String)
-    suspend fun shareList(listId: String, email: String)
-    suspend fun getSharedUsers(listId: String)
+    suspend fun shareList(listId: String, email: String): ShareListResult
+    suspend fun fetchSharedUsers(listId: String): List<SharedUser>
     suspend fun revokeShare(listId: String, userId: String)
+    fun getShareLink(listId: String): String
 }
 
 @Singleton
@@ -364,16 +384,16 @@ class DefaultShoppingListsRepository @Inject constructor(
         }
     }
 
-    override suspend fun shareList(listId: String, email: String) {
-        withContext(Dispatchers.IO) {
-            api.shareList(listId, ShareListRequest(recipients = listOf(email)))
-        }
+    override suspend fun shareList(listId: String, email: String): ShareListResult = withContext(Dispatchers.IO) {
+        val response = api.shareList(listId, ShareListRequest(email = email))
+        ShareListResult(
+            shareLink = response.resolveShareLink(),
+            sharedUsers = response.sharedWith.map { it.toSharedUser() },
+        )
     }
 
-    override suspend fun getSharedUsers(listId: String) {
-        withContext(Dispatchers.IO) {
-            api.getSharedUsers(listId)
-        }
+    override suspend fun fetchSharedUsers(listId: String): List<SharedUser> = withContext(Dispatchers.IO) {
+        api.getSharedUsers(listId).data.map { it.toSharedUser() }
     }
 
     override suspend fun revokeShare(listId: String, userId: String) {
@@ -381,6 +401,8 @@ class DefaultShoppingListsRepository @Inject constructor(
             api.revokeListShare(listId, userId)
         }
     }
+
+    override fun getShareLink(listId: String): String = ShareLinkFormatter.build(listId)
 
     private suspend fun ensureSynced() {
         val currentUserId = authRepository.currentUser.firstOrNull()?.id.orEmpty()
@@ -455,6 +477,7 @@ class DefaultShoppingListsRepository @Inject constructor(
         updatedAt = updatedAt,
         lastPurchasedAt = lastPurchasedAt,
         items = items.map { it.toDomainModel() },
+        shareLink = ShareLinkFormatter.build(id),
     )
 
     private fun ListItemEntity.toDomainModel(): ListItem = ListItem(
@@ -484,3 +507,33 @@ class DefaultShoppingListsRepository @Inject constructor(
             )
         }
 }
+
+private object ShareLinkFormatter {
+    fun build(listId: String): String {
+        val rawBase = BuildConfig.COMPRARTIR_API_BASE_URL.trimEnd('/')
+        val sanitizedBase = if (rawBase.endsWith("/api")) rawBase.dropLast(4) else rawBase
+        return "${sanitizedBase.trimEnd('/')}/share/lists/$listId"
+    }
+}
+
+private fun ShoppingListDto.resolveShareLink(): String =
+    metadata.extractString("shareUrl")
+        ?: metadata.extractString("share_url")
+        ?: ShareLinkFormatter.build(id)
+
+private fun UserSummaryDto.toSharedUser(): SharedUser {
+    val resolvedName = displayName.ifBlank {
+        listOfNotNull(name, surname)
+            .joinToString(" ")
+            .ifBlank { email }
+    }
+    return SharedUser(
+        id = id,
+        email = email,
+        displayName = resolvedName,
+        avatarUrl = avatar,
+    )
+}
+
+private fun JsonObject?.extractString(key: String): String? =
+    this?.get(key)?.jsonPrimitive?.contentOrNull

@@ -146,7 +146,7 @@ private fun NavGraphBuilder.authGraph(
 }
 
 private fun NavGraphBuilder.profileGraph(contentPadding: PaddingValues, appState: ComprartirAppState) {
-    composable(AppDestination.Profile.route) { backStackEntry ->
+    composable(AppDestination.Profile.route) {
         ProfileRoute(
             contentPadding = contentPadding,
             navController = appState.navController,
@@ -227,6 +227,11 @@ private fun NavGraphBuilder.listsGraph(
     ) {
         ListDetailRoute(
             onBack = appState::onBack,
+            onOpenShareManagement = { listId ->
+                if (listId.isNotBlank()) {
+                    appState.navController.navigate("${AppDestination.ShareList.route}?listId=$listId")
+                }
+            },
             windowSizeClass = appState.windowSizeClass,
             contentPadding = contentPadding,
         )
@@ -240,7 +245,7 @@ private fun NavGraphBuilder.listsGraph(
             },
         ),
     ) {
-        ShareListRoute(onNavigate = appState::navigate)
+        ShareListRoute(onBack = appState::onBack)
     }
 }
 

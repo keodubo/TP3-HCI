@@ -1,6 +1,5 @@
 .
 ├── README.md
-├── TODO.md
 ├── app
 │   ├── build
 │   │   ├── generated
@@ -8523,6 +8522,7 @@
 │       └── problems
 │           └── problems-report.html
 ├── build.gradle.kts
+├── deliverables.md
 ├── gradle
 │   ├── libs.versions.toml
 │   └── wrapper
@@ -8538,6 +8538,7 @@
 │   ├── reinstall_app.sh
 │   └── stop_port_8080.sh
 ├── settings.gradle.kts
+├── swagger.json
 └── tree.txt
 
-1125 directories, 7416 files
+1125 directories, 7417 files

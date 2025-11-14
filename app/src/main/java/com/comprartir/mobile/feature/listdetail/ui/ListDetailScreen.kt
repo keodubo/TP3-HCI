@@ -97,6 +97,7 @@ fun ListDetailScreen(
     state: ListDetailUiState,
     onEvent: (ListDetailEvent) -> Unit,
     onBack: () -> Unit,
+    onOpenShareManagement: (String) -> Unit,
     snackbarHostState: SnackbarHostState,
     isTabletLayout: Boolean,
     contentPadding: PaddingValues = PaddingValues(),
@@ -174,11 +175,18 @@ fun ListDetailScreen(
                             SharePanel(
                                 email = state.shareState.email,
                                 link = state.shareState.link,
+                                isInviting = state.shareState.isInviting,
                                 onEmailChange = { onEvent(ListDetailEvent.ShareEmailChanged(it)) },
+                                onInvite = { onEvent(ListDetailEvent.SubmitShareInvite) },
                                 onCopyLink = {
                                     if (state.shareState.link.isNotBlank()) {
                                         clipboardManager.setText(AnnotatedString(state.shareState.link))
                                         onEvent(ListDetailEvent.LinkCopied)
+                                    }
+                                },
+                                onManage = {
+                                    if (state.listId.isNotBlank()) {
+                                        onOpenShareManagement(state.listId)
                                     }
                                 },
                             )
@@ -220,11 +228,18 @@ fun ListDetailScreen(
                     SharePanel(
                         email = state.shareState.email,
                         link = state.shareState.link,
+                        isInviting = state.shareState.isInviting,
                         onEmailChange = { onEvent(ListDetailEvent.ShareEmailChanged(it)) },
+                        onInvite = { onEvent(ListDetailEvent.SubmitShareInvite) },
                         onCopyLink = {
                             if (state.shareState.link.isNotBlank()) {
                                 clipboardManager.setText(AnnotatedString(state.shareState.link))
                                 onEvent(ListDetailEvent.LinkCopied)
+                            }
+                        },
+                        onManage = {
+                            if (state.listId.isNotBlank()) {
+                                onOpenShareManagement(state.listId)
                             }
                         },
                         modifier = Modifier
@@ -955,8 +970,11 @@ private fun categoryDisplayName(category: CategoryUi): String =
 private fun SharePanel(
     email: String,
     link: String,
+    isInviting: Boolean,
     onEmailChange: (String) -> Unit,
+    onInvite: () -> Unit,
     onCopyLink: () -> Unit,
+    onManage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
@@ -984,11 +1002,42 @@ private fun SharePanel(
                 shape = ComprartirPillShape,
                 singleLine = true,
             )
-            Text(
-                text = link,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.textMuted,
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(spacing.small),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Button(
+                    onClick = onInvite,
+                    enabled = !isInviting,
+                    shape = ComprartirPillShape,
+                ) {
+                    if (isInviting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .padding(end = spacing.xs),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    }
+                    Text(text = stringResource(id = R.string.list_detail_share_invite))
+                }
+                TextButton(onClick = onManage) {
+                    Text(text = stringResource(id = R.string.list_detail_share_manage))
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.tiny)) {
+                Text(
+                    text = stringResource(id = R.string.list_detail_share_link_label),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = link,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.textMuted,
+                )
+            }
             Button(
                 onClick = onCopyLink,
                 shape = ComprartirPillShape,

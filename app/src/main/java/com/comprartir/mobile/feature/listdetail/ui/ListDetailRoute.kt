@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun ListDetailRoute(
     onBack: () -> Unit,
+    onOpenShareManagement: (String) -> Unit,
     windowSizeClass: WindowSizeClass? = null,
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: ListDetailViewModel = hiltViewModel(),
@@ -58,6 +59,7 @@ fun ListDetailRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onBack = onBack,
+        onOpenShareManagement = onOpenShareManagement,
         snackbarHostState = snackbarHostState,
         isTabletLayout = isTabletLayout,
         contentPadding = contentPadding,

@@ -1,9 +1,12 @@
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+
 package com.comprartir.mobile.core.network
 
 import com.comprartir.mobile.core.network.serialization.BackendDateSerializer
 import com.comprartir.mobile.core.network.serialization.FlexibleStringSerializer
 import com.comprartir.mobile.core.network.serialization.InstantIsoSerializer
 import java.time.Instant
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNames
@@ -540,7 +543,7 @@ data class MoveListToPantryRequest(
 
 @Serializable
 data class ShareListRequest(
-    val recipients: List<String>,
+    val email: String,
     val message: String? = null,
 )
 
@@ -612,7 +615,7 @@ data class PantryItemUpsertRequest(
 
 @Serializable
 data class SharePantryRequest(
-    val recipients: List<String>,
+    val email: String,
     val message: String? = null,
 )
 // endregion

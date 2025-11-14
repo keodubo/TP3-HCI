@@ -87,6 +87,7 @@ data class EditProductDialogState(
 data class ShareUiState(
     val email: String = "",
     val link: String = "",
+    val isInviting: Boolean = false,
 )
 
 data class EditListDialogState(

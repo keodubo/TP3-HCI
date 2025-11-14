@@ -219,7 +219,7 @@ class DefaultListDetailRepository @Inject constructor(
                     id = shoppingList.id,
                     title = shoppingList.name,
                     subtitle = subtitle,
-                    shareLink = "",
+                    shareLink = shoppingList.shareLink,
                     items = items,
                 )
             }

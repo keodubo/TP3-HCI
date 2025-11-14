@@ -81,7 +81,6 @@
     <string name="lists_create">Crear lista</string>
     <string name="lists_share">Compartir</string>
     <string name="lists_default_title">Lista</string>
-    <string name="share_list_heading">Comparte tu lista #%1$s</string>
     <string name="share_list_button">Enviar invitación</string>
     <string name="acquire_products_heading">Marca productos como adquiridos</string>
     <string name="pantry_heading">Despensa</string>
@@ -245,4 +244,27 @@
     <string name="lists_delete_dialog_confirm">Eliminar</string>
     <string name="lists_items_count">%1$d productos</string>
     <string name="lists_no_items">Lista vacía</string>
+    <string name="list_detail_share_invite">Enviar invitación</string>
+    <string name="list_detail_share_manage">Administrar invitados</string>
+    <string name="list_detail_share_link_label">Enlace para compartir</string>
+    <string name="list_detail_share_email_required">Ingresá un correo electrónico</string>
+    <string name="list_detail_share_email_invalid">El correo ingresado no es válido</string>
+    <string name="list_detail_share_invite_success">Invitación enviada</string>
+    <string name="list_detail_share_error">No pudimos compartir esta lista</string>
+    <string name="share_list_title">Personas con acceso</string>
+    <string name="share_list_description">Invitá colaboradores por email y administrá quién puede editar la lista.</string>
+    <string name="share_list_link_label">Enlace para compartir</string>
+    <string name="share_list_link_placeholder">El enlace estará disponible luego de crear la lista.</string>
+    <string name="share_list_copy_link">Copiar enlace</string>
+    <string name="share_list_invite_label">Invitar por email</string>
+    <string name="share_list_invite_placeholder">nombre@ejemplo.com</string>
+    <string name="share_list_invite_action">Enviar invitación</string>
+    <string name="share_list_shared_section">Compartido con</string>
+    <string name="share_list_empty">Todavía no compartiste esta lista.</string>
+    <string name="share_list_remove">Quitar acceso</string>
+    <string name="share_list_remove_success">Se quitó el acceso</string>
+    <string name="share_list_heading">Lista #%1$s</string>
+    <string name="share_list_invite_error">No pudimos enviar la invitación. Intentá nuevamente.</string>
+    <string name="share_list_load_error">No pudimos cargar los usuarios compartidos.</string>
+    <string name="share_list_remove_error">No pudimos quitar el acceso.</string>
 </resources>
