@@ -143,12 +143,6 @@ fun ListsScreen(
             ),
         verticalArrangement = Arrangement.Top,
     ) {
-        Text(
-            text = stringResource(id = R.string.lists_title),
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Spacer(modifier = Modifier.size(spacing.large))
 
         if (state.isLoading && state.lists.isEmpty()) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))

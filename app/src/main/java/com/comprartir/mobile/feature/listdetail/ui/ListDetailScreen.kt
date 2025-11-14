@@ -108,7 +108,7 @@ fun ListDetailScreen(
                 contentPadding.calculateStartPadding(layoutDirection),
             end = innerPadding.calculateEndPadding(layoutDirection) +
                 contentPadding.calculateEndPadding(layoutDirection),
-            top = innerPadding.calculateTopPadding() + spacing.large,
+            top = innerPadding.calculateTopPadding() + spacing.extraLarge,
             bottom = innerPadding.calculateBottomPadding() +
                 contentPadding.calculateBottomPadding() + spacing.large,
         )
