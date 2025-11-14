@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -94,30 +95,22 @@ fun HomeScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface),
+        contentAlignment = Alignment.TopCenter,
     ) {
-        Scaffold(containerColor = Color.Transparent) { innerPadding ->
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.TopCenter,
-            ) {
-                val combinedPadding = PaddingValues(
-                    start = innerPadding.calculateStartPadding(layoutDirection) +
-                        contentPadding.calculateStartPadding(layoutDirection) + 20.dp,
-                    end = innerPadding.calculateEndPadding(layoutDirection) +
-                        contentPadding.calculateEndPadding(layoutDirection) + 20.dp,
-                    top = innerPadding.calculateTopPadding() +
-                        contentPadding.calculateTopPadding() + 24.dp,
-                    bottom = innerPadding.calculateBottomPadding() +
-                        contentPadding.calculateBottomPadding() + 24.dp,
-                )
+        val combinedPadding = PaddingValues(
+            start = contentPadding.calculateStartPadding(layoutDirection) + 20.dp,
+            end = contentPadding.calculateEndPadding(layoutDirection) + 20.dp,
+            top = contentPadding.calculateTopPadding() + 24.dp,
+            bottom = contentPadding.calculateBottomPadding() + 80.dp,
+        )
 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .widthIn(max = containerMaxWidth),
-                    contentPadding = combinedPadding,
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .widthIn(max = containerMaxWidth),
+            contentPadding = combinedPadding,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
                     item {
                         HomeHeroCard(
                             userName = state.userName,
@@ -161,21 +154,19 @@ fun HomeScreen(
                         }
                     }
                 }
-            }
 
-            if (state.isLoading) {
-                val loadingDescription = stringResource(id = R.string.cd_loading_home)
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.semantics {
-                            contentDescription = loadingDescription
-                        },
-                        color = MaterialTheme.colorScheme.brand,
-                    )
-                }
+        if (state.isLoading) {
+            val loadingDescription = stringResource(id = R.string.cd_loading_home)
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.semantics {
+                        contentDescription = loadingDescription
+                    },
+                    color = MaterialTheme.colorScheme.brand,
+                )
             }
         }
     }

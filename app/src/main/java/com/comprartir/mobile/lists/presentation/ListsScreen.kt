@@ -2,6 +2,7 @@ package com.comprartir.mobile.lists.presentation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -53,6 +54,7 @@ fun ListsRoute(
     onNavigate: (NavigationIntent) -> Unit,
     viewModel: ListsViewModel = hiltViewModel(),
     openCreateDialog: Boolean = false,
+    contentPadding: PaddingValues = PaddingValues(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     
@@ -76,6 +78,7 @@ fun ListsRoute(
     
     ListsScreen(
         state = state,
+        contentPadding = contentPadding,
         onShowCreateDialog = viewModel::showCreateDialog,
         onDismissCreateDialog = viewModel::dismissCreateDialog,
         onCreateListNameChanged = viewModel::onCreateListNameChanged,
@@ -106,6 +109,7 @@ fun ListsRoute(
 @Composable
 fun ListsScreen(
     state: ListsUiState,
+    contentPadding: PaddingValues = PaddingValues(),
     onShowCreateDialog: () -> Unit,
     onDismissCreateDialog: () -> Unit,
     onCreateListNameChanged: (String) -> Unit,
@@ -127,122 +131,93 @@ fun ListsScreen(
     onClearError: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
-    val snackbarHostState = remember { SnackbarHostState() }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    android.util.Log.d("ListsScreen", "FAB clicked - opening create dialog")
-                    onShowCreateDialog()
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(id = R.string.lists_create)
-                )
-            }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(
+                top = contentPadding.calculateTopPadding() + spacing.medium,
+                bottom = contentPadding.calculateBottomPadding(),
+                start = spacing.large,
+                end = spacing.large
+            ),
+        verticalArrangement = Arrangement.Top,
+    ) {
+        Text(
+            text = stringResource(id = R.string.lists_title),
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Spacer(modifier = Modifier.size(spacing.large))
+
+        if (state.isLoading && state.lists.isEmpty()) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = spacing.large, vertical = spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(spacing.medium),
-        ) {
-            Row(
+
+        if (state.errorMessage != null && state.lists.isEmpty()) {
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(spacing.small)
             ) {
                 Text(
-                    text = stringResource(id = R.string.lists_title),
-                    style = MaterialTheme.typography.headlineMedium
+                    text = state.errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
                 )
                 Button(onClick = {
-                    android.util.Log.d("ListsScreen", "Header create button clicked - opening create dialog")
-                    onShowCreateDialog()
+                    onClearError()
+                    onRefresh()
                 }) {
-                    Text(text = stringResource(id = R.string.lists_create))
-                }
-            }
-
-            if (state.isLoading && state.lists.isEmpty()) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-            }
-
-            if (state.errorMessage != null && state.lists.isEmpty()) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(spacing.small)
-                ) {
-                    Text(
-                        text = state.errorMessage,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Button(onClick = {
-                        onClearError()
-                        onRefresh()
-                    }) {
-                        Text(text = stringResource(id = R.string.common_retry))
-                    }
-                }
-            }
-
-            if (!state.isLoading && state.errorMessage == null && state.lists.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(spacing.large),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.lists_empty_title),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = stringResource(id = R.string.lists_empty_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = spacing.small)
-                    )
-                    Spacer(modifier = Modifier.padding(top = spacing.large))
-                    Button(
-                        onClick = {
-                            android.util.Log.d("ListsScreen", "Empty state button clicked - opening create dialog")
-                            onShowCreateDialog()
-                        }
-                    ) {
-                        Text(text = stringResource(id = R.string.lists_empty_action))
-                    }
-                }
-            }
-
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(spacing.medium)
-            ) {
-                items(state.lists, key = { it.id }) { list ->
-                    ShoppingListCard(
-                        list = list,
-                        onListClick = { onListSelected(list.id) },
-                        onEditClick = { onShowEditDialog(list) },
-                        onDeleteClick = { onShowDeleteDialog(list) },
-                        onShareClick = { onShareList(list.id) },
-                    )
+                    Text(text = stringResource(id = R.string.common_retry))
                 }
             }
         }
 
-        CreateListDialog(
+        if (!state.isLoading && state.errorMessage == null && state.lists.isEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(spacing.large),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = stringResource(id = R.string.lists_empty_title),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = stringResource(id = R.string.lists_empty_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = spacing.small)
+                )
+                Spacer(modifier = Modifier.padding(top = spacing.large))
+                // FAB available in bottom-right corner
+            }
+        }
+
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+            contentPadding = PaddingValues(bottom = 80.dp)
+        ) {
+            items(state.lists, key = { it.id }) { list ->
+                ShoppingListCard(
+                    list = list,
+                    onListClick = { onListSelected(list.id) },
+                    onEditClick = { onShowEditDialog(list) },
+                    onDeleteClick = { onShowDeleteDialog(list) },
+                    onShareClick = { onShareList(list.id) },
+                )
+            }
+        }
+    }
+
+    CreateListDialog(
             state = state.createListState,
             onNameChange = { newName ->
                 android.util.Log.d("ListsScreen", "CreateListDialog onNameChange: '$newName'")
@@ -266,21 +241,20 @@ fun ListsScreen(
             },
         )
 
-        EditListDialog(
-            state = state.editListState,
-            onNameChange = onEditListNameChanged,
-            onDescriptionChange = onEditListDescriptionChanged,
-            onRecurringChange = onEditListRecurringChanged,
-            onDismiss = onDismissEditDialog,
-            onConfirm = onConfirmEditList,
-        )
+    EditListDialog(
+        state = state.editListState,
+        onNameChange = onEditListNameChanged,
+        onDescriptionChange = onEditListDescriptionChanged,
+        onRecurringChange = onEditListRecurringChanged,
+        onDismiss = onDismissEditDialog,
+        onConfirm = onConfirmEditList,
+    )
 
-        DeleteListDialog(
-            state = state.deleteListState,
-            onDismiss = onDismissDeleteDialog,
-            onConfirm = onConfirmDeleteList,
-        )
-    }
+    DeleteListDialog(
+        state = state.deleteListState,
+        onDismiss = onDismissDeleteDialog,
+        onConfirm = onConfirmDeleteList,
+    )
 }
 
 @Composable

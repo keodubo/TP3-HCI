@@ -30,6 +30,7 @@ fun ResponsiveAppScaffold(
     appState: ComprartirAppState,
     isLandscape: Boolean,
     topBar: @Composable () -> Unit,
+    floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val navigationItems = remember { primaryNavigationItems() }
@@ -68,6 +69,7 @@ fun ResponsiveAppScaffold(
                 }
                 Scaffold(
                     topBar = topBar,
+                    floatingActionButton = floatingActionButton,
                     content = { padding ->
                         content(padding)
                     },
@@ -87,6 +89,7 @@ fun ResponsiveAppScaffold(
                         )
                     }
                 },
+                floatingActionButton = floatingActionButton,
                 content = { padding ->
                     content(padding)
                 },

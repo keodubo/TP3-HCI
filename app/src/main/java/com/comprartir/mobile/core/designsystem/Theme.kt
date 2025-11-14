@@ -17,7 +17,7 @@ import com.google.accompanist.systemuicontroller.rememberSystemUiController
 @Composable
 fun ComprartirTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {

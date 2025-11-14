@@ -206,6 +206,7 @@ private fun NavGraphBuilder.listsGraph(
         ListsRoute(
             onNavigate = appState::navigate,
             openCreateDialog = openCreate,
+            contentPadding = contentPadding,
         )
     }
     composable(
