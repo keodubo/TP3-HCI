@@ -5,11 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
@@ -97,29 +92,6 @@ fun ComprartirApp(
                         },
                         featureFlags = featureFlags,
                     )
-                },
-                floatingActionButton = {
-                    // Show FAB only on Lists screen
-                    if (currentRouteBase == AppDestination.Lists.route) {
-                        FloatingActionButton(
-                            onClick = {
-                                // Navigate to Lists with openCreate=true to open create dialog
-                                appState.navController.navigate(
-                                    AppDestination.Lists.route + "?openCreate=true"
-                                ) {
-                                    popUpTo(AppDestination.Lists.route) { inclusive = true }
-                                    launchSingleTop = true
-                                }
-                            },
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Crear lista"
-                            )
-                        }
-                    }
                 },
             ) { paddingValues ->
                 Box(

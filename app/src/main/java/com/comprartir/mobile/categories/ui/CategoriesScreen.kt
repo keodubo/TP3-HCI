@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -23,7 +22,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,6 +52,8 @@ import com.comprartir.mobile.categories.model.CategoryItemUi
 import com.comprartir.mobile.categories.model.DeleteCategoryState
 import com.comprartir.mobile.categories.viewmodel.CategoriesViewModel
 import com.comprartir.mobile.core.designsystem.LocalSpacing
+import com.comprartir.mobile.shared.components.AddFab
+import com.comprartir.mobile.shared.components.EmptyStateMessage
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -109,16 +108,13 @@ fun CategoriesScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            AddFab(
+                onClick = { onEvent(CategoriesEvent.ShowCreateDialog) },
+                contentDescription = stringResource(id = R.string.categories_new),
                 modifier = Modifier
                     .padding(contentPadding)
-                    .padding(end = spacing.large, bottom = spacing.large),
-                onClick = { onEvent(CategoriesEvent.ShowCreateDialog) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ) {
-                Icon(imageVector = Icons.Filled.Add, contentDescription = stringResource(id = R.string.categories_new))
-            }
+                    .padding(spacing.large),
+            )
         },
         snackbarHost = {
             SnackbarHost(
@@ -133,6 +129,11 @@ fun CategoriesScreen(
             .fillMaxSize()
             .padding(contentPadding)
             .padding(paddingValues)
+            .padding(
+                start = spacing.large,
+                end = spacing.large,
+                top = spacing.medium,
+            )
 
         when {
             state.isLoading -> {
@@ -141,7 +142,11 @@ fun CategoriesScreen(
                 }
             }
             state.categories.isEmpty() -> {
-                CategoriesEmptyState(modifier = contentModifier)
+                EmptyStateMessage(
+                    title = stringResource(id = R.string.categories_empty_title),
+                    subtitle = stringResource(id = R.string.categories_empty_subtitle),
+                    modifier = contentModifier,
+                )
             }
             else -> {
                 CategoryList(
@@ -169,25 +174,6 @@ fun CategoriesScreen(
                 onConfirm = { onEvent(CategoriesEvent.ConfirmDelete) },
             )
         }
-    }
-}
-
-@Composable
-private fun CategoriesEmptyState(modifier: Modifier = Modifier) {
-    val spacing = LocalSpacing.current
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = spacing.extraLarge),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = stringResource(id = R.string.categories_empty),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
     }
 }
 

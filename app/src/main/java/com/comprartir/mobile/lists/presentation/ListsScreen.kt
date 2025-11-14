@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
@@ -22,17 +20,13 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -48,6 +42,8 @@ import com.comprartir.mobile.feature.lists.ui.components.CreateListDialog
 import com.comprartir.mobile.feature.lists.ui.components.EditListDialog
 import com.comprartir.mobile.feature.lists.ui.components.DeleteListDialog
 import com.comprartir.mobile.lists.data.ShoppingList
+import com.comprartir.mobile.shared.components.AddFab
+import com.comprartir.mobile.shared.components.EmptyStateMessage
 
 @Composable
 fun ListsRoute(
@@ -132,17 +128,29 @@ fun ListsScreen(
 ) {
     val spacing = LocalSpacing.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(
-                top = contentPadding.calculateTopPadding() + spacing.medium,
-                bottom = contentPadding.calculateBottomPadding(),
-                start = spacing.large,
-                end = spacing.large
-            ),
-        verticalArrangement = Arrangement.Top,
-    ) {
+    Scaffold(
+        floatingActionButton = {
+            AddFab(
+                onClick = onShowCreateDialog,
+                contentDescription = stringResource(id = R.string.lists_empty_action),
+                modifier = Modifier
+                    .padding(contentPadding)
+                    .padding(spacing.large),
+            )
+        },
+    ) { scaffoldPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .padding(scaffoldPadding)
+                .padding(
+                    start = spacing.large,
+                    end = spacing.large,
+                    top = spacing.medium,
+                ),
+            verticalArrangement = Arrangement.Top,
+        ) {
 
         if (state.isLoading && state.lists.isEmpty()) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -169,29 +177,13 @@ fun ListsScreen(
         }
 
         if (!state.isLoading && state.errorMessage == null && state.lists.isEmpty()) {
-            Column(
+            EmptyStateMessage(
+                title = stringResource(id = R.string.lists_empty_title),
+                subtitle = stringResource(id = R.string.lists_empty_subtitle),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .padding(spacing.large),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = stringResource(id = R.string.lists_empty_title),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = stringResource(id = R.string.lists_empty_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = spacing.small)
-                )
-                Spacer(modifier = Modifier.padding(top = spacing.large))
-                // FAB available in bottom-right corner
-            }
+                    .weight(1f),
+            )
         }
 
         LazyColumn(
@@ -209,9 +201,10 @@ fun ListsScreen(
                 )
             }
         }
-    }
 
-    CreateListDialog(
+        }
+
+        CreateListDialog(
             state = state.createListState,
             onNameChange = { newName ->
                 android.util.Log.d("ListsScreen", "CreateListDialog onNameChange: '$newName'")
@@ -235,20 +228,21 @@ fun ListsScreen(
             },
         )
 
-    EditListDialog(
-        state = state.editListState,
-        onNameChange = onEditListNameChanged,
-        onDescriptionChange = onEditListDescriptionChanged,
-        onRecurringChange = onEditListRecurringChanged,
-        onDismiss = onDismissEditDialog,
-        onConfirm = onConfirmEditList,
-    )
+        EditListDialog(
+            state = state.editListState,
+            onNameChange = onEditListNameChanged,
+            onDescriptionChange = onEditListDescriptionChanged,
+            onRecurringChange = onEditListRecurringChanged,
+            onDismiss = onDismissEditDialog,
+            onConfirm = onConfirmEditList,
+        )
 
-    DeleteListDialog(
-        state = state.deleteListState,
-        onDismiss = onDismissDeleteDialog,
-        onConfirm = onConfirmDeleteList,
-    )
+        DeleteListDialog(
+            state = state.deleteListState,
+            onDismiss = onDismissDeleteDialog,
+            onConfirm = onConfirmDeleteList,
+        )
+    }
 }
 
 @Composable
