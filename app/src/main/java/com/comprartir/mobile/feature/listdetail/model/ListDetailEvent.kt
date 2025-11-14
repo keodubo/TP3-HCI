@@ -9,6 +9,7 @@ sealed interface ListDetailEvent {
     data class AddProductNameChanged(val value: String) : ListDetailEvent
     data class AddProductQuantityChanged(val value: String) : ListDetailEvent
     data class AddProductUnitChanged(val value: String) : ListDetailEvent
+    data class AddProductCategoryChanged(val value: String?) : ListDetailEvent
     data object SubmitNewProduct : ListDetailEvent
     data class ShareEmailChanged(val value: String) : ListDetailEvent
     data object LinkCopied : ListDetailEvent
@@ -21,4 +22,12 @@ sealed interface ListDetailEvent {
     data object ShowDeleteDialog : ListDetailEvent
     data object ConfirmDeleteList : ListDetailEvent
     data object DismissDeleteDialog : ListDetailEvent
+    data class FilterCategoryChanged(val categoryId: String?) : ListDetailEvent
+    data class ShowEditProductDialog(val itemId: String) : ListDetailEvent
+    data object DismissEditProductDialog : ListDetailEvent
+    data class EditProductNameChanged(val value: String) : ListDetailEvent
+    data class EditProductQuantityChanged(val value: String) : ListDetailEvent
+    data class EditProductUnitChanged(val value: String) : ListDetailEvent
+    data class EditProductCategoryChanged(val categoryId: String?) : ListDetailEvent
+    data object ConfirmEditProduct : ListDetailEvent
 }

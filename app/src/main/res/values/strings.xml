@@ -235,11 +235,14 @@
     <string name="list_detail_add_quantity">Cantidad</string>
     <string name="list_detail_add_unit">Unidad</string>
     <string name="list_detail_add_button">Agregar</string>
+    <string name="list_detail_category_label">Categoría</string>
+    <string name="list_detail_category_none">Sin categoría</string>
     <string name="list_detail_share_title">Compartir</string>
     <string name="list_detail_share_email">Invitar por email</string>
     <string name="list_detail_share_copy">Copiar enlace</string>
     <string name="list_detail_item_deleted">%1$s eliminado</string>
     <string name="list_detail_delete_item">Eliminar producto</string>
+    <string name="list_detail_edit_item">Editar producto</string>
     <string name="list_detail_link_copied">Enlace copiado al portapapeles</string>
     <string name="list_detail_error_not_found">No encontramos esta lista.</string>
     <string name="list_detail_error_toggle">No pudimos actualizar el producto.</string>
@@ -249,6 +252,12 @@
     <string name="list_detail_add_name_error">Ingresa un nombre para continuar.</string>
     <string name="list_detail_product_added_success">Producto agregado exitosamente</string>
     <string name="list_detail_product_already_exists">Ya se agregó este producto</string>
+    <string name="list_detail_product_updated_success">Producto actualizado</string>
+    <string name="list_detail_filter_category_label">Filtrar por categoría</string>
+    <string name="list_detail_filter_category_all">Todas las categorías</string>
+    <string name="list_detail_edit_product_title">Editar producto</string>
+    <string name="list_detail_edit_product_save">Guardar</string>
+    <string name="list_detail_edit_product_cancel">Cancelar</string>
     <string name="action_undo">Deshacer</string>
 
     <!-- Password Recovery -->

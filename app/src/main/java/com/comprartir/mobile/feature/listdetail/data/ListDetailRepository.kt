@@ -2,21 +2,39 @@ package com.comprartir.mobile.feature.listdetail.data
 
 import com.comprartir.mobile.lists.data.ItemAlreadyExistsException
 import com.comprartir.mobile.lists.data.ShoppingListsRepository
+import com.comprartir.mobile.products.data.Category
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
 interface ListDetailRepository {
     fun observeList(listId: String): Flow<ListDetailData>
+    fun observeCategories(): Flow<List<com.comprartir.mobile.products.data.Category>>
     suspend fun toggleItem(listId: String, itemId: String, completed: Boolean)
     suspend fun deleteItem(listId: String, itemId: String): ListDetailItem?
     suspend fun restoreItem(listId: String, item: ListDetailItem)
-    suspend fun addItem(listId: String, name: String, quantity: String, unit: String?): AddItemResult
-    suspend fun updateItem(listId: String, itemId: String, name: String, quantity: String, unit: String?): ListDetailItem
+    suspend fun addItem(
+        listId: String,
+        name: String,
+        quantity: String,
+        unit: String?,
+        categoryId: String?,
+        overrideCategory: Boolean,
+    ): AddItemResult
+    suspend fun updateItem(
+        listId: String,
+        itemId: String,
+        name: String,
+        quantity: String,
+        unit: String?,
+        categoryId: String?,
+        overrideCategory: Boolean,
+    ): ListDetailItem
 }
 
 /**
@@ -30,13 +48,16 @@ class FakeListDetailRepository() : ListDetailRepository {
             subtitle = "Actualizada hace 2 h",
             shareLink = "",
             items = listOf(
-                ListDetailItem(id = "i1", productId = "p1", name = "Leche descremada", quantity = "1", unit = "L", notes = null, isCompleted = false),
-                ListDetailItem(id = "i2", productId = "p2", name = "Pan integral", quantity = "2", unit = null, notes = null, isCompleted = true),
+                ListDetailItem(id = "i1", productId = "p1", name = "Leche descremada", quantity = "1", unit = "L", notes = null, isCompleted = false, categoryId = null),
+                ListDetailItem(id = "i2", productId = "p2", name = "Pan integral", quantity = "2", unit = null, notes = null, isCompleted = true, categoryId = null),
             ),
         )
     )
 
     override fun observeList(listId: String): Flow<ListDetailData> = flow
+
+    override fun observeCategories(): Flow<List<com.comprartir.mobile.products.data.Category>> =
+        flowOf(emptyList())
 
     override suspend fun toggleItem(listId: String, itemId: String, completed: Boolean) {
         flow.update { current ->
@@ -61,18 +82,42 @@ class FakeListDetailRepository() : ListDetailRepository {
         flow.update { current -> current.copy(items = listOf(item) + current.items) }
     }
 
-    override suspend fun addItem(listId: String, name: String, quantity: String, unit: String?): AddItemResult {
-        val newItem = ListDetailItem(id = java.util.UUID.randomUUID().toString(), productId = java.util.UUID.randomUUID().toString(), name = name, quantity = quantity.ifBlank { "1" }, unit = unit, notes = null, isCompleted = false)
+    override suspend fun addItem(
+        listId: String,
+        name: String,
+        quantity: String,
+        unit: String?,
+        categoryId: String?,
+        overrideCategory: Boolean,
+    ): AddItemResult {
+        val newItem = ListDetailItem(
+            id = java.util.UUID.randomUUID().toString(),
+            productId = java.util.UUID.randomUUID().toString(),
+            name = name,
+            quantity = quantity.ifBlank { "1" },
+            unit = unit,
+            notes = null,
+            isCompleted = false,
+            categoryId = categoryId,
+        )
         flow.update { current -> current.copy(items = current.items + newItem) }
         return AddItemResult.Added(newItem)
     }
 
-    override suspend fun updateItem(listId: String, itemId: String, name: String, quantity: String, unit: String?): ListDetailItem {
+    override suspend fun updateItem(
+        listId: String,
+        itemId: String,
+        name: String,
+        quantity: String,
+        unit: String?,
+        categoryId: String?,
+        overrideCategory: Boolean,
+    ): ListDetailItem {
         var updated: ListDetailItem? = null
         flow.update { current ->
             current.copy(items = current.items.map { item ->
                 if (item.id == itemId) {
-                    item.copy(name = name, quantity = quantity, unit = unit).also { updated = it }
+                    item.copy(name = name, quantity = quantity, unit = unit, categoryId = categoryId).also { updated = it }
                 } else {
                     item
                 }
@@ -98,6 +143,7 @@ data class ListDetailItem(
     val unit: String?,
     val notes: String?,
     val isCompleted: Boolean,
+    val categoryId: String?,
 )
 
 sealed interface AddItemResult {
@@ -113,7 +159,11 @@ private fun com.comprartir.mobile.lists.data.ListItem.toDetailItem(): ListDetail
     unit = unit,
     notes = notes,
     isCompleted = isAcquired,
+    categoryId = categoryId,
 )
+
+private fun categoryFromId(categoryId: String?): Category? =
+    categoryId?.takeIf { it.isNotBlank() }?.let { Category(id = it, name = "", description = null, color = null) }
 
 @Singleton
 class DefaultListDetailRepository @Inject constructor(
@@ -140,6 +190,9 @@ class DefaultListDetailRepository @Inject constructor(
             else -> "Hace ${days / 30} meses"
         }
     }
+
+    override fun observeCategories(): Flow<List<com.comprartir.mobile.products.data.Category>> =
+        productsRepository.observeCategories()
 
     override fun observeList(listId: String): Flow<ListDetailData> =
         shoppingListsRepository.observeList(listId).map { shoppingList ->
@@ -175,6 +228,7 @@ class DefaultListDetailRepository @Inject constructor(
                 unit = it.unit,
                 notes = it.notes,
                 isCompleted = it.isAcquired,
+                categoryId = it.categoryId,
             )
         }
         shoppingListsRepository.deleteItem(listId, itemId)
@@ -186,7 +240,14 @@ class DefaultListDetailRepository @Inject constructor(
         shoppingListsRepository.addItem(listId = listId, productId = item.productId, quantity = quantityDouble, unit = item.unit)
     }
 
-    override suspend fun addItem(listId: String, name: String, quantity: String, unit: String?): AddItemResult {
+    override suspend fun addItem(
+        listId: String,
+        name: String,
+        quantity: String,
+        unit: String?,
+        categoryId: String?,
+        overrideCategory: Boolean,
+    ): AddItemResult {
         val qty = quantity.toDoubleOrNull() ?: 1.0
 
         android.util.Log.d("ListDetailRepository", "addItem: START - name=$name, qty=$qty, unit=$unit")
@@ -194,10 +255,16 @@ class DefaultListDetailRepository @Inject constructor(
         // Try to find existing product in catalog by name
         val catalog = productsRepository.observeCatalog().firstOrNull().orEmpty()
         val existingProduct = catalog.find { it.name.equals(name, ignoreCase = true) }
-        
+
+        val selectedCategory = categoryFromId(categoryId)
         val product = if (existingProduct != null) {
             android.util.Log.d("ListDetailRepository", "addItem: Using existing product: id=${existingProduct.id}")
-            existingProduct
+            val shouldUpdateCategory = overrideCategory && existingProduct.category?.id != selectedCategory?.id
+            if (shouldUpdateCategory) {
+                productsRepository.upsertProduct(existingProduct.copy(category = selectedCategory))
+            } else {
+                existingProduct
+            }
         } else {
             // Create product in catalog - upsertProduct now returns Product with valid ID
             android.util.Log.d("ListDetailRepository", "addItem: Creating new product...")
@@ -205,7 +272,7 @@ class DefaultListDetailRepository @Inject constructor(
                 id = "",
                 name = name,
                 description = null,
-                category = null,
+                category = selectedCategory,
                 unit = unit,
                 defaultQuantity = qty,
                 isFavorite = false,
@@ -214,7 +281,7 @@ class DefaultListDetailRepository @Inject constructor(
             android.util.Log.d("ListDetailRepository", "addItem: Product created/found with id=${createdProduct.id}")
             createdProduct
         }
-
+        
         // Validate product ID is numeric
         if (product.id.isBlank() || product.id.toIntOrNull() == null) {
             android.util.Log.e("ListDetailRepository", "addItem: INVALID product ID: '${product.id}'")
@@ -231,6 +298,7 @@ class DefaultListDetailRepository @Inject constructor(
             unit = unit,
             notes = null,
             isCompleted = false,
+            categoryId = product.category?.id,
         )
 
         return try {
@@ -256,50 +324,64 @@ class DefaultListDetailRepository @Inject constructor(
         }
     }
 
-    override suspend fun updateItem(listId: String, itemId: String, name: String, quantity: String, unit: String?): ListDetailItem {
+    override suspend fun updateItem(
+        listId: String,
+        itemId: String,
+        name: String,
+        quantity: String,
+        unit: String?,
+        categoryId: String?,
+        overrideCategory: Boolean,
+    ): ListDetailItem {
         val qty = quantity.toDoubleOrNull() ?: 1.0
 
-        // Find existing product by name or get the current product ID from the item
         val currentList = shoppingListsRepository.observeList(listId).firstOrNull()
         val currentItem = currentList?.items?.find { it.id == itemId }
-        
+        val catalog = productsRepository.observeCatalog().firstOrNull().orEmpty()
+        val selectedCategory = categoryFromId(categoryId)
+
         val product = if (currentItem != null && currentItem.name == name) {
-            // Name unchanged, use existing product
-            com.comprartir.mobile.products.data.Product(
+            val baseProduct = com.comprartir.mobile.products.data.Product(
                 id = currentItem.productId,
                 name = currentItem.name,
                 description = null,
-                category = null,
+                category = currentItem.categoryId?.let { categoryFromId(it) },
                 unit = currentItem.unit,
                 defaultQuantity = currentItem.quantity,
                 isFavorite = false,
             )
-        } else {
-            // Name changed, find or create product
-            val catalog = productsRepository.observeCatalog().firstOrNull().orEmpty()
-            val existingProduct = catalog.find { it.name.equals(name, ignoreCase = true) }
-            
-            if (existingProduct != null) {
-                existingProduct
+            if (overrideCategory) {
+                productsRepository.upsertProduct(baseProduct.copy(category = selectedCategory))
             } else {
-                // Create new product - upsertProduct returns Product with valid ID
-                val newProduct = com.comprartir.mobile.products.data.Product(
-                    id = "",
-                    name = name,
-                    description = null,
-                    category = null,
-                    unit = unit,
-                    defaultQuantity = qty,
-                    isFavorite = false,
-                )
-                productsRepository.upsertProduct(newProduct)
+                baseProduct
+            }
+        } else {
+            val existingProduct = catalog.find { it.name.equals(name, ignoreCase = true) }
+            when {
+                existingProduct != null -> {
+                    val needsCategoryUpdate = overrideCategory && existingProduct.category?.id != selectedCategory?.id
+                    if (needsCategoryUpdate) {
+                        productsRepository.upsertProduct(existingProduct.copy(category = selectedCategory))
+                    } else {
+                        existingProduct
+                    }
+                }
+                else -> {
+                    val newProduct = com.comprartir.mobile.products.data.Product(
+                        id = "",
+                        name = name,
+                        description = null,
+                        category = if (overrideCategory) selectedCategory else null,
+                        unit = unit,
+                        defaultQuantity = qty,
+                        isFavorite = false,
+                    )
+                    productsRepository.upsertProduct(newProduct)
+                }
             }
         }
 
-        // Update the item in the shopping list
         shoppingListsRepository.updateItem(listId = listId, itemId = itemId, productId = product.id, quantity = qty, unit = unit)
-
-        // Refresh list items to ensure Room is up to date
         shoppingListsRepository.refreshListItems(listId)
         
         val updated = shoppingListsRepository.observeList(listId).firstOrNull()
@@ -314,9 +396,9 @@ class DefaultListDetailRepository @Inject constructor(
                 unit = updatedItem.unit,
                 notes = updatedItem.notes,
                 isCompleted = updatedItem.isAcquired,
+                categoryId = updatedItem.categoryId,
             )
         } else {
-            // Construct item with the data we know
             ListDetailItem(
                 id = itemId,
                 productId = product.id,
@@ -325,6 +407,7 @@ class DefaultListDetailRepository @Inject constructor(
                 unit = unit,
                 notes = currentItem?.notes,
                 isCompleted = currentItem?.isAcquired ?: false,
+                categoryId = product.category?.id ?: currentItem?.categoryId,
             )
         }
     }

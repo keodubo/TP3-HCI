@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,8 +29,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FilterList
-import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -36,6 +40,10 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -47,11 +55,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,11 +68,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.AnnotatedString
 import com.comprartir.mobile.R
 import com.comprartir.mobile.core.designsystem.ComprartirPillShape
 import com.comprartir.mobile.core.designsystem.LocalSpacing
@@ -74,9 +83,11 @@ import com.comprartir.mobile.core.designsystem.surfaceCard
 import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.core.designsystem.theme.ColorTokens
 import com.comprartir.mobile.feature.listdetail.model.AddProductUiState
+import com.comprartir.mobile.feature.listdetail.model.CategoryUi
 import com.comprartir.mobile.feature.listdetail.model.ListDetailEvent
 import com.comprartir.mobile.feature.listdetail.model.ListDetailUiState
 import com.comprartir.mobile.feature.listdetail.model.ListItemUi
+import com.comprartir.mobile.feature.listdetail.model.EditProductDialogState
 import androidx.compose.animation.core.animateFloatAsState
 
 @Composable
@@ -150,9 +161,11 @@ fun ListDetailScreen(
                         ) {
                             AddProductPanel(
                                 state = state.addProductState,
+                                categories = listOf(CategoryUi(id = null, nameRes = R.string.list_detail_category_none)) + state.categories,
                                 onNameChange = { onEvent(ListDetailEvent.AddProductNameChanged(it)) },
                                 onQuantityChange = { onEvent(ListDetailEvent.AddProductQuantityChanged(it)) },
                                 onUnitChange = { onEvent(ListDetailEvent.AddProductUnitChanged(it)) },
+                                onCategorySelected = { onEvent(ListDetailEvent.AddProductCategoryChanged(it)) },
                                 onSubmit = { onEvent(ListDetailEvent.SubmitNewProduct) },
                             )
                             SharePanel(
@@ -188,9 +201,11 @@ fun ListDetailScreen(
                 item {
                     AddProductPanel(
                         state = state.addProductState,
+                        categories = listOf(CategoryUi(id = null, nameRes = R.string.list_detail_category_none)) + state.categories,
                         onNameChange = { onEvent(ListDetailEvent.AddProductNameChanged(it)) },
                         onQuantityChange = { onEvent(ListDetailEvent.AddProductQuantityChanged(it)) },
                         onUnitChange = { onEvent(ListDetailEvent.AddProductUnitChanged(it)) },
+                        onCategorySelected = { onEvent(ListDetailEvent.AddProductCategoryChanged(it)) },
                         onSubmit = { onEvent(ListDetailEvent.SubmitNewProduct) },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -254,6 +269,18 @@ fun ListDetailScreen(
                 ),
                 onDismiss = { onEvent(ListDetailEvent.DismissDeleteDialog) },
                 onConfirm = { onEvent(ListDetailEvent.ConfirmDeleteList) },
+            )
+        }
+        if (state.editProductState.isVisible) {
+            EditProductDialog(
+                state = state.editProductState,
+                categories = listOf(CategoryUi(id = null, nameRes = R.string.list_detail_category_none)) + state.categories,
+                onNameChange = { onEvent(ListDetailEvent.EditProductNameChanged(it)) },
+                onQuantityChange = { onEvent(ListDetailEvent.EditProductQuantityChanged(it)) },
+                onUnitChange = { onEvent(ListDetailEvent.EditProductUnitChanged(it)) },
+                onCategorySelected = { onEvent(ListDetailEvent.EditProductCategoryChanged(it)) },
+                onDismiss = { onEvent(ListDetailEvent.DismissEditProductDialog) },
+                onConfirm = { onEvent(ListDetailEvent.ConfirmEditProduct) },
             )
         }
     }
@@ -377,8 +404,11 @@ private fun ListDetailMainCard(
             ListDetailFilterCard(
                 isExpanded = state.filtersExpanded,
                 hideCompleted = state.hideCompleted,
+                categories = state.categories,
+                selectedCategoryId = state.selectedCategoryFilterId,
                 onToggleFilters = { onEvent(ListDetailEvent.ToggleFilters) },
                 onToggleHideCompleted = { onEvent(ListDetailEvent.ToggleHideCompleted) },
+                onCategorySelected = { onEvent(ListDetailEvent.FilterCategoryChanged(it)) },
             )
             state.errorMessageRes?.let { res ->
                 Text(
@@ -389,8 +419,10 @@ private fun ListDetailMainCard(
             }
             ListDetailItemsList(
                 items = state.visibleItems,
+                categories = state.categories,
                 onToggle = { id, completed -> onEvent(ListDetailEvent.ToggleItem(id, completed)) },
                 onDelete = { id -> onEvent(ListDetailEvent.DeleteItem(id)) },
+                onEdit = { id -> onEvent(ListDetailEvent.ShowEditProductDialog(id)) },
             )
         }
     }
@@ -425,8 +457,11 @@ private fun ListDetailProgress(
 private fun ListDetailFilterCard(
     isExpanded: Boolean,
     hideCompleted: Boolean,
+    categories: List<CategoryUi>,
+    selectedCategoryId: String?,
     onToggleFilters: () -> Unit,
     onToggleHideCompleted: () -> Unit,
+    onCategorySelected: (String?) -> Unit,
 ) {
     val spacing = LocalSpacing.current
     Card(
@@ -457,32 +492,47 @@ private fun ListDetailFilterCard(
                 }
             }
             AnimatedVisibility(visible = isExpanded, enter = fadeIn(), exit = fadeOut()) {
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalArrangement = Arrangement.spacedBy(spacing.medium),
                 ) {
                     Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(spacing.small),
                     ) {
-                        Checkbox(
-                            checked = hideCompleted,
-                            onCheckedChange = { onToggleHideCompleted() },
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = MaterialTheme.colorScheme.primary,
-                                uncheckedColor = Color.White,
-                            ),
-                        )
-                        Text(
-                            text = stringResource(id = R.string.list_detail_hide_completed),
-                            color = Color.White,
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(spacing.small),
+                        ) {
+                            Checkbox(
+                                checked = hideCompleted,
+                                onCheckedChange = { onToggleHideCompleted() },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = MaterialTheme.colorScheme.primary,
+                                    uncheckedColor = Color.White,
+                                ),
+                            )
+                            Text(
+                                text = stringResource(id = R.string.list_detail_hide_completed),
+                                color = Color.White,
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Outlined.FilterList,
+                            contentDescription = null,
+                            tint = Color.White,
                         )
                     }
-                    Icon(
-                        imageVector = Icons.Outlined.FilterList,
-                        contentDescription = null,
-                        tint = Color.White,
+                    CategoryDropdownField(
+                        label = stringResource(id = R.string.list_detail_filter_category_label),
+                        categories = listOf(
+                            CategoryUi(id = null, nameRes = R.string.list_detail_filter_category_all),
+                        ) + categories,
+                        selectedCategoryId = selectedCategoryId,
+                        onCategorySelected = onCategorySelected,
+                        containerColor = ColorTokens.PurpleDeep,
+                        textColor = Color.White,
                     )
                 }
             }
@@ -493,8 +543,10 @@ private fun ListDetailFilterCard(
 @Composable
 private fun ListDetailItemsList(
     items: List<ListItemUi>,
+    categories: List<CategoryUi>,
     onToggle: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
+    onEdit: (String) -> Unit,
 ) {
     val spacing = LocalSpacing.current
     if (items.isEmpty()) {
@@ -519,9 +571,12 @@ private fun ListDetailItemsList(
         verticalArrangement = Arrangement.spacedBy(spacing.small),
     ) {
         items(items, key = { it.id }) { item ->
+            val categoryLabel = categoryLabelFor(item.categoryId, categories)
             ListItemRow(
                 item = item,
+                categoryLabel = categoryLabel,
                 onToggle = { checked -> onToggle(item.id, checked) },
+                onEdit = { onEdit(item.id) },
                 onDelete = { onDelete(item.id) },
             )
         }
@@ -529,9 +584,20 @@ private fun ListDetailItemsList(
 }
 
 @Composable
+private fun categoryLabelFor(categoryId: String?, categories: List<CategoryUi>): String? {
+    if (categoryId == null) {
+        return stringResource(id = R.string.list_detail_category_none)
+    }
+    val category = categories.firstOrNull { it.id == categoryId } ?: return null
+    return categoryDisplayName(category)
+}
+
+@Composable
 private fun ListItemRow(
     item: ListItemUi,
+    categoryLabel: String?,
     onToggle: (Boolean) -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
@@ -572,6 +638,13 @@ private fun ListItemRow(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.textMuted,
                 )
+                categoryLabel?.let { label ->
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 item.notes?.takeIf { it.isNotBlank() }?.let { notes ->
                     Text(
                         text = notes,
@@ -582,8 +655,13 @@ private fun ListItemRow(
                     )
                 }
             }
-            IconButton(onClick = onDelete) {
-                Icon(imageVector = Icons.Outlined.Delete, contentDescription = stringResource(id = R.string.list_detail_delete_item))
+            Row {
+                IconButton(onClick = onEdit) {
+                    Icon(imageVector = Icons.Outlined.Edit, contentDescription = stringResource(id = R.string.list_detail_edit_item))
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(imageVector = Icons.Outlined.Delete, contentDescription = stringResource(id = R.string.list_detail_delete_item))
+                }
             }
         }
     }
@@ -592,9 +670,11 @@ private fun ListItemRow(
 @Composable
 private fun AddProductPanel(
     state: AddProductUiState,
+    categories: List<CategoryUi>,
     onNameChange: (String) -> Unit,
     onQuantityChange: (String) -> Unit,
     onUnitChange: (String) -> Unit,
+    onCategorySelected: (String?) -> Unit,
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -644,6 +724,12 @@ private fun AddProductPanel(
                     singleLine = true,
                 )
             }
+            CategoryDropdownField(
+                label = stringResource(id = R.string.list_detail_category_label),
+                categories = categories,
+                selectedCategoryId = state.categoryId,
+                onCategorySelected = onCategorySelected,
+            )
             state.errorMessageRes?.let { res ->
                 Text(
                     text = stringResource(id = res),
@@ -661,6 +747,139 @@ private fun AddProductPanel(
         }
     }
 }
+
+@Composable
+private fun EditProductDialog(
+    state: EditProductDialogState,
+    categories: List<CategoryUi>,
+    onNameChange: (String) -> Unit,
+    onQuantityChange: (String) -> Unit,
+    onUnitChange: (String) -> Unit,
+    onCategorySelected: (String?) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(id = R.string.list_detail_edit_product_title)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = state.canSubmit) {
+                Text(text = stringResource(id = R.string.list_detail_edit_product_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.list_detail_edit_product_cancel))
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(LocalSpacing.current.medium)) {
+                OutlinedTextField(
+                    value = state.name,
+                    onValueChange = onNameChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(text = stringResource(id = R.string.list_detail_add_name)) },
+                    singleLine = true,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(LocalSpacing.current.small),
+                ) {
+                    OutlinedTextField(
+                        value = state.quantity,
+                        onValueChange = onQuantityChange,
+                        modifier = Modifier.weight(1f),
+                        label = { Text(text = stringResource(id = R.string.list_detail_add_quantity)) },
+                        singleLine = true,
+                    )
+                    OutlinedTextField(
+                        value = state.unit,
+                        onValueChange = onUnitChange,
+                        modifier = Modifier.weight(1f),
+                        label = { Text(text = stringResource(id = R.string.list_detail_add_unit)) },
+                        singleLine = true,
+                    )
+                }
+                CategoryDropdownField(
+                    label = stringResource(id = R.string.list_detail_category_label),
+                    categories = categories,
+                    selectedCategoryId = state.categoryId,
+                    onCategorySelected = onCategorySelected,
+                )
+                state.errorMessageRes?.let { res ->
+                    Text(
+                        text = stringResource(id = res),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CategoryDropdownField(
+    label: String,
+    categories: List<CategoryUi>,
+    selectedCategoryId: String?,
+    onCategorySelected: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    textColor: Color = MaterialTheme.colorScheme.onSurface,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selected = categories.firstOrNull { it.id == selectedCategoryId }
+    val defaultLabel = categories.firstOrNull { it.id == null }?.let { categoryDisplayName(it) }
+        ?: label
+    val displayLabel = selected?.let { categoryDisplayName(it) } ?: defaultLabel
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = modifier,
+    ) {
+        OutlinedTextField(
+            value = displayLabel,
+            onValueChange = {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            label = { Text(text = label, color = textColor) },
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedTextColor = textColor,
+                unfocusedTextColor = textColor,
+                focusedLabelColor = textColor,
+                unfocusedLabelColor = textColor.copy(alpha = 0.8f),
+                focusedBorderColor = textColor,
+                unfocusedBorderColor = textColor.copy(alpha = 0.5f),
+                cursorColor = textColor,
+                containerColor = containerColor,
+            ),
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            categories.forEach { category ->
+                DropdownMenuItem(
+                    text = { Text(text = categoryDisplayName(category), color = textColor) },
+                    onClick = {
+                        expanded = false
+                        onCategorySelected(category.id)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun categoryDisplayName(category: CategoryUi): String =
+    category.name ?: category.nameRes?.let { stringResource(id = it) } ?: ""
 
 @Composable
 private fun SharePanel(
