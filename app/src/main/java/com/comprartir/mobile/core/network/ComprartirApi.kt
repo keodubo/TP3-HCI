@@ -1,7 +1,8 @@
 package com.comprartir.mobile.core.network
 
-import com.comprartir.mobile.core.network.serialization.InstantIsoSerializer
 import com.comprartir.mobile.core.network.serialization.BackendDateSerializer
+import com.comprartir.mobile.core.network.serialization.FlexibleStringSerializer
+import com.comprartir.mobile.core.network.serialization.InstantIsoSerializer
 import java.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -374,7 +375,10 @@ data class ProfileUpdateRequest(
 // region Catalog DTOs
 @Serializable
 data class CategoryDto(
+    @JsonNames("id", "category_id")
+    @Serializable(with = FlexibleStringSerializer::class)
     val id: String,
+    @JsonNames("name", "category_name")
     val name: String,
     val description: String? = null,
     val metadata: JsonObject? = null,
