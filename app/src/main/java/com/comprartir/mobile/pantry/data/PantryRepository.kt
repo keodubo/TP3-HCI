@@ -1,6 +1,7 @@
 package com.comprartir.mobile.pantry.data
 
 import android.util.Log
+import com.comprartir.mobile.auth.data.AuthRepository
 import com.comprartir.mobile.core.data.mapper.toEntity
 import com.comprartir.mobile.core.database.dao.PantryDao
 import com.comprartir.mobile.core.database.entity.PantryItemEntity
@@ -9,6 +10,8 @@ import com.comprartir.mobile.core.network.PantryItemUpsertRequest
 import com.comprartir.mobile.core.network.PantryUpsertRequest
 import com.comprartir.mobile.core.network.SharePantryRequest
 import com.comprartir.mobile.core.network.fetchAllPages
+import com.comprartir.mobile.core.network.UserSummaryDto
+import com.comprartir.mobile.core.network.PantryDto
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -16,6 +19,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
@@ -34,7 +39,23 @@ data class PantryItem(
     val updatedAt: Instant,
 )
 
+data class PantrySummary(
+    val id: String,
+    val name: String,
+    val description: String?,
+    val ownerId: String,
+    val isOwner: Boolean,
+    val sharedUsers: List<SharedPantryUser>,
+)
+
+data class SharedPantryUser(
+    val id: String,
+    val displayName: String,
+    val email: String,
+)
+
 interface PantryRepository {
+    fun observePantries(): Flow<List<PantrySummary>>
     fun observePantry(): Flow<List<PantryItem>>
     suspend fun refresh()
     suspend fun createPantry(name: String, description: String?)
@@ -43,7 +64,7 @@ interface PantryRepository {
     suspend fun upsertItem(item: PantryItem)
     suspend fun deleteItem(itemId: String)
     suspend fun sharePantry(pantryId: String, email: String)
-    suspend fun getSharedUsers(pantryId: String)
+    suspend fun getSharedUsers(pantryId: String): List<SharedPantryUser>
     suspend fun revokeShare(pantryId: String, userId: String)
 }
 
@@ -51,10 +72,14 @@ interface PantryRepository {
 class DefaultPantryRepository @Inject constructor(
     private val pantryDao: PantryDao,
     private val api: ComprartirApi,
+    private val authRepository: AuthRepository,
 ) : PantryRepository {
 
     private val hasSyncedPantry = AtomicBoolean(false)
     private val cachedPantryId = AtomicReference<String?>(null)
+    private val pantriesState = MutableStateFlow<List<PantrySummary>>(emptyList())
+
+    override fun observePantries(): Flow<List<PantrySummary>> = pantriesState
 
     override fun observePantry(): Flow<List<PantryItem>> = pantryDao.observePantry()
         .map { entities -> entities.map { it.toDomainModel() } }
@@ -67,18 +92,21 @@ class DefaultPantryRepository @Inject constructor(
     override suspend fun createPantry(name: String, description: String?) {
         withContext(Dispatchers.IO) {
             api.createPantry(PantryUpsertRequest(name = name, description = description))
+            refreshPantryInternal()
         }
     }
 
     override suspend fun updatePantry(pantryId: String, name: String, description: String?) {
         withContext(Dispatchers.IO) {
             api.updatePantry(pantryId, PantryUpsertRequest(name = name, description = description))
+            refreshPantryInternal()
         }
     }
 
     override suspend fun deletePantry(pantryId: String) {
         withContext(Dispatchers.IO) {
             api.deletePantry(pantryId)
+            refreshPantryInternal()
         }
     }
 
@@ -116,18 +144,19 @@ class DefaultPantryRepository @Inject constructor(
     override suspend fun sharePantry(pantryId: String, email: String) {
         withContext(Dispatchers.IO) {
             api.sharePantry(pantryId, SharePantryRequest(email = email))
+            refreshPantryInternal()
         }
     }
 
-    override suspend fun getSharedUsers(pantryId: String) {
+    override suspend fun getSharedUsers(pantryId: String): List<SharedPantryUser> =
         withContext(Dispatchers.IO) {
-            api.getPantrySharedUsers(pantryId)
-        }
+            api.getPantrySharedUsers(pantryId).map { it.toSharedPantryUser() }
     }
 
     override suspend fun revokeShare(pantryId: String, userId: String) {
         withContext(Dispatchers.IO) {
             api.revokePantryShare(pantryId, userId)
+            refreshPantryInternal()
         }
     }
 
@@ -141,10 +170,12 @@ class DefaultPantryRepository @Inject constructor(
 
     private suspend fun refreshPantryInternal() {
         try {
+            val currentUserId = authRepository.currentUser.firstOrNull()?.id.orEmpty()
             val pantries = fetchAllPages { page, perPage ->
                 api.getPantries(page = page, perPage = perPage)
             }
             pantryDao.clearAll()
+            pantriesState.value = pantries.map { it.toSummary(currentUserId) }
             if (pantries.isEmpty()) {
                 return
             }
@@ -195,4 +226,21 @@ class DefaultPantryRepository @Inject constructor(
         private const val TAG = "PantryRepository"
         private const val TEMP_PANTRY_ID = "default"
     }
+
+    private fun PantryDto.toSummary(currentUserId: String): PantrySummary =
+        PantrySummary(
+            id = id,
+            name = name,
+            description = description,
+            ownerId = ownerId,
+            isOwner = ownerId == currentUserId,
+            sharedUsers = sharedUsers.map { it.toSharedPantryUser() },
+        )
+
+    private fun UserSummaryDto.toSharedPantryUser(): SharedPantryUser =
+        SharedPantryUser(
+            id = id,
+            displayName = displayName.takeIf { it.isNotBlank() } ?: name.orEmpty(),
+            email = email,
+        )
 }

@@ -7,6 +7,7 @@ import com.comprartir.mobile.lists.data.ShoppingList
 import com.comprartir.mobile.lists.data.ShoppingListsRepository
 import com.comprartir.mobile.R
 import com.comprartir.mobile.feature.lists.model.CreateListUiState
+import com.comprartir.mobile.pantry.data.PantryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class ListsViewModel @Inject constructor(
     private val repository: ShoppingListsRepository,
+    private val pantryRepository: PantryRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ListsUiState())
@@ -38,6 +40,28 @@ class ListsViewModel @Inject constructor(
                     currentState.copy(lists = lists, isLoading = false)
                 }
                 android.util.Log.d(TAG, "observeLists collectLatest: UI state updated, new state has ${_state.value.lists.size} lists")
+            }
+        }
+        viewModelScope.launch {
+            pantryRepository.observePantries().collectLatest { pantries ->
+                val options = pantries.map { PantryOption(id = it.id, name = it.name) }
+                _state.update { current ->
+                    val updatedComplete = if (current.completeListState.isVisible) {
+                        val selected = current.completeListState.selectedPantryId?.takeIf { id ->
+                            options.any { it.id == id }
+                        } ?: options.firstOrNull()?.id
+                        current.completeListState.copy(
+                            pantryOptions = options,
+                            selectedPantryId = selected,
+                        )
+                    } else {
+                        current.completeListState
+                    }
+                    current.copy(
+                        pantryOptions = options,
+                        completeListState = updatedComplete,
+                    )
+                }
             }
         }
         android.util.Log.d(TAG, "init: Calling initial refresh()")
@@ -333,6 +357,84 @@ class ListsViewModel @Inject constructor(
         }
     }
 
+    fun showCompleteDialog(list: ShoppingList) {
+        val options = _state.value.pantryOptions
+        _state.update {
+            it.copy(
+                completeListState = CompleteListUiState(
+                    isVisible = true,
+                    listId = list.id,
+                    listName = list.name.ifBlank { list.id },
+                    pantryOptions = options,
+                    selectedPantryId = options.firstOrNull()?.id,
+                )
+            )
+        }
+    }
+
+    fun dismissCompleteDialog() {
+        _state.update { it.copy(completeListState = CompleteListUiState()) }
+    }
+
+    fun onCompletePantrySelected(pantryId: String) {
+        _state.update {
+            it.copy(
+                completeListState = it.completeListState.copy(
+                    selectedPantryId = pantryId,
+                    errorMessageRes = null,
+                )
+            )
+        }
+    }
+
+    fun confirmCompleteList() {
+        val currentState = _state.value.completeListState
+        if (!currentState.isVisible || currentState.isSubmitting) return
+        val pantryId = currentState.selectedPantryId
+        if (pantryId.isNullOrBlank()) {
+            _state.update {
+                it.copy(
+                    completeListState = currentState.copy(
+                        errorMessageRes = R.string.lists_complete_select_pantry_error
+                    )
+                )
+            }
+            return
+        }
+
+        _state.update {
+            it.copy(
+                completeListState = currentState.copy(
+                    isSubmitting = true,
+                    errorMessageRes = null,
+                )
+            )
+        }
+
+        val submittingState = _state.value.completeListState
+        viewModelScope.launch {
+            runCatching {
+                repository.purchaseList(currentState.listId)
+                repository.moveListToPantry(currentState.listId, pantryId)
+                repository.resetList(currentState.listId)
+                pantryRepository.refresh()
+                repository.refresh()
+            }.onSuccess {
+                _state.update { it.copy(completeListState = CompleteListUiState()) }
+            }.onFailure { throwable ->
+                _state.update {
+                    it.copy(
+                        completeListState = submittingState.copy(
+                            isSubmitting = false,
+                            errorMessageRes = R.string.lists_complete_error,
+                        ),
+                        errorMessage = throwable.message,
+                    )
+                }
+            }
+        }
+    }
+
     companion object {
         private const val TAG = "ListsViewModel"
     }
@@ -345,6 +447,8 @@ data class ListsUiState(
     val createListState: CreateListUiState = CreateListUiState(),
     val editListState: EditListUiState = EditListUiState(),
     val deleteListState: DeleteListUiState = DeleteListUiState(),
+    val pantryOptions: List<PantryOption> = emptyList(),
+    val completeListState: CompleteListUiState = CompleteListUiState(),
 )
 
 data class EditListUiState(
@@ -364,4 +468,19 @@ data class DeleteListUiState(
     val listId: String = "",
     val listName: String = "",
     val isDeleting: Boolean = false,
+)
+
+data class PantryOption(
+    val id: String,
+    val name: String,
+)
+
+data class CompleteListUiState(
+    val isVisible: Boolean = false,
+    val listId: String = "",
+    val listName: String = "",
+    val pantryOptions: List<PantryOption> = emptyList(),
+    val selectedPantryId: String? = null,
+    val isSubmitting: Boolean = false,
+    @StringRes val errorMessageRes: Int? = null,
 )

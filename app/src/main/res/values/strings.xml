@@ -84,8 +84,41 @@
     <string name="lists_share">Share</string>
     <string name="lists_default_title">List</string>
     <string name="share_list_button">Send invitation</string>
+    <string name="lists_mark_complete">Complete list</string>
+    <string name="lists_complete_dialog_title">Complete %1$s</string>
+    <string name="lists_complete_dialog_message">Choose the pantry where the products should be stored.</string>
+    <string name="lists_complete_dialog_no_pantry">Create a pantry first to finish this list.</string>
+    <string name="lists_complete_dialog_confirm">Move products</string>
+    <string name="lists_complete_select_pantry_error">Select a pantry to continue.</string>
+    <string name="lists_complete_error">We could not move the products to the pantry.</string>
     <string name="acquire_products_heading">Mark products as acquired</string>
     <string name="pantry_heading">Pantry</string>
+    <string name="pantry_add_item">Add pantry item</string>
+    <string name="pantry_items_heading">Items</string>
+    <string name="pantry_empty_items">No products stored in this pantry yet.</string>
+    <string name="pantry_share_title">Sharing</string>
+    <string name="pantry_share_no_selection">Select a pantry to manage collaborators.</string>
+    <string name="pantry_share_empty">Not shared with anybody yet.</string>
+    <string name="pantry_share_remove">Remove collaborator</string>
+    <string name="pantry_share_email_hint">Invite email</string>
+    <string name="pantry_share_invite">Send invite</string>
+    <string name="pantry_edit_item">Edit pantry item</string>
+    <string name="pantry_delete_item">Remove item</string>
+    <string name="pantry_add_pantry">New pantry</string>
+    <string name="pantry_edit_pantry">Edit pantry</string>
+    <string name="pantry_shared_count">%1$d collaborators</string>
+    <string name="pantry_name_label">Pantry name</string>
+    <string name="pantry_description_label">Description</string>
+    <string name="pantry_delete_pantry">Delete this pantry</string>
+    <string name="pantry_item_name_label">Product name</string>
+    <string name="pantry_item_quantity_label">Quantity</string>
+    <string name="pantry_item_unit_label">Unit</string>
+    <string name="pantry_item_expiration_label">Expiration date (YYYY-MM-DD)</string>
+    <string name="pantry_empty_title">Create your first pantry</string>
+    <string name="pantry_empty_subtitle">Organize your staples by creating a pantry and tracking what is already at home.</string>
+    <string name="pantry_error_name_required">Name cannot be empty</string>
+    <string name="pantry_error_quantity_invalid">Enter a valid quantity</string>
+    <string name="pantry_error_email_invalid">Enter a valid email</string>
     <string name="dashboard_heading">Comprartir Dashboard</string>
     <string name="dashboard_lists">Shopping lists</string>
     <string name="dashboard_products">Products</string>
@@ -120,6 +153,7 @@
     <string name="passwords_do_not_match">Passwords do not match</string>
     <string name="registration_failed">Registration failed. Please try again.</string>
     <string name="common_retry">Try again</string>
+    <string name="common_dismiss">Dismiss</string>
     
     <!-- Profile Screen -->
     <string name="profile_edit_button">Edit</string>
@@ -215,6 +249,7 @@
     <string name="lists_create_dialog_confirm">Crear</string>
     <string name="lists_create_dialog_name_error">Ingresa un nombre para la lista.</string>
     <string name="dialog_cancel">Cancelar</string>
+    <string name="dialog_save">Save</string>
     <string name="error_creating_list">No pudimos crear la lista. Intenta de nuevo.</string>
     <string name="error_updating_list">Failed to update list. Please try again.</string>
     <string name="error_deleting_list">Failed to delete list. Please try again.</string>

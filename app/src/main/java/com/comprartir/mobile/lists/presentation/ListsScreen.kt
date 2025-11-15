@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -20,6 +22,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -41,6 +44,7 @@ import com.comprartir.mobile.core.navigation.NavigationIntent
 import com.comprartir.mobile.feature.lists.ui.components.CreateListDialog
 import com.comprartir.mobile.feature.lists.ui.components.EditListDialog
 import com.comprartir.mobile.feature.lists.ui.components.DeleteListDialog
+import com.comprartir.mobile.feature.lists.ui.components.CompleteListDialog
 import com.comprartir.mobile.lists.data.ShoppingList
 import com.comprartir.mobile.shared.components.AddFab
 import com.comprartir.mobile.shared.components.EmptyStateMessage
@@ -96,6 +100,10 @@ fun ListsRoute(
         onShareList = { listId ->
             onNavigate(NavigationIntent(AppDestination.ShareList, mapOf("listId" to listId)))
         },
+        onShowCompleteDialog = viewModel::showCompleteDialog,
+        onDismissCompleteDialog = viewModel::dismissCompleteDialog,
+        onCompletePantrySelected = viewModel::onCompletePantrySelected,
+        onConfirmCompleteList = viewModel::confirmCompleteList,
         onRefresh = viewModel::refresh,
         onClearError = viewModel::clearError,
     )
@@ -123,10 +131,15 @@ fun ListsScreen(
     onConfirmDeleteList: () -> Unit,
     onListSelected: (String) -> Unit,
     onShareList: (String) -> Unit,
+    onShowCompleteDialog: (ShoppingList) -> Unit,
+    onDismissCompleteDialog: () -> Unit,
+    onCompletePantrySelected: (String) -> Unit,
+    onConfirmCompleteList: () -> Unit,
     onRefresh: () -> Unit,
     onClearError: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
+    val canComplete = state.pantryOptions.isNotEmpty()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -189,6 +202,8 @@ fun ListsScreen(
                     onEditClick = { onShowEditDialog(list) },
                     onDeleteClick = { onShowDeleteDialog(list) },
                     onShareClick = { onShareList(list.id) },
+                    onCompleteClick = { onShowCompleteDialog(list) },
+                    canComplete = canComplete,
                 )
             }
         }
@@ -254,6 +269,8 @@ private fun ShoppingListCard(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onShareClick: () -> Unit,
+    onCompleteClick: () -> Unit,
+    canComplete: Boolean,
 ) {
     val spacing = LocalSpacing.current
     
@@ -306,6 +323,15 @@ private fun ShoppingListCard(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (canComplete) {
+                    FilledTonalButton(
+                        onClick = onCompleteClick,
+                        enabled = list.items.isNotEmpty(),
+                    ) {
+                        Text(text = stringResource(id = R.string.lists_mark_complete))
+                    }
+                    Spacer(modifier = Modifier.width(spacing.small))
+                }
                 FilledTonalIconButton(
                     onClick = { onShareClick() },
                     modifier = Modifier.size(36.dp),
@@ -351,4 +377,6 @@ private fun ShoppingListCard(
             }
         }
     }
+
+    // Dialog rendered by parent after list content
 }

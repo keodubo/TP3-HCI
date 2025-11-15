@@ -3,10 +3,10 @@
 Complete the items in order; each block lists the remaining Functional (RF) and Non-Functional (RNF) requirements plus polish work that keeps you on spec.
 
 ## Priority 1 – Mandatory RF gaps
-1. [ ] **RF6 – Manage Products**
+1. [x] **RF6 – Manage Products**
    - `app/src/main/java/com/comprartir/mobile/products/presentation/ProductsScreen.kt:26` only lets users search and list products; there is no way to create, edit, favorite, or delete catalog entries even though `ProductsRepository` exposes `upsertProduct`/`deleteProduct`.
    - Build product detail / editor flows (dialogs or screens) that call the repository, add deletion with confirmation, and surface validation + error messages. Consider letting users pick default unit/quantity so list creation pulls consistent data.
-2. [ ] **RF10 – Categorize Products**
+2. [x] **RF10 – Categorize Products**
    - `app/src/main/java/com/comprartir/mobile/products/presentation/CategorizeProductsScreen.kt:17` is just a title with a TODO comment. Implement the drag & drop / bulk assignment UI, hook it to `CategorizeProductsViewModel.assignCategory`, and display both unassigned and categorized items so users see progress.
 
 ## Priority 2 – Optional RF backlog (do once the mandatory work is stable)
@@ -31,16 +31,49 @@ Complete the items in order; each block lists the remaining Functional (RF) and 
    - `HomeViewModel` hardcodes `recentActivity = emptyList()` (`app/src/main/java/com/comprartir/mobile/feature/home/viewmodel/HomeViewModel.kt:33`), so the activity section in `HomeScreen` never shows data. Populate it using either a backend feed or synthesized events from local list mutations to match the spec’s “incorporate class characteristics” guidance for the main screen.
 
 ## RNF gaps
-10. [ ] **RNF7 – Barcode scanning**
-    - `IntegrationPlaceholders.launchBarcodeScanner` (`app/src/main/java/com/comprartir/mobile/core/util/IntegrationPlaceholders.kt:1`) is an empty stub. Add the actual camera permission flow and a barcode scanning component, then expose it via the top bar when `featureFlags.rnf7Barcode` is enabled.
-11. [ ] **RNF8 – Voice commands**
-    - `IntegrationPlaceholders.startVoiceCommandSession` is also a stub (same file). Decide on a speech provider, request mic permissions, and wire the callback so shopping lists can be dictated hands-free.
-12. [ ] **RNF9 – Product photo capture**
-    - `IntegrationPlaceholders.captureProductPhoto` is unimplemented. Integrate `ActivityResultContracts.TakePicture` or a camera library, store the image (and metadata) per product, and add UI affordances to view/remove the photos.
+10. [ ]  **RNF1 – Localization**
+    
+    The application must support at least two languages (Spanish and English), automatically selecting the language based on the device settings and using proper string resources instead of hard-coded text.
+11. [ ]  **RNF2 – Contextual app bar**
+    
+    The application must provide a consistent top app bar that displays a contextual title and relevant actions for each screen (e.g., share, edit, filter), following platform conventions.
+    
+12. [ ]  **RNF3 – Personalization / customization**
+    
+    The application must allow users to personalize aspects of their experience, such as theme (light/dark/system), language preference, and notification toggles, persisting these choices across sessions.
+    
+13. [ ]  **RNF4 – Support for different form factors**
+    
+    The application must adapt its layout to different device form factors (phones and tablets), using responsive patterns such as bottom navigation on compact devices and navigation rail / master–detail layouts on larger screens.
+    
+14. [ ]  **RNF5 – Support for different orientations**
+    
+    The application must behave correctly in both portrait and landscape orientations, preserving state across orientation changes and adjusting layouts to use the available space efficiently.
+    
+15. [ ]  **RNF6 – Platform compatibility (Android 10+)**
+    
+    The application must target and run correctly on Android 10 (API 29) or higher, respecting platform guidelines for permissions, networking, and navigation.
+    
+
+---
+
+Optionals:
+
+16. [ ]  **RNF7 – Barcode integration (optional / advanced)**
+    
+    The application should support barcode scanning to add or identify products, integrating with the camera in a way that is consistent with Android UX patterns.
+    
+17. [ ]  **RNF8 – Voice input integration (optional / advanced)**
+    
+    The application should support voice input for actions such as adding products or searching lists, using Android’s speech recognition capabilities where available.
+    
+18. [ ]  **RNF9 – Photo capture integration (optional / advanced)**
+    
+    The application should allow capturing or attaching photos (e.g., of products or receipts), handling permissions, storage, and previews according to Android best practices.
 
 ## Navigation & UX hygiene (after the RF/RNF work)
-13. [ ] **Hide routes for disabled optional features**
+19. [ ] **Hide routes for disabled optional features**
     - Because `primaryNavigationItems` always exposes `OptionalHistory` (`app/src/main/java/com/comprartir/mobile/core/ui/NavigationItems.kt:12`) while the nav graph only registers it when feature flags are true (`AppNavHost.kt:269`) and `FeatureFlags.Disabled` is the default (`ComprartirApp.kt:30`), tapping “History” today throws.
     - Either conditionally build the bottom navigation list based on the feature flags, or enable the matching destinations by default.
-14. [ ] **Extend personalization controls**
+20. [ ] **Extend personalization controls**
     - The Settings screen hints at more customization (`TODO` at `app/src/main/java/com/comprartir/mobile/shared/settings/SettingsScreen.kt:105`). Once core/optional requirements are done, add accent color + density toggles to better satisfy RNF3’s “allow customization” spirit.
