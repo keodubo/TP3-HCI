@@ -28,23 +28,38 @@ The installation instructions must contain at minimum:
 The mobile application implementation must comply with the following functional requirements:
 
 - **RF1.** Register Account.
+The system must allow a new user to create an account by entering their basic information and validating required fields.
 - **RF2.** Verify Account.
+The system must allow a user to verify their account (e.g., via a verification code) and only enable full access after successful verification.
 - **RF3.** Modify Password.
+The system must allow a logged-in user to change their password, enforcing basic security rules and validating the new password.
 - **RF4.** Log In and Log Out.
+The system must allow users to log in with valid credentials and log out, clearing session data and returning to the access screen.
 - **RF5.** Manage Profile.
+The system must allow users to view and edit their profile data (e.g., name, email, preferences) in a centralized flow.
 - **RF6.** Manage Products.
+The system must allow users to create, edit, delete, and search products in a global catalog that can be reused across lists.
 - **RF7.** Manage Shopping Lists.
+The system must allow users to create, edit, and delete shopping lists, updating summaries and counters accordingly.
 - **RF8.** Manage Products in Shopping Lists.
+The system must allow users to add, edit, reorder, and remove products inside a specific shopping list.
 - **RF9.** Share Shopping Lists.
+The system must allow users to share a shopping list with other people (e.g., via invitations or share links) and manage collaborators.
 - **RF10.** Categorize Products.
+The system must allow users to assign categories to products and use those categories for filtering, browsing, and organizing lists.
 - **RF11.** Mark Products as Purchased.
+The system must allow users to mark products in a list as “acquired/purchased”, updating the visual state and progress indicators.
 
 Optionally, the following functional requirements may be implemented:
 
 - **RF12.** Recover Password.
+The system must allow users who forgot their password to request a password reset via email and complete the recovery process.
 - **RF13.** Consult Shopping List History.
+The system must allow users to consult a history of completed shopping lists, with options to view details and/or reuse them.
 - **RF14.** Mark Shopping Lists as Recurring.
+The system must allow users to mark lists as recurrent (e.g., weekly shopping), prioritizing them in reuse flows and summaries.
 - **RF15.** Manage Products in Pantry.
+The system must allow users to manage pantry inventories (create pantries, add/edit/remove items with quantities and units) and use this information to complement shopping lists.
 
 It must also mandatorily comply with the following non-functional requirements:
 
