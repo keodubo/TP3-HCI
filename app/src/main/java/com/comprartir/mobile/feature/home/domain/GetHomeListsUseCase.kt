@@ -4,6 +4,7 @@ import android.content.Context
 import android.text.format.DateUtils
 import com.comprartir.mobile.R
 import com.comprartir.mobile.auth.data.AuthRepository
+import com.comprartir.mobile.feature.home.model.ListStatusType
 import com.comprartir.mobile.feature.home.model.RecentListUi
 import com.comprartir.mobile.feature.home.model.SharedListUi
 import com.comprartir.mobile.lists.data.ShoppingList
@@ -77,11 +78,17 @@ class GetHomeListsUseCase @Inject constructor(
     private fun ShoppingList.toRecentListUi(now: Instant): RecentListUi {
         val totalItems = items.size
         val acquiredItems = items.count { it.isAcquired }
-        val statusRes = when {
-            totalItems == 0 -> R.string.list_status_empty
-            acquiredItems == totalItems -> R.string.list_status_complete
-            acquiredItems > 0 -> R.string.list_status_in_progress
-            else -> R.string.list_status_pending
+        val statusType = when {
+            totalItems == 0 -> ListStatusType.EMPTY
+            acquiredItems == totalItems -> ListStatusType.COMPLETE
+            acquiredItems > 0 -> ListStatusType.IN_PROGRESS
+            else -> ListStatusType.PENDING
+        }
+        val statusRes = when (statusType) {
+            ListStatusType.EMPTY -> R.string.list_status_empty
+            ListStatusType.COMPLETE -> R.string.list_status_complete
+            ListStatusType.IN_PROGRESS -> R.string.list_status_in_progress
+            ListStatusType.PENDING -> R.string.list_status_pending
         }
         val status = context.getString(statusRes)
 
@@ -99,6 +106,7 @@ class GetHomeListsUseCase @Inject constructor(
             itemCount = totalItems,
             completedItemCount = acquiredItems,
             status = status,
+            statusType = statusType,
             isShared = sharedWith.isNotEmpty(),
         )
     }

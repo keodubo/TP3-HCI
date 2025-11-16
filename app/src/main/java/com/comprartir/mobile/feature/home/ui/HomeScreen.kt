@@ -73,8 +73,10 @@ import com.comprartir.mobile.core.designsystem.brandTint
 import com.comprartir.mobile.core.designsystem.darkNavy
 import com.comprartir.mobile.core.designsystem.surfaceCard
 import com.comprartir.mobile.core.designsystem.textMuted
+import com.comprartir.mobile.core.designsystem.theme.LocalColorTokens
 import com.comprartir.mobile.feature.home.model.ActivityUi
 import com.comprartir.mobile.feature.home.model.HomeUiState
+import com.comprartir.mobile.feature.home.model.ListStatusType
 import com.comprartir.mobile.feature.home.model.RecentListUi
 import com.comprartir.mobile.feature.home.model.SharedListUi
 
@@ -203,8 +205,13 @@ private fun HomeHeroCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(spacing.medium),
             ) {
+                val logoRes = if (LocalColorTokens.current.isDark) {
+                    R.drawable.logo_comprartir_nobg
+                } else {
+                    R.drawable.logo_comprartir
+                }
                 Image(
-                    painter = painterResource(id = R.drawable.logo_comprartir),
+                    painter = painterResource(id = logoRes),
                     contentDescription = stringResource(id = R.string.app_name),
                     modifier = Modifier.size(80.dp),
                 )
@@ -456,7 +463,10 @@ private fun RecentListCard(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.BottomStart,
             ) {
-                StatusChip(text = item.status)
+                StatusChip(
+                    text = item.status,
+                    statusType = item.statusType,
+                )
             }
         }
     }
@@ -637,11 +647,54 @@ private fun ItemCountPill(
 }
 
 @Composable
-private fun StatusChip(text: String) {
+private fun StatusChip(
+    text: String,
+    statusType: ListStatusType,
+) {
+    val tokens = LocalColorTokens.current
+    val isDark = tokens.isDark
+    val (background, contentColor) = when (statusType) {
+        ListStatusType.COMPLETE -> {
+            val bg = if (isDark) {
+                MaterialTheme.colorScheme.brand.copy(alpha = 0.25f)
+            } else {
+                MaterialTheme.colorScheme.brandTint
+            }
+            bg to MaterialTheme.colorScheme.brand
+        }
+
+        ListStatusType.IN_PROGRESS -> {
+            val bg = if (isDark) {
+                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
+            } else {
+                MaterialTheme.colorScheme.secondaryContainer
+            }
+            bg to MaterialTheme.colorScheme.onSecondaryContainer
+        }
+
+        ListStatusType.PENDING -> {
+            val bg = if (isDark) {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+            bg to MaterialTheme.colorScheme.onSurface
+        }
+
+        ListStatusType.EMPTY -> {
+            val bg = if (isDark) {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+            bg to MaterialTheme.colorScheme.textMuted
+        }
+    }
+
     Box(
         modifier = Modifier
             .background(
-                color = MaterialTheme.colorScheme.brandTint,
+                color = background,
                 shape = ComprartirPillShape,
             )
             .padding(horizontal = 10.dp, vertical = 4.dp),
@@ -649,7 +702,7 @@ private fun StatusChip(text: String) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.brand,
+            color = contentColor,
         )
     }
 }

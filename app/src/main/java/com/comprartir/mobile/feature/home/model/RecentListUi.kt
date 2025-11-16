@@ -7,5 +7,13 @@ data class RecentListUi(
     val itemCount: Int,
     val completedItemCount: Int,
     val status: String,
+    val statusType: ListStatusType,
     val isShared: Boolean,
 )
+
+enum class ListStatusType {
+    EMPTY,
+    PENDING,
+    IN_PROGRESS,
+    COMPLETE,
+}

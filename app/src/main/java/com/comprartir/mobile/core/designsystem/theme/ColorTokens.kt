@@ -6,6 +6,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 data class ColorTokenPalette(
+    val isDark: Boolean,
     val navSurface: Color,
     val navDivider: Color,
     val navActiveBackground: Color,
@@ -21,6 +22,7 @@ data class ColorTokenPalette(
 )
 
 val LightColorTokens = ColorTokenPalette(
+    isDark = false,
     navSurface = Color(0xFFFFFFFF),
     navDivider = Color(0xFFE5E7EB),
     navActiveBackground = Color(0xFF3C3553),
@@ -36,6 +38,7 @@ val LightColorTokens = ColorTokenPalette(
 )
 
 val DarkColorTokens = ColorTokenPalette(
+    isDark = true,
     navSurface = Color(0xFF0E1320),
     navDivider = Color(0xFF1F2434),
     navActiveBackground = Color(0xFF3C3553),

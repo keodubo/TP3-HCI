@@ -27,7 +27,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -102,6 +101,21 @@ fun ProfileTextField(
     supportingText: String? = null,
     modifier: Modifier = Modifier,
 ) {
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+        disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        cursorColor = MaterialTheme.colorScheme.primary,
+        focusedBorderColor = MaterialTheme.colorScheme.primary,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+        disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        disabledContainerColor = MaterialTheme.colorScheme.surface,
+        focusedLabelColor = MaterialTheme.colorScheme.primary,
+        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+    )
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -122,11 +136,7 @@ fun ProfileTextField(
         },
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-        ),
+        colors = textFieldColors,
         singleLine = true,
     )
 }
@@ -143,6 +153,25 @@ fun ProfileDropdownField(
 ) {
     var expanded by remember { mutableStateOf(false) }
     
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+        disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        cursorColor = MaterialTheme.colorScheme.primary,
+        focusedBorderColor = MaterialTheme.colorScheme.primary,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+        disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        disabledContainerColor = MaterialTheme.colorScheme.surface,
+        focusedLabelColor = MaterialTheme.colorScheme.primary,
+        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+        focusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+    )
+
     ExposedDropdownMenuBox(
         expanded = expanded && enabled,
         onExpandedChange = { if (enabled) expanded = it },
@@ -164,22 +193,18 @@ fun ProfileDropdownField(
                 .fillMaxWidth()
                 .menuAnchor(),
             shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-            ),
+            colors = textFieldColors,
             singleLine = true,
         )
         
         ExposedDropdownMenu(
             expanded = expanded && enabled,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(Color.White),
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface),
         ) {
             options.forEach { (key, displayText) ->
                 DropdownMenuItem(
-                    text = { Text(displayText) },
+                    text = { Text(displayText, color = MaterialTheme.colorScheme.onSurface) },
                     onClick = {
                         onValueChange(key)
                         expanded = false

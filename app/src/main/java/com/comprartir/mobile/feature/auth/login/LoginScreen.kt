@@ -74,6 +74,7 @@ import com.comprartir.mobile.core.designsystem.borderDefault
 import com.comprartir.mobile.core.designsystem.surfaceCard
 import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.core.designsystem.textPrimary
+import com.comprartir.mobile.core.designsystem.theme.LocalColorTokens
 import java.util.Locale
 
 @Composable
@@ -151,8 +152,13 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(spacing.large),
                 ) {
+                    val logoRes = if (LocalColorTokens.current.isDark) {
+                        R.drawable.logo_comprartir_nobg
+                    } else {
+                        R.drawable.logo_comprartir
+                    }
                     Image(
-                        painter = painterResource(id = R.drawable.logo_comprartir),
+                        painter = painterResource(id = logoRes),
                         contentDescription = stringResource(id = R.string.cd_logo_comprartir),
                         modifier = Modifier
                             .size(100.dp),
