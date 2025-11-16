@@ -1,11 +1,14 @@
 package com.comprartir.mobile.feature.home.domain
 
+import android.content.Context
+import android.text.format.DateUtils
+import com.comprartir.mobile.R
 import com.comprartir.mobile.auth.data.AuthRepository
 import com.comprartir.mobile.feature.home.model.RecentListUi
 import com.comprartir.mobile.feature.home.model.SharedListUi
 import com.comprartir.mobile.lists.data.ShoppingList
 import com.comprartir.mobile.lists.data.ShoppingListsRepository
-import java.time.Duration
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Instant
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -26,6 +29,7 @@ data class HomeListsData(
 class GetHomeListsUseCase @Inject constructor(
     private val listsRepository: ShoppingListsRepository,
     private val authRepository: AuthRepository,
+    @ApplicationContext private val context: Context,
 ) {
 
     operator fun invoke(): Flow<HomeListsData> = combine(
@@ -73,12 +77,13 @@ class GetHomeListsUseCase @Inject constructor(
     private fun ShoppingList.toRecentListUi(now: Instant): RecentListUi {
         val totalItems = items.size
         val acquiredItems = items.count { it.isAcquired }
-        val status = when {
-            totalItems == 0 -> "Vacía"
-            acquiredItems == totalItems -> "Completada"
-            acquiredItems > 0 -> "En progreso"
-            else -> "Pendiente"
+        val statusRes = when {
+            totalItems == 0 -> R.string.list_status_empty
+            acquiredItems == totalItems -> R.string.list_status_complete
+            acquiredItems > 0 -> R.string.list_status_in_progress
+            else -> R.string.list_status_pending
         }
+        val status = context.getString(statusRes)
 
         android.util.Log.d("GetHomeListsUseCase", "🔍 toRecentListUi: List '$name' (id=$id)")
         android.util.Log.d("GetHomeListsUseCase", "  - totalItems: $totalItems")
@@ -102,37 +107,27 @@ class GetHomeListsUseCase @Inject constructor(
         // For shared lists, we might need to fetch owner details
         // For now, we use ownerId as placeholder (could be enhanced with user service)
         val ownerName = if (ownerId.isNotEmpty()) {
-            "Usuario $ownerId" // Placeholder - ideally fetch from user service
+            context.getString(R.string.home_shared_owner_placeholder, ownerId.takeLast(6))
         } else {
-            "Desconocido"
+            context.getString(R.string.home_shared_owner_unknown)
         }
 
         return SharedListUi(
             id = id,
             name = name,
             ownerName = ownerName,
-            lastUpdated = "Actualizada ${formatRelativeTime(updatedAt, now).lowercase()}",
+            lastUpdated = formatRelativeTime(updatedAt, now),
             avatarUrl = null,
         )
     }
 
     private fun formatRelativeTime(timestamp: Instant, now: Instant): String {
-        val duration = Duration.between(timestamp, now)
-        val minutes = duration.toMinutes()
-        val hours = duration.toHours()
-        val days = duration.toDays()
-
-        return when {
-            minutes < 1 -> "Ahora"
-            minutes < 60 -> "Hace ${minutes}m"
-            hours == 1L -> "Hace 1 hora"
-            hours < 24 -> "Hace ${hours} horas"
-            days == 1L -> "Ayer"
-            days < 7 -> "Hace ${days} días"
-            days < 14 -> "Hace 1 semana"
-            days < 30 -> "Hace ${days / 7} semanas"
-            days < 60 -> "Hace 1 mes"
-            else -> "Hace ${days / 30} meses"
-        }
+        val relative = DateUtils.getRelativeTimeSpanString(
+            timestamp.toEpochMilli(),
+            now.toEpochMilli(),
+            DateUtils.MINUTE_IN_MILLIS,
+            DateUtils.FORMAT_ABBREV_RELATIVE,
+        )
+        return context.getString(R.string.common_last_updated, relative)
     }
 }

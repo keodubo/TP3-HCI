@@ -1,12 +1,14 @@
 package com.comprartir.mobile.feature.listdetail.viewmodel
 
 import android.content.Context
+import android.text.format.DateUtils
 import android.util.Patterns
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.comprartir.mobile.R
 import com.comprartir.mobile.feature.listdetail.data.AddItemResult
+import com.comprartir.mobile.feature.listdetail.data.ListDetailData
 import com.comprartir.mobile.feature.listdetail.data.ListDetailItem
 import com.comprartir.mobile.feature.listdetail.data.ListDetailRepository
 import com.comprartir.mobile.feature.listdetail.model.AddProductUiState
@@ -123,7 +125,7 @@ class ListDetailViewModel @Inject constructor(
                 _state.update { current ->
                     current.copy(
                         title = detail.title,
-                        subtitle = detail.subtitle,
+                        subtitle = formatLastUpdated(detail),
                         items = detail.items,
                         shareState = current.shareState.copy(
                             link = detail.shareLink.ifBlank { current.shareState.link },
@@ -208,7 +210,7 @@ class ListDetailViewModel @Inject constructor(
             }.onFailure { error ->
                 android.util.Log.e("ListDetailViewModel", "Error adding product: ${error.message}", error)
                 // Show specific error message if available
-                val errorMessage = error.message ?: "No pudimos agregar el producto."
+                val errorMessage = error.toReadableMessage(context.getString(R.string.list_detail_error_add))
                 _state.update { it.copy(errorMessageRes = R.string.list_detail_error_add) }
                 updateAddProductState { it.copy(isSubmitting = false, errorMessageRes = null) }
                 // Emit error as a toast/snackbar effect
@@ -404,7 +406,7 @@ class ListDetailViewModel @Inject constructor(
             }.onFailure { error ->
                 android.util.Log.e("ListDetailViewModel", "Error updating product: ${error.message}", error)
                 updateEditProductState { it.copy(isSubmitting = false) }
-                val errorMessage = error.message ?: "No pudimos actualizar el producto."
+                val errorMessage = error.toReadableMessage(context.getString(R.string.list_detail_error_toggle))
                 viewModelScope.launch { _effects.emit(ListDetailEffect.ShowError(errorMessage)) }
             }
         }
@@ -450,12 +452,24 @@ class ListDetailViewModel @Inject constructor(
                 }
                 .onFailure { error ->
                     updateCreateCategoryState { it.copy(isSubmitting = false) }
-                    val message = error.message ?: "No pudimos crear la categoría."
+                    val message = error.toReadableMessage(context.getString(R.string.categories_create_error))
                     viewModelScope.launch {
                         _effects.emit(ListDetailEffect.ShowError(message))
                     }
                 }
         }
+    }
+
+    private fun formatLastUpdated(detail: ListDetailData): String {
+        if (detail.subtitle.isNotBlank()) return detail.subtitle
+        val updatedAt = detail.updatedAt ?: return ""
+        val relative = DateUtils.getRelativeTimeSpanString(
+            updatedAt.toEpochMilli(),
+            System.currentTimeMillis(),
+            DateUtils.MINUTE_IN_MILLIS,
+            DateUtils.FORMAT_ABBREV_RELATIVE,
+        )
+        return context.getString(R.string.common_last_updated, relative)
     }
 
     private fun ListDetailItem.toUiModel(): ListItemUi {

@@ -137,6 +137,7 @@ dependencies {
     implementation("com.google.android.material:material:1.9.0")
     implementation(libs.androidx.material3.window.size)
     implementation(libs.androidx.core.ktx)
+    implementation("androidx.appcompat:appcompat:1.7.0")
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
@@ -169,6 +170,11 @@ dependencies {
 
 kapt {
     correctErrorTypes = true
+    arguments {
+        arg("room.schemaLocation", "$projectDir/schemas")
+        arg("room.incremental", "true")
+        arg("room.expandProjection", "true")
+    }
 }
 
 // Force Compose 1.5.x artifacts to avoid accidental upgrades from other libraries

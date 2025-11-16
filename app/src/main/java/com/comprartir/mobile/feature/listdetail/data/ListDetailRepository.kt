@@ -3,6 +3,7 @@ package com.comprartir.mobile.feature.listdetail.data
 import com.comprartir.mobile.lists.data.ItemAlreadyExistsException
 import com.comprartir.mobile.lists.data.ShoppingListsRepository
 import com.comprartir.mobile.products.data.Category
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -46,12 +47,13 @@ class FakeListDetailRepository() : ListDetailRepository {
         ListDetailData(
             id = "demo",
             title = "Demo list",
-            subtitle = "Actualizada hace 2 h",
+            subtitle = "",
             shareLink = "",
             items = listOf(
                 ListDetailItem(id = "i1", productId = "p1", name = "Leche descremada", quantity = "1", unit = "L", notes = null, isCompleted = false, categoryId = null),
                 ListDetailItem(id = "i2", productId = "p2", name = "Pan integral", quantity = "2", unit = null, notes = null, isCompleted = true, categoryId = null),
             ),
+            updatedAt = Instant.now(),
         )
     )
 
@@ -143,6 +145,7 @@ data class ListDetailData(
     val subtitle: String,
     val shareLink: String,
     val items: List<ListDetailItem>,
+    val updatedAt: Instant? = null,
 )
 
 data class ListDetailItem(
@@ -181,26 +184,6 @@ class DefaultListDetailRepository @Inject constructor(
     private val productsRepository: com.comprartir.mobile.products.data.ProductsRepository,
 ) : ListDetailRepository {
 
-    private fun formatRelativeTime(timestamp: java.time.Instant, now: java.time.Instant): String {
-        val duration = java.time.Duration.between(timestamp, now)
-        val minutes = duration.toMinutes()
-        val hours = duration.toHours()
-        val days = duration.toDays()
-
-        return when {
-            minutes < 1 -> "Ahora"
-            minutes < 60 -> "Hace ${minutes}m"
-            hours == 1L -> "Hace 1 hora"
-            hours < 24 -> "Hace ${hours} horas"
-            days == 1L -> "Ayer"
-            days < 7 -> "Hace ${days} días"
-            days < 14 -> "Hace 1 semana"
-            days < 30 -> "Hace ${days / 7} semanas"
-            days < 60 -> "Hace 1 mes"
-            else -> "Hace ${days / 30} meses"
-        }
-    }
-
     override fun observeCategories(): Flow<List<com.comprartir.mobile.products.data.Category>> =
         productsRepository.observeCategories()
 
@@ -212,15 +195,14 @@ class DefaultListDetailRepository @Inject constructor(
             if (shoppingList == null) {
                 ListDetailData(id = listId, title = "", subtitle = "", shareLink = "", items = emptyList())
             } else {
-                val now = java.time.Instant.now()
-                val subtitle = "Actualizada ${formatRelativeTime(shoppingList.updatedAt, now).lowercase()}"
                 val items = shoppingList.items.map { it.toDetailItem() }
                 ListDetailData(
                     id = shoppingList.id,
                     title = shoppingList.name,
-                    subtitle = subtitle,
+                    subtitle = "",
                     shareLink = shoppingList.shareLink,
                     items = items,
+                    updatedAt = shoppingList.updatedAt,
                 )
             }
         }

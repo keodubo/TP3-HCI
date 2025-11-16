@@ -21,6 +21,7 @@ import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.profile.domain.AppLanguage
 import com.comprartir.mobile.profile.domain.AppTheme
 import com.comprartir.mobile.profile.domain.ProfileField
+import com.comprartir.mobile.shared.i18n.rememberLanguageOptions
 
 @Composable
 fun ProfileRoute(
@@ -152,7 +153,6 @@ fun ProfileScreen(
                             ) {
                                 // Avatar section
                                 ProfileAvatarSection(
-                                    photoUrl = state.currentProfile.photoUrl,
                                     isEditing = state.isEditing,
                                     onChangePhotoClick = onChangePhotoClick,
                                     onRemoveBackgroundClick = onRemoveBackgroundClick,
@@ -176,7 +176,6 @@ fun ProfileScreen(
                         } else {
                             // Narrow screen: Avatar on top, fields below
                             ProfileAvatarSection(
-                                photoUrl = state.currentProfile.photoUrl,
                                 isEditing = state.isEditing,
                                 onChangePhotoClick = onChangePhotoClick,
                                 onRemoveBackgroundClick = onRemoveBackgroundClick,
@@ -256,7 +255,7 @@ private fun ProfileFields(
     onThemeChanged: (AppTheme) -> Unit,
 ) {
     val spacing = LocalSpacing.current
-    val languageOptions = getLanguageOptions()
+    val languageOptions = rememberLanguageOptions()
     val themeOptions = getThemeOptions()
     
     Column(
@@ -289,16 +288,17 @@ private fun ProfileFields(
             supportingText = stringResource(R.string.profile_email_hint),
         )
         
-        // Language dropdown
         ProfileDropdownField(
-            value = languageOptions.find { it.first == state.currentProfile.language.code }?.second 
+            value = languageOptions.firstOrNull { it.language == state.currentProfile.language }?.label
                 ?: stringResource(R.string.language_system),
             onValueChange = { selectedCode ->
-                onLanguageChanged(AppLanguage.fromCode(selectedCode))
+                val selectedLanguage = languageOptions.firstOrNull { it.language.code == selectedCode }?.language
+                    ?: AppLanguage.SYSTEM
+                onLanguageChanged(selectedLanguage)
             },
             label = stringResource(R.string.profile_language),
-            options = languageOptions,
-            enabled = state.isEditing,
+            options = languageOptions.map { it.language.code to it.label },
+            enabled = true, // Preferencias siempre editables
         )
         
         // Theme dropdown
@@ -310,8 +310,7 @@ private fun ProfileFields(
             },
             label = stringResource(R.string.profile_theme),
             options = themeOptions,
-            enabled = state.isEditing,
+            enabled = true,
         )
     }
 }
-

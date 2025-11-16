@@ -34,6 +34,7 @@ Complete the items in order; each block lists the remaining Functional (RF) and 
 10. [ ]  **RNF1 – Localization**
     
     The application must support at least two languages (Spanish and English), automatically selecting the language based on the device settings and using proper string resources instead of hard-coded text.
+    
 11. [ ]  **RNF2 – Contextual app bar**
     
     The application must provide a consistent top app bar that displays a contextual title and relevant actions for each screen (e.g., share, edit, filter), following platform conventions.
@@ -54,7 +55,6 @@ Complete the items in order; each block lists the remaining Functional (RF) and 
     
     The application must target and run correctly on Android 10 (API 29) or higher, respecting platform guidelines for permissions, networking, and navigation.
     
-
 ---
 
 Optionals:

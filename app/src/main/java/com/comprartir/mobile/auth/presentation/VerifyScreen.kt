@@ -14,8 +14,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.comprartir.mobile.R
 
 @Composable
 fun VerifyScreen(
@@ -39,7 +41,7 @@ fun VerifyScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Verify your account",
+            text = stringResource(id = R.string.headline_verify),
             style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )
@@ -48,7 +50,7 @@ fun VerifyScreen(
             onValueChange = viewModel::onEmailChange,
             singleLine = true,
             isError = uiState.error != null,
-            placeholder = { Text("Email") },
+            placeholder = { Text(stringResource(id = R.string.label_email)) },
             modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
@@ -56,7 +58,7 @@ fun VerifyScreen(
             onValueChange = viewModel::onCodeChange,
             singleLine = true,
             isError = uiState.error != null,
-            placeholder = { Text("Verification Code") },
+            placeholder = { Text(stringResource(id = R.string.label_verification_code)) },
             modifier = Modifier.fillMaxWidth()
         )
         uiState.error?.let {
@@ -70,7 +72,7 @@ fun VerifyScreen(
             onClick = viewModel::verify,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Verify")
+            Text(stringResource(id = R.string.action_verify))
         }
     }
 }

@@ -1,10 +1,13 @@
 package com.comprartir.mobile.purchase.presentation
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.comprartir.mobile.R
 import com.comprartir.mobile.purchase.data.Purchase
 import com.comprartir.mobile.purchase.data.PurchaseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -19,6 +22,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     private val repository: PurchaseRepository,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PurchaseHistoryUiState(isLoading = true))
@@ -50,8 +54,9 @@ class HistoryViewModel @Inject constructor(
             runCatching { repository.refresh() }
                 .onFailure { throwable ->
                     _uiState.update { current ->
+                        val fallback = context.getString(R.string.history_error_generic)
                         current.copy(
-                            errorMessage = throwable.message ?: DEFAULT_ERROR_MESSAGE,
+                            errorMessage = throwable.message ?: fallback,
                         )
                     }
                 }
@@ -100,9 +105,6 @@ class HistoryViewModel @Inject constructor(
             .sortedByDescending { it.date }
     }
 
-    companion object {
-        private const val DEFAULT_ERROR_MESSAGE = "No se pudo cargar el historial"
-    }
 }
 
 data class PurchaseHistoryUiState(

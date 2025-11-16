@@ -7,7 +7,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,12 +33,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.comprartir.mobile.R
 import com.comprartir.mobile.core.designsystem.LocalSpacing
-import com.comprartir.mobile.profile.domain.AppLanguage
 import com.comprartir.mobile.profile.domain.AppTheme
 
 @Composable
 fun ProfileAvatarSection(
-    photoUrl: String?,
     isEditing: Boolean,
     onChangePhotoClick: () -> Unit,
     onRemoveBackgroundClick: () -> Unit,
@@ -100,7 +106,7 @@ fun ProfileTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(label) },
+        label = { Text(label) },
         enabled = enabled,
         isError = errorMessage != null,
         supportingText = {
@@ -147,7 +153,7 @@ fun ProfileDropdownField(
             value = value,
             onValueChange = {},
             readOnly = true,
-            placeholder = { Text(label) },
+            label = { Text(label) },
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Outlined.ArrowDropDown,
@@ -210,15 +216,6 @@ fun ProfileFieldValue(
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         modifier = modifier,
-    )
-}
-
-@Composable
-fun getLanguageOptions(): List<Pair<String, String>> {
-    return listOf(
-        AppLanguage.SYSTEM.code to stringResource(R.string.language_system),
-        AppLanguage.SPANISH_AR.code to stringResource(R.string.language_spanish_ar),
-        AppLanguage.ENGLISH_US.code to stringResource(R.string.language_english_us),
     )
 }
 

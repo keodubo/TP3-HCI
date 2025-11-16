@@ -153,7 +153,7 @@ fun LoginScreen(
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.logo_comprartir),
-                        contentDescription = "Comprartir Logo",
+                        contentDescription = stringResource(id = R.string.cd_logo_comprartir),
                         modifier = Modifier
                             .size(100.dp),
                     )

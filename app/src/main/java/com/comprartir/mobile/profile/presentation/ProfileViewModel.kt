@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.comprartir.mobile.R
 import com.comprartir.mobile.auth.data.AuthRepository
+import com.comprartir.mobile.core.data.datastore.UserPreferencesDataSource
 import com.comprartir.mobile.profile.data.ProfileRepository
 import com.comprartir.mobile.profile.data.UserProfile
 import com.comprartir.mobile.profile.domain.AppLanguage
@@ -15,6 +16,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -22,6 +25,7 @@ import kotlinx.coroutines.launch
 class ProfileViewModel @Inject constructor(
     private val repository: ProfileRepository,
     private val authRepository: AuthRepository,
+    private val userPreferencesDataSource: UserPreferencesDataSource,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileUiState())
@@ -31,13 +35,18 @@ class ProfileViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            repository.profile.collect { profile ->
-                originalProfile = profile
+            combine(
+                repository.profile,
+                userPreferencesDataSource.userPreferences().map { AppLanguage.fromCode(it.languageOverride) },
+            ) { profile, languagePreference ->
+                profile.copy(language = languagePreference)
+            }.collect { mergedProfile ->
+                originalProfile = mergedProfile
                 if (!_state.value.isEditing) {
-                    _state.update { 
+                    _state.update {
                         it.copy(
-                            currentProfile = profile, 
-                            isLoading = false
+                            currentProfile = mergedProfile,
+                            isLoading = false,
                         )
                     }
                 }
@@ -98,6 +107,7 @@ class ProfileViewModel @Inject constructor(
                 hasUnsavedChanges = newProfile != originalProfile
             )
         }
+        persistLanguagePreference(language)
     }
 
     fun onThemeChanged(theme: AppTheme) {
@@ -207,6 +217,13 @@ class ProfileViewModel @Inject constructor(
         }
         
         return errors
+    }
+
+    private fun persistLanguagePreference(language: AppLanguage) {
+        viewModelScope.launch {
+            val languageTag = language.code.takeIf { language != AppLanguage.SYSTEM }
+            userPreferencesDataSource.updateLanguage(languageTag)
+        }
     }
 
     fun onLogout(onComplete: () -> Unit) {
