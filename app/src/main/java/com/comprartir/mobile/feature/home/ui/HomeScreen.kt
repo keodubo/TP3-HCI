@@ -9,7 +9,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -17,8 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -27,7 +28,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Assignment
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ContentPaste
@@ -36,24 +36,25 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -62,12 +63,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.comprartir.mobile.R
 import com.comprartir.mobile.core.designsystem.ComprartirPillShape
 import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.core.designsystem.brand
 import com.comprartir.mobile.core.designsystem.brandTint
+import com.comprartir.mobile.core.designsystem.darkNavy
 import com.comprartir.mobile.core.designsystem.surfaceCard
 import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.feature.home.model.ActivityUi
@@ -209,11 +212,6 @@ private fun HomeHeroCard(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text(
-                        text = stringResource(id = R.string.home_welcome_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
                     val subtitle = if (userName.isBlank()) {
                         stringResource(id = R.string.home_welcome_subtitle)
                     } else {
@@ -222,6 +220,7 @@ private fun HomeHeroCard(
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodyMedium,
+                        fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.textMuted,
                     )
                 }
@@ -272,13 +271,47 @@ private fun RecentListsSection(
                 message = stringResource(id = R.string.home_empty_lists),
             )
         } else {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                items(lists, key = { it.id }) { item ->
-                    RecentListCard(
-                        item = item,
-                        onClick = { onRecentListClick(item.id) },
-                    )
+            val fadeColor = MaterialTheme.colorScheme.background
+            val fadeWidth = 48.dp
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+            ) {
+                LazyRow(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                ) {
+                    items(lists, key = { it.id }) { item ->
+                        RecentListCard(
+                            item = item,
+                            onClick = { onRecentListClick(item.id) },
+                        )
+                    }
                 }
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .fillMaxHeight()
+                        .width(fadeWidth)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(fadeColor, Color.Transparent),
+                            ),
+                        ),
+                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight()
+                        .width(fadeWidth)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(Color.Transparent, fadeColor),
+                            ),
+                        ),
+                )
             }
         }
     }
@@ -405,36 +438,25 @@ private fun RecentListCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Box(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = item.name,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.align(Alignment.TopStart),
                 )
-                Text(
-                    text = item.date,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.textMuted,
+                ItemCountPill(
+                    completedCount = item.completedItemCount,
+                    totalCount = item.itemCount,
+                    modifier = Modifier.align(Alignment.TopEnd),
                 )
             }
-            Row(
+            Box(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                contentAlignment = Alignment.BottomStart,
             ) {
-                Column {
-                    Text(
-                        text = stringResource(id = R.string.home_recent_list_items, item.itemCount),
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                    StatusChip(text = item.status)
-                }
-                Icon(
-                    imageVector = Icons.Outlined.ArrowForward,
-                    contentDescription = stringResource(id = R.string.home_recent_list_cd, item.name),
-                    tint = MaterialTheme.colorScheme.brand,
-                )
+                StatusChip(text = item.status)
             }
         }
     }
@@ -447,10 +469,10 @@ private fun SharedListRow(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardDefaults.shape,
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.brand.copy(alpha = 0.12f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
     ) {
         Row(
             modifier = Modifier
@@ -499,10 +521,10 @@ private fun SharedListRow(
 private fun ActivityRow(item: ActivityUi) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardDefaults.shape,
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.brand.copy(alpha = 0.08f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
     ) {
         Row(
             modifier = Modifier
@@ -549,11 +571,15 @@ private fun HomePlaceholder(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     message: String,
 ) {
+    val cardShape = RoundedCornerShape(16.dp)
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, cardShape),
+        shape = cardShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.brand.copy(alpha = 0.06f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Column(
             modifier = Modifier
@@ -585,6 +611,29 @@ private fun SectionTitle(text: String) {
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onSurface,
     )
+}
+
+@Composable
+private fun ItemCountPill(
+    completedCount: Int,
+    totalCount: Int,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(50.dp),
+        color = MaterialTheme.colorScheme.darkNavy,
+        contentColor = Color.White,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+    ) {
+        Text(
+            text = "$completedCount/$totalCount",
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            color = Color.White,
+        )
+    }
 }
 
 @Composable

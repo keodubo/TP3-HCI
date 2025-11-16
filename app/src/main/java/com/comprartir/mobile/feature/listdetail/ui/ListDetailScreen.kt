@@ -3,6 +3,7 @@ package com.comprartir.mobile.feature.listdetail.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -726,9 +727,9 @@ private fun AddProductPanel(
                 value = state.name,
                 onValueChange = onNameChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text(text = stringResource(id = R.string.list_detail_add_name)) },
                 shape = ComprartirPillShape,
                 singleLine = true,
+                placeholder = { Text(text = stringResource(id = R.string.list_detail_add_name)) },
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -738,17 +739,17 @@ private fun AddProductPanel(
                     modifier = Modifier.weight(1f),
                     value = state.quantity,
                     onValueChange = onQuantityChange,
-                    label = { Text(text = stringResource(id = R.string.list_detail_add_quantity)) },
                     shape = ComprartirPillShape,
                     singleLine = true,
+                    placeholder = { Text(text = stringResource(id = R.string.list_detail_add_quantity)) },
                 )
                 OutlinedTextField(
                     modifier = Modifier.weight(1f),
                     value = state.unit,
                     onValueChange = onUnitChange,
-                    label = { Text(text = stringResource(id = R.string.list_detail_add_unit)) },
                     shape = ComprartirPillShape,
                     singleLine = true,
+                    placeholder = { Text(text = stringResource(id = R.string.list_detail_add_unit)) },
                 )
             }
             CategoryDropdownField(
@@ -791,6 +792,7 @@ private fun EditProductDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color.White,
         title = { Text(text = stringResource(id = R.string.list_detail_edit_product_title)) },
         confirmButton = {
             TextButton(onClick = onConfirm, enabled = state.canSubmit) {
@@ -808,8 +810,8 @@ private fun EditProductDialog(
                     value = state.name,
                     onValueChange = onNameChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text(text = stringResource(id = R.string.list_detail_add_name)) },
                     singleLine = true,
+                    placeholder = { Text(text = stringResource(id = R.string.list_detail_add_name)) },
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -819,15 +821,15 @@ private fun EditProductDialog(
                         value = state.quantity,
                         onValueChange = onQuantityChange,
                         modifier = Modifier.weight(1f),
-                        label = { Text(text = stringResource(id = R.string.list_detail_add_quantity)) },
                         singleLine = true,
+                        placeholder = { Text(text = stringResource(id = R.string.list_detail_add_quantity)) },
                     )
                     OutlinedTextField(
                         value = state.unit,
                         onValueChange = onUnitChange,
                         modifier = Modifier.weight(1f),
-                        label = { Text(text = stringResource(id = R.string.list_detail_add_unit)) },
                         singleLine = true,
+                        placeholder = { Text(text = stringResource(id = R.string.list_detail_add_unit)) },
                     )
                 }
                 CategoryDropdownField(
@@ -859,6 +861,7 @@ private fun CreateCategoryDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color.White,
         title = { Text(text = stringResource(id = R.string.list_detail_category_dialog_title)) },
         confirmButton = {
             TextButton(onClick = onConfirm, enabled = state.canSubmit) {
@@ -876,8 +879,8 @@ private fun CreateCategoryDialog(
                     value = state.name,
                     onValueChange = onNameChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text(text = stringResource(id = R.string.list_detail_category_label)) },
                     singleLine = true,
+                    placeholder = { Text(text = stringResource(id = R.string.list_detail_category_label)) },
                 )
                 state.errorMessageRes?.let { res ->
                     Text(
@@ -921,8 +924,8 @@ private fun CategoryDropdownField(
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor(),
-            label = { Text(text = label, color = textColor) },
             readOnly = true,
+            placeholder = { Text(text = label, color = textColor) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = TextFieldDefaults.outlinedTextFieldColors(
                 focusedTextColor = textColor,
@@ -938,6 +941,7 @@ private fun CategoryDropdownField(
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
+            modifier = Modifier.background(Color.White),
         ) {
             categories.forEach { category ->
                 DropdownMenuItem(
@@ -998,9 +1002,9 @@ private fun SharePanel(
                 value = email,
                 onValueChange = onEmailChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text(text = stringResource(id = R.string.list_detail_share_email)) },
                 shape = ComprartirPillShape,
                 singleLine = true,
+                placeholder = { Text(text = stringResource(id = R.string.list_detail_share_email)) },
             )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(spacing.small),

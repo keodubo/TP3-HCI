@@ -25,6 +25,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -220,6 +221,7 @@ private fun CategoryDialog(
     }
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color.White,
         confirmButton = {
             TextButton(onClick = onConfirm, enabled = state.canSubmit) {
                 Text(text = stringResource(id = R.string.categories_save))
@@ -237,8 +239,8 @@ private fun CategoryDialog(
                     value = state.name,
                     onValueChange = onNameChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text(text = stringResource(id = R.string.list_detail_category_label)) },
                     singleLine = true,
+                    placeholder = { Text(text = stringResource(id = R.string.list_detail_category_label)) },
                 )
                 state.errorMessageRes?.let { res ->
                     Text(
@@ -260,6 +262,7 @@ private fun DeleteCategoryDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color.White,
         title = { Text(text = stringResource(id = R.string.categories_delete_title)) },
         text = { Text(text = stringResource(id = R.string.categories_delete_message, state.categoryName)) },
         confirmButton = {

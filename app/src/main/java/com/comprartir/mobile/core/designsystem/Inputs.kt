@@ -28,7 +28,6 @@ fun ComprartirOutlinedTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    label: @Composable (() -> Unit)? = null,
     placeholder: @Composable (() -> Unit)? = null,
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
@@ -55,7 +54,6 @@ fun ComprartirOutlinedTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 44.dp),
-            label = label,
             placeholder = placeholder,
             leadingIcon = leadingIcon,
             trailingIcon = trailingIcon,

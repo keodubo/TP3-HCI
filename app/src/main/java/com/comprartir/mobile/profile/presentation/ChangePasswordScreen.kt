@@ -140,7 +140,6 @@ fun ChangePasswordScreen(
                         OutlinedTextField(
                             value = state.currentPassword,
                             onValueChange = onCurrentPasswordChanged,
-                            label = { Text(stringResource(R.string.change_password_current)) },
                             visualTransformation = if (state.showCurrentPassword) {
                                 VisualTransformation.None
                             } else {
@@ -172,13 +171,13 @@ fun ChangePasswordScreen(
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !state.isLoading,
                             singleLine = true,
+                            placeholder = { Text(stringResource(R.string.change_password_current)) },
                         )
 
                         // New password field
                         OutlinedTextField(
                             value = state.newPassword,
                             onValueChange = onNewPasswordChanged,
-                            label = { Text(stringResource(R.string.change_password_new)) },
                             visualTransformation = if (state.showNewPassword) {
                                 VisualTransformation.None
                             } else {
@@ -210,13 +209,13 @@ fun ChangePasswordScreen(
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !state.isLoading,
                             singleLine = true,
+                            placeholder = { Text(stringResource(R.string.change_password_new)) },
                         )
 
                         // Confirm password field
                         OutlinedTextField(
                             value = state.confirmPassword,
                             onValueChange = onConfirmPasswordChanged,
-                            label = { Text(stringResource(R.string.change_password_confirm)) },
                             visualTransformation = if (state.showConfirmPassword) {
                                 VisualTransformation.None
                             } else {
@@ -248,6 +247,7 @@ fun ChangePasswordScreen(
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !state.isLoading,
                             singleLine = true,
+                            placeholder = { Text(stringResource(R.string.change_password_confirm)) },
                         )
 
                         Spacer(modifier = Modifier.height(spacing.small))

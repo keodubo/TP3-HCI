@@ -70,22 +70,22 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth(),
             value = state.credentials.email,
             onValueChange = onEmailChanged,
-            label = { Text(stringResource(id = R.string.label_email)) },
             singleLine = true,
+            placeholder = { Text(stringResource(id = R.string.label_email)) },
         )
         ComprartirOutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = state.credentials.password,
             onValueChange = onPasswordChanged,
-            label = { Text(stringResource(id = R.string.label_password)) },
             singleLine = true,
+            placeholder = { Text(stringResource(id = R.string.label_password)) },
         )
         ComprartirOutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = state.confirmPassword,
             onValueChange = onConfirmPasswordChanged,
-            label = { Text(stringResource(id = R.string.label_confirm_password)) },
             singleLine = true,
+            placeholder = { Text(stringResource(id = R.string.label_confirm_password)) },
         )
         state.errorMessageRes?.let { errorRes ->
             Text(

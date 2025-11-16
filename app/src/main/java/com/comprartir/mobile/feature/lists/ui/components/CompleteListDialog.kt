@@ -14,6 +14,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.comprartir.mobile.R
 import com.comprartir.mobile.core.designsystem.LocalSpacing
@@ -30,6 +31,7 @@ fun CompleteListDialog(
 
     AlertDialog(
         onDismissRequest = { if (!state.isSubmitting) onDismiss() },
+        containerColor = Color.White,
         confirmButton = {
             Button(
                 onClick = onConfirm,

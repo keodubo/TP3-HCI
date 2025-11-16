@@ -5,6 +5,7 @@ data class RecentListUi(
     val name: String,
     val date: String,
     val itemCount: Int,
+    val completedItemCount: Int,
     val status: String,
     val isShared: Boolean,
 )

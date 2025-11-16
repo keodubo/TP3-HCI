@@ -7,6 +7,9 @@ import com.comprartir.mobile.lists.data.ShoppingList
 import com.comprartir.mobile.lists.data.ShoppingListsRepository
 import com.comprartir.mobile.R
 import com.comprartir.mobile.feature.lists.model.CreateListUiState
+import com.comprartir.mobile.feature.lists.model.ListTypeFilter
+import com.comprartir.mobile.feature.lists.model.SortDirection
+import com.comprartir.mobile.feature.lists.model.SortOption
 import com.comprartir.mobile.pantry.data.PantryRepository
 import com.comprartir.mobile.core.util.FeatureFlags
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -46,11 +49,10 @@ class ListsViewModel @Inject constructor(
                 _state.update { currentState ->
                     android.util.Log.d(TAG, "observeLists collectLatest: Updating UI state from ${currentState.lists.size} to ${lists.size} lists")
                     currentState.copy(
-                        lists = lists,
                         recurringLists = recurringLists,
                         showRecurringSection = showRecurringSection,
                         isLoading = false,
-                    )
+                    ).recalculateLists(newAllLists = lists)
                 }
                 android.util.Log.d(TAG, "observeLists collectLatest: UI state updated, new state has ${_state.value.lists.size} lists")
             }
@@ -197,6 +199,87 @@ class ListsViewModel @Inject constructor(
                 }
             _state.update { it.copy(isLoading = false) }
         }
+    }
+
+    fun onSearchQueryChange(query: String) {
+        updateFilters { it.copy(searchQuery = query) }
+    }
+
+    fun toggleFilters() {
+        _state.update { it.copy(isFiltersExpanded = !it.isFiltersExpanded) }
+    }
+
+    fun onSortOptionChange(option: SortOption) {
+        updateFilters { it.copy(sortOption = option) }
+    }
+
+    fun onSortDirectionChange(direction: SortDirection) {
+        updateFilters { it.copy(sortDirection = direction) }
+    }
+
+    fun onListTypeChange(filter: ListTypeFilter) {
+        updateFilters { it.copy(listType = filter) }
+    }
+
+    fun clearFilters() {
+        updateFilters {
+            it.copy(
+                searchQuery = "",
+                sortOption = SortOption.RECENT,
+                sortDirection = SortDirection.DESCENDING,
+                listType = ListTypeFilter.ALL,
+                isFiltersExpanded = false,
+            )
+        }
+    }
+
+    private fun updateFilters(transform: (ListsUiState) -> ListsUiState) {
+        _state.update { current ->
+            transform(current).recalculateLists()
+        }
+    }
+
+    private fun filterLists(
+        source: List<ShoppingList>,
+        state: ListsUiState,
+    ): List<ShoppingList> {
+        var filtered = source
+
+        if (state.searchQuery.isNotBlank()) {
+            filtered = filtered.filter { list ->
+                list.name.contains(state.searchQuery, ignoreCase = true)
+            }
+        }
+
+        filtered = when (state.listType) {
+            ListTypeFilter.ALL -> filtered
+            ListTypeFilter.SHARED -> filtered.filter { it.sharedWith.isNotEmpty() }
+            ListTypeFilter.PERSONAL -> filtered.filter { it.sharedWith.isEmpty() }
+        }
+
+        val sorted = when (state.sortOption) {
+            SortOption.NAME -> filtered.sortedBy { it.name.lowercase() }
+            SortOption.RECENT -> filtered.sortedBy { it.updatedAt }
+            SortOption.PROGRESS -> filtered.sortedBy { list ->
+                val total = list.items.size
+                val completed = list.items.count { it.isAcquired }
+                if (total == 0) 0f else completed.toFloat() / total.toFloat()
+            }
+        }
+
+        val finalSorted = if (state.sortDirection == SortDirection.ASCENDING) {
+            sorted
+        } else {
+            sorted.asReversed()
+        }
+
+        return finalSorted
+    }
+
+    private fun ListsUiState.recalculateLists(newAllLists: List<ShoppingList>? = null): ListsUiState {
+        val allLists = newAllLists ?: this.allLists
+        val filtered = filterLists(allLists, this)
+        return this.copy(allLists = allLists, lists = filtered)
     }
 
     fun clearError() {
@@ -454,6 +537,7 @@ class ListsViewModel @Inject constructor(
 }
 
 data class ListsUiState(
+    val allLists: List<ShoppingList> = emptyList(),
     val lists: List<ShoppingList> = emptyList(),
     val recurringLists: List<ShoppingList> = emptyList(),
     val showRecurringSection: Boolean = false,
@@ -464,6 +548,11 @@ data class ListsUiState(
     val deleteListState: DeleteListUiState = DeleteListUiState(),
     val pantryOptions: List<PantryOption> = emptyList(),
     val completeListState: CompleteListUiState = CompleteListUiState(),
+    val searchQuery: String = "",
+    val isFiltersExpanded: Boolean = false,
+    val sortOption: SortOption = SortOption.RECENT,
+    val sortDirection: SortDirection = SortDirection.DESCENDING,
+    val listType: ListTypeFilter = ListTypeFilter.ALL,
 )
 
 data class EditListUiState(

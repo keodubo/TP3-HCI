@@ -92,6 +92,7 @@ class GetHomeListsUseCase @Inject constructor(
             name = name,
             date = formatRelativeTime(updatedAt, now),
             itemCount = totalItems,
+            completedItemCount = acquiredItems,
             status = status,
             isShared = sharedWith.isNotEmpty(),
         )

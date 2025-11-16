@@ -150,8 +150,8 @@ fun ForgotPasswordScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.email,
                 onValueChange = onEmailChanged,
-                label = { Text(stringResource(R.string.label_email)) },
                 singleLine = true,
+                placeholder = { Text(stringResource(R.string.label_email)) },
             )
 
             // Error message
@@ -191,4 +191,3 @@ fun ForgotPasswordScreen(
         }
     }
 }
-

@@ -9,6 +9,7 @@ import com.comprartir.mobile.core.util.FeatureFlags
 import com.comprartir.mobile.pantry.data.PantryItem
 import com.comprartir.mobile.pantry.data.PantryRepository
 import com.comprartir.mobile.pantry.data.PantrySummary
+import com.comprartir.mobile.feature.lists.model.SortDirection
 import com.comprartir.mobile.products.data.Product
 import com.comprartir.mobile.products.data.ProductsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -327,6 +328,37 @@ class PantryViewModel @Inject constructor(
         _state.update { it.copy(errorMessage = null) }
     }
 
+    fun onSearchQueryChange(query: String) {
+        _state.update { it.copy(searchQuery = query) }
+    }
+
+    fun toggleFilters() {
+        _state.update { it.copy(isFiltersExpanded = !it.isFiltersExpanded) }
+    }
+
+    fun onSortOptionChange(option: PantrySortOption) {
+        _state.update { it.copy(sortOption = option) }
+    }
+
+    fun onSortDirectionChange(direction: SortDirection) {
+        _state.update { it.copy(sortDirection = direction) }
+    }
+
+    fun onPantryTypeFilterChange(filter: PantryTypeFilter) {
+        _state.update { it.copy(pantryTypeFilter = filter) }
+    }
+
+    fun clearFilters() {
+        _state.update {
+            it.copy(
+                searchQuery = "",
+                sortOption = PantrySortOption.RECENT,
+                sortDirection = SortDirection.DESCENDING,
+                pantryTypeFilter = PantryTypeFilter.ALL,
+            )
+        }
+    }
+
     private suspend fun resolveProductId(dialog: PantryItemDialogState): String {
         if (dialog.isEditing && !dialog.productId.isNullOrBlank()) {
             return dialog.productId
@@ -370,6 +402,11 @@ data class PantryUiState(
     val selectedPantryId: String? = null,
     val allItems: List<PantryItem> = emptyList(),
     val items: List<PantryItem> = emptyList(),
+    val searchQuery: String = "",
+    val isFiltersExpanded: Boolean = false,
+    val sortOption: PantrySortOption = PantrySortOption.RECENT,
+    val sortDirection: SortDirection = SortDirection.DESCENDING,
+    val pantryTypeFilter: PantryTypeFilter = PantryTypeFilter.ALL,
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
     val pantryDialog: PantryDialogState = PantryDialogState(),
@@ -408,3 +445,15 @@ data class PantryShareUiState(
     val removingUserId: String? = null,
     @StringRes val errorMessageRes: Int? = null,
 )
+
+enum class PantrySortOption {
+    RECENT,
+    NAME,
+    ITEM_COUNT,
+}
+
+enum class PantryTypeFilter {
+    ALL,
+    SHARED,
+    PERSONAL,
+}

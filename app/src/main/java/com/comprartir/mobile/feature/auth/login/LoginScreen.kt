@@ -181,7 +181,7 @@ fun LoginScreen(
                         value = state.email,
                         onValueChange = onEmailChanged,
                         singleLine = true,
-                        label = { Text(text = stringResource(id = R.string.label_email)) },
+                        placeholder = { Text(text = stringResource(id = R.string.label_email)) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Outlined.Mail,
@@ -202,7 +202,7 @@ fun LoginScreen(
                         value = state.password,
                         onValueChange = onPasswordChanged,
                         singleLine = true,
-                        label = { Text(text = stringResource(id = R.string.label_password)) },
+                        placeholder = { Text(text = stringResource(id = R.string.label_password)) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Outlined.Lock,

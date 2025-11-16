@@ -194,7 +194,6 @@ private fun ListsSearchCard(
                 placeholder = { Text(text = stringResource(id = R.string.lists_search_placeholder)) },
                 singleLine = true,
                 maxLines = 1,
-                label = { Text(text = searchContentDescription) },
             )
             Button(
                 onClick = onCreateList,

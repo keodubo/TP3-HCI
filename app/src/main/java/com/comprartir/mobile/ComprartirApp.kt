@@ -90,7 +90,6 @@ fun ComprartirApp(
                                 launchSingleTop = true
                             }
                         },
-                        featureFlags = featureFlags,
                     )
                 },
             ) { paddingValues ->

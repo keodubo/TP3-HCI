@@ -59,8 +59,8 @@ fun ProductsScreen(
             modifier = Modifier.fillMaxWidth(),
             value = state.searchQuery,
             onValueChange = onSearchQueryChanged,
-            label = { Text(text = stringResource(id = R.string.hint_search_products)) },
             isError = state.errorMessage != null,
+            placeholder = { Text(text = stringResource(id = R.string.hint_search_products)) },
             supportingText = state.errorMessage?.let { message ->
                 {
                     Text(

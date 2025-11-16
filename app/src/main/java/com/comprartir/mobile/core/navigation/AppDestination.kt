@@ -19,6 +19,7 @@ enum class AppDestination(val route: String) {
     AcquireProduct("lists/acquire"),
     Settings("settings"),
     Pantry("pantry/overview"),
+    PantryDetail("pantry/{pantryId}"),
     OptionalPasswordRecovery("auth/passwordRecovery"),
     OptionalHistory("lists/history"),
     OptionalRecurringLists("lists/recurring"),

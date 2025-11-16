@@ -58,22 +58,22 @@ fun UpdatePasswordScreen(
             modifier = Modifier.fillMaxWidth(),
             value = state.currentPassword,
             onValueChange = onCurrentPasswordChanged,
-            label = { Text(stringResource(id = R.string.label_current_password)) },
             singleLine = true,
+            placeholder = { Text(stringResource(id = R.string.label_current_password)) },
         )
         ComprartirOutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = state.newPassword,
             onValueChange = onNewPasswordChanged,
-            label = { Text(stringResource(id = R.string.label_new_password)) },
             singleLine = true,
+            placeholder = { Text(stringResource(id = R.string.label_new_password)) },
         )
         ComprartirOutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = state.confirmPassword,
             onValueChange = onConfirmPasswordChanged,
-            label = { Text(stringResource(id = R.string.label_confirm_new_password)) },
             singleLine = true,
+            placeholder = { Text(stringResource(id = R.string.label_confirm_new_password)) },
         )
         state.errorMessageRes?.let { errorRes ->
             Text(

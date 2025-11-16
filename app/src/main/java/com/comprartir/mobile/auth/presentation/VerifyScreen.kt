@@ -46,17 +46,17 @@ fun VerifyScreen(
         OutlinedTextField(
             value = uiState.email,
             onValueChange = viewModel::onEmailChange,
-            label = { Text("Email") },
             singleLine = true,
             isError = uiState.error != null,
+            placeholder = { Text("Email") },
             modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
             value = uiState.code,
             onValueChange = viewModel::onCodeChange,
-            label = { Text("Verification Code") },
             singleLine = true,
             isError = uiState.error != null,
+            placeholder = { Text("Verification Code") },
             modifier = Modifier.fillMaxWidth()
         )
         uiState.error?.let {

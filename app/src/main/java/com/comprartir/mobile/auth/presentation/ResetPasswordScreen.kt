@@ -166,8 +166,8 @@ fun ResetPasswordScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.code,
                 onValueChange = onCodeChanged,
-                label = { Text(stringResource(R.string.label_reset_code)) },
                 singleLine = true,
+                placeholder = { Text(stringResource(R.string.label_reset_code)) },
             )
 
             Spacer(modifier = Modifier.height(spacing.medium))
@@ -177,8 +177,8 @@ fun ResetPasswordScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.newPassword,
                 onValueChange = onPasswordChanged,
-                label = { Text(stringResource(R.string.label_new_password)) },
                 singleLine = true,
+                placeholder = { Text(stringResource(R.string.label_new_password)) },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -200,8 +200,8 @@ fun ResetPasswordScreen(
                 modifier = Modifier.fillMaxWidth(),
                 value = state.confirmPassword,
                 onValueChange = onConfirmPasswordChanged,
-                label = { Text(stringResource(R.string.label_confirm_password)) },
                 singleLine = true,
+                placeholder = { Text(stringResource(R.string.label_confirm_password)) },
                 visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
@@ -254,4 +254,3 @@ fun ResetPasswordScreen(
         }
     }
 }
-

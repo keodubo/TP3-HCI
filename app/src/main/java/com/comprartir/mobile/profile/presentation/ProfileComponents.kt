@@ -100,7 +100,7 @@ fun ProfileTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
+        placeholder = { Text(label) },
         enabled = enabled,
         isError = errorMessage != null,
         supportingText = {
@@ -147,7 +147,7 @@ fun ProfileDropdownField(
             value = value,
             onValueChange = {},
             readOnly = true,
-            label = { Text(label) },
+            placeholder = { Text(label) },
             trailingIcon = {
                 Icon(
                     imageVector = Icons.Outlined.ArrowDropDown,
@@ -170,6 +170,7 @@ fun ProfileDropdownField(
         ExposedDropdownMenu(
             expanded = expanded && enabled,
             onDismissRequest = { expanded = false },
+            modifier = Modifier.background(Color.White),
         ) {
             options.forEach { (key, displayText) ->
                 DropdownMenuItem(

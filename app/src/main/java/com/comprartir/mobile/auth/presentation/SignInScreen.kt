@@ -73,16 +73,16 @@ fun SignInScreen(
             modifier = Modifier.fillMaxWidth(),
             value = state.credentials.email,
             onValueChange = onEmailChanged,
-            label = { Text(text = stringResource(id = R.string.label_email)) },
             singleLine = true,
+            placeholder = { Text(text = stringResource(id = R.string.label_email)) },
         )
         ComprartirOutlinedTextField(
             modifier = Modifier.fillMaxWidth(),
             value = state.credentials.password,
             onValueChange = onPasswordChanged,
-            label = { Text(text = stringResource(id = R.string.label_password)) },
             singleLine = true,
             isError = state.errorMessage != null,
+            placeholder = { Text(text = stringResource(id = R.string.label_password)) },
             supportingText = state.errorMessage?.let { message ->
                 {
                     Text(

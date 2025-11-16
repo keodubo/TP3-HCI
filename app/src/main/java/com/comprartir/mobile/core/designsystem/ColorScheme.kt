@@ -18,6 +18,8 @@ object ComprartirColors {
     val TextMuted = Color(0xFF6B7280)
     val Placeholder = Color(0xFF9CA3AF)
     val White = Color(0xFFFFFFFF)
+    val DarkNavy = Color(0xFF2A2A44)
+    val SearchFilterPill = Color(0xFFA2A244)
 
     val BrandPrimary = Color(0xFF4DA851)
     val BrandPressed = Color(0xFF3E8E47)
@@ -108,3 +110,9 @@ val ColorScheme.surfaceCard: Color
 
 val ColorScheme.borderDefault: Color
     get() = ComprartirColors.Border
+
+val ColorScheme.darkNavy: Color
+    get() = ComprartirColors.DarkNavy
+
+val ColorScheme.searchFilterPill: Color
+    get() = ComprartirColors.SearchFilterPill

@@ -17,6 +17,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -48,7 +49,7 @@ fun EditListDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = spacing.large),
-            color = MaterialTheme.colorScheme.surface,
+            color = Color.White,
         ) {
             Column(
                 modifier = Modifier
@@ -66,7 +67,7 @@ fun EditListDialog(
                     onValueChange = onNameChange,
                     shape = ComprartirPillShape,
                     singleLine = true,
-                    label = { Text(stringResource(id = R.string.lists_create_dialog_name)) },
+                    placeholder = { Text(stringResource(id = R.string.lists_create_dialog_name)) },
                 )
                 OutlinedTextField(
                     modifier = Modifier
@@ -75,7 +76,7 @@ fun EditListDialog(
                     value = state.description,
                     onValueChange = onDescriptionChange,
                     shape = ComprartirPillShape,
-                    label = { Text(stringResource(id = R.string.lists_create_dialog_description)) },
+                    placeholder = { Text(stringResource(id = R.string.lists_create_dialog_description)) },
                     supportingText = {
                         Text(
                             text = stringResource(id = R.string.lists_create_dialog_optional_hint),

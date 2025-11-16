@@ -462,18 +462,21 @@ private fun RegisterTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
 ) {
     val spacing = LocalSpacing.current
+    val placeholderText = placeholder ?: label
     Column(
         verticalArrangement = Arrangement.spacedBy(spacing.tiny),
     ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.textMuted,
+        )
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            label = { Text(text = label) },
-            placeholder = {
-                placeholder?.let { Text(text = it) }
-            },
+            placeholder = { Text(text = placeholderText) },
             leadingIcon = leadingIcon,
             trailingIcon = trailingIcon,
             isError = isError,

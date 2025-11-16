@@ -130,7 +130,7 @@ fun VerifyScreen(
                         value = state.email,
                         onValueChange = {},
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text(text = stringResource(id = R.string.label_email)) },
+                        placeholder = { Text(text = stringResource(id = R.string.label_email)) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Outlined.Mail,
@@ -156,7 +156,7 @@ fun VerifyScreen(
                             onEvent(VerifyEvent.CodeChanged(sanitized))
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text(text = stringResource(id = R.string.verify_code_label)) },
+                        placeholder = { Text(text = stringResource(id = R.string.verify_code_label)) },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Ascii,
                             imeAction = ImeAction.Done,

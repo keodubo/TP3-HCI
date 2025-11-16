@@ -265,6 +265,19 @@ private fun NavGraphBuilder.pantryGraph(appState: ComprartirAppState) {
     composable(AppDestination.Pantry.route) {
         PantryRoute(onNavigate = appState::navigate)
     }
+    
+    composable(
+        route = AppDestination.PantryDetail.route,
+        arguments = listOf(
+            navArgument("pantryId") { type = NavType.StringType }
+        ),
+    ) { backStackEntry ->
+        val pantryId = backStackEntry.arguments?.getString("pantryId") ?: return@composable
+        com.comprartir.mobile.pantry.presentation.PantryDetailRoute(
+            pantryId = pantryId,
+            onNavigateBack = { appState.navController.popBackStack() },
+        )
+    }
 }
 
 private fun NavGraphBuilder.optionalFeaturesGraph(
