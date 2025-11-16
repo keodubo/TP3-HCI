@@ -33,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.comprartir.mobile.R
 import com.comprartir.mobile.core.designsystem.LocalSpacing
-import com.comprartir.mobile.profile.domain.AppTheme
 
 @Composable
 fun ProfileAvatarSection(
@@ -216,15 +215,6 @@ fun ProfileFieldValue(
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         modifier = modifier,
-    )
-}
-
-@Composable
-fun getThemeOptions(): List<Pair<String, String>> {
-    return listOf(
-        AppTheme.SYSTEM.code to stringResource(R.string.theme_system),
-        AppTheme.LIGHT.code to stringResource(R.string.theme_light),
-        AppTheme.DARK.code to stringResource(R.string.theme_dark),
     )
 }
 

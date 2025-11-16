@@ -16,11 +16,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
-import com.comprartir.mobile.core.data.datastore.ThemeMode
-import com.comprartir.mobile.core.data.datastore.UserPreferences
 import com.comprartir.mobile.core.data.datastore.UserPreferencesDataSource
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -32,10 +32,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        val initialPreferences = runBlocking {
+            userPreferencesDataSource.userPreferences().first()
+        }
 
         setContent {
             val preferences by userPreferencesDataSource.userPreferences()
-                .collectAsState(initial = UserPreferences(ThemeMode.SYSTEM, null, true))
+                .collectAsState(initial = initialPreferences)
             val localizedConfiguration = remember(preferences.languageOverride) {
                 val baseConfig = Configuration(resources.configuration)
                 val override = preferences.languageOverride
@@ -65,7 +68,10 @@ class MainActivity : AppCompatActivity() {
                 LocalContext provides localizedContext,
             ) {
                 val windowSizeClass = calculateWindowSizeClass(this@MainActivity)
-                ComprartirApp(windowSizeClass = windowSizeClass)
+                ComprartirApp(
+                    windowSizeClass = windowSizeClass,
+                    appTheme = preferences.appTheme,
+                )
             }
         }
     }

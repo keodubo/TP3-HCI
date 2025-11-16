@@ -3,7 +3,10 @@ package com.comprartir.mobile.core.designsystem
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
+import com.comprartir.mobile.core.designsystem.theme.LocalColorTokens
 
 /**
  * Color palette aligned with the Comprartir web design tokens.
@@ -12,10 +15,13 @@ object ComprartirColors {
     val Surface = Color(0xFFF4F6F8)
     val SurfaceDark = Color(0xFF101522)
     val SurfaceCard = Color(0xFFFFFFFF)
+    val SurfaceCardDark = Color(0xFF1E2536)
     val Border = Color(0xFFE5E7EB)
     val BorderHover = Color(0xFFD1D5DB)
     val TextPrimary = Color(0xFF0F172A)
+    val TextPrimaryDark = Color(0xFFF4F6FB)
     val TextMuted = Color(0xFF6B7280)
+    val TextMutedDark = Color(0xFFB5BDCC)
     val Placeholder = Color(0xFF9CA3AF)
     val White = Color(0xFFFFFFFF)
     val DarkNavy = Color(0xFF2A2A44)
@@ -100,13 +106,19 @@ val ColorScheme.brandTint: Color
     get() = ComprartirColors.BrandTint
 
 val ColorScheme.textPrimary: Color
-    get() = ComprartirColors.TextPrimary
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalColorTokens.current.textPrimary
 
 val ColorScheme.textMuted: Color
-    get() = ComprartirColors.TextMuted
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalColorTokens.current.textMuted
 
 val ColorScheme.surfaceCard: Color
-    get() = ComprartirColors.SurfaceCard
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalColorTokens.current.surfaceCard
 
 val ColorScheme.borderDefault: Color
     get() = ComprartirColors.Border

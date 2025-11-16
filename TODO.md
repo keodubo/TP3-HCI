@@ -31,11 +31,11 @@ Complete the items in order; each block lists the remaining Functional (RF) and 
    - `HomeViewModel` hardcodes `recentActivity = emptyList()` (`app/src/main/java/com/comprartir/mobile/feature/home/viewmodel/HomeViewModel.kt:33`), so the activity section in `HomeScreen` never shows data. Populate it using either a backend feed or synthesized events from local list mutations to match the spec’s “incorporate class characteristics” guidance for the main screen.
 
 ## RNF gaps
-10. [ ]  **RNF1 – Localization**
+10. [x]  **RNF1 – Localization**
     
     The application must support at least two languages (Spanish and English), automatically selecting the language based on the device settings and using proper string resources instead of hard-coded text.
-    
-11. [ ]  **RNF2 – Contextual app bar**
+
+11. [x]  **RNF2 – Contextual app bar**
     
     The application must provide a consistent top app bar that displays a contextual title and relevant actions for each screen (e.g., share, edit, filter), following platform conventions.
     
@@ -47,11 +47,11 @@ Complete the items in order; each block lists the remaining Functional (RF) and 
     
     The application must adapt its layout to different device form factors (phones and tablets), using responsive patterns such as bottom navigation on compact devices and navigation rail / master–detail layouts on larger screens.
     
-14. [ ]  **RNF5 – Support for different orientations**
+14. [x]  **RNF5 – Support for different orientations**
     
     The application must behave correctly in both portrait and landscape orientations, preserving state across orientation changes and adjusting layouts to use the available space efficiently.
     
-15. [ ]  **RNF6 – Platform compatibility (Android 10+)**
+15. [x]  **RNF6 – Platform compatibility (Android 10+)**
     
     The application must target and run correctly on Android 10 (API 29) or higher, respecting platform guidelines for permissions, networking, and navigation.
     

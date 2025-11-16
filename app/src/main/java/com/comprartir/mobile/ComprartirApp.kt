@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.comprartir.mobile.core.data.datastore.AppTheme
 import com.comprartir.mobile.core.designsystem.ComprartirTheme
 import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.core.navigation.ComprartirNavHost
@@ -30,11 +31,14 @@ import com.comprartir.mobile.shared.components.ComprartirTopBar
 fun ComprartirApp(
     windowSizeClass: WindowSizeClass,
     featureFlags: FeatureFlags = FeatureFlags.Disabled,
+    appTheme: AppTheme = AppTheme.LIGHT,
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    ComprartirTheme {
+    ComprartirTheme(
+        darkTheme = appTheme == AppTheme.DARK,
+    ) {
         val appState = rememberComprartirAppState(
             windowSizeClass = windowSizeClass,
             isLandscape = isLandscape,

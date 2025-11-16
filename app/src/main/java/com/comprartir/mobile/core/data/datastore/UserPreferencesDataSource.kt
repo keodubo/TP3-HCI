@@ -20,15 +20,15 @@ class UserPreferencesDataSource @Inject constructor(
 
     fun userPreferences(): Flow<UserPreferences> = dataStore.data.map { prefs ->
         UserPreferences(
-            themeMode = prefs[themeModeKey] ?: ThemeMode.SYSTEM,
+            appTheme = AppTheme.fromStorageValue(prefs[themeModeKey]),
             languageOverride = prefs[languageOverrideKey],
             notificationsEnabled = prefs[notificationsEnabledKey] ?: true,
         )
     }
 
-    suspend fun updateTheme(themeMode: String) {
+    suspend fun updateTheme(theme: AppTheme) {
         dataStore.edit { prefs ->
-            prefs[themeModeKey] = themeMode
+            prefs[themeModeKey] = theme.storageValue
         }
     }
 
@@ -50,13 +50,19 @@ class UserPreferencesDataSource @Inject constructor(
 }
 
 data class UserPreferences(
-    val themeMode: String,
+    val appTheme: AppTheme,
     val languageOverride: String?,
     val notificationsEnabled: Boolean,
 )
 
-object ThemeMode {
-    const val LIGHT = "light"
-    const val DARK = "dark"
-    const val SYSTEM = "system"
+enum class AppTheme(val storageValue: String) {
+    LIGHT("light"),
+    DARK("dark");
+
+    companion object {
+        fun fromStorageValue(value: String?): AppTheme = when (value?.lowercase()) {
+            DARK.storageValue -> DARK
+            else -> LIGHT
+        }
+    }
 }

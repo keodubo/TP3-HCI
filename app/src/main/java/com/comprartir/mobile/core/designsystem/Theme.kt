@@ -12,6 +12,9 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import com.comprartir.mobile.core.designsystem.theme.DarkColorTokens
+import com.comprartir.mobile.core.designsystem.theme.LightColorTokens
+import com.comprartir.mobile.core.designsystem.theme.LocalColorTokens
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @Composable
@@ -43,9 +46,12 @@ fun ComprartirTheme(
         systemUiController.setSystemBarsColor(color = colorScheme.background, darkIcons = !darkTheme)
     }
 
+    val tokens = if (darkTheme) DarkColorTokens else LightColorTokens
+
     CompositionLocalProvider(
         LocalSpacing provides Spacing(),
         LocalElevations provides ElevationTokens(),
+        LocalColorTokens provides tokens,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

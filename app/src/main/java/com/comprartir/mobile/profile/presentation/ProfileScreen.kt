@@ -17,9 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.comprartir.mobile.R
+import com.comprartir.mobile.core.data.datastore.AppTheme
 import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.profile.domain.AppLanguage
-import com.comprartir.mobile.profile.domain.AppTheme
 import com.comprartir.mobile.profile.domain.ProfileField
 import com.comprartir.mobile.shared.i18n.rememberLanguageOptions
 
@@ -256,7 +256,10 @@ private fun ProfileFields(
 ) {
     val spacing = LocalSpacing.current
     val languageOptions = rememberLanguageOptions()
-    val themeOptions = getThemeOptions()
+    val themeOptions = listOf(
+        AppTheme.LIGHT to stringResource(R.string.theme_light),
+        AppTheme.DARK to stringResource(R.string.theme_dark),
+    )
     
     Column(
         verticalArrangement = Arrangement.spacedBy(spacing.medium),
@@ -300,16 +303,17 @@ private fun ProfileFields(
             options = languageOptions.map { it.language.code to it.label },
             enabled = true, // Preferencias siempre editables
         )
-        
-        // Theme dropdown
+
         ProfileDropdownField(
-            value = themeOptions.find { it.first == state.currentProfile.theme.code }?.second 
-                ?: stringResource(R.string.theme_system),
+            value = themeOptions.firstOrNull { it.first == state.themePreference }?.second
+                ?: stringResource(R.string.theme_light),
             onValueChange = { selectedCode ->
-                onThemeChanged(AppTheme.fromCode(selectedCode))
+                val selectedTheme = AppTheme.entries.firstOrNull { it.storageValue == selectedCode }
+                    ?: AppTheme.LIGHT
+                onThemeChanged(selectedTheme)
             },
             label = stringResource(R.string.profile_theme),
-            options = themeOptions,
+            options = themeOptions.map { it.first.storageValue to it.second },
             enabled = true,
         )
     }

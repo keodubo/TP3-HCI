@@ -4,11 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.comprartir.mobile.R
 import com.comprartir.mobile.auth.data.AuthRepository
+import com.comprartir.mobile.core.data.datastore.AppTheme
 import com.comprartir.mobile.core.data.datastore.UserPreferencesDataSource
 import com.comprartir.mobile.profile.data.ProfileRepository
 import com.comprartir.mobile.profile.data.UserProfile
 import com.comprartir.mobile.profile.domain.AppLanguage
-import com.comprartir.mobile.profile.domain.AppTheme
 import com.comprartir.mobile.profile.domain.FieldError
 import com.comprartir.mobile.profile.domain.ProfileField
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -37,16 +36,22 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 repository.profile,
-                userPreferencesDataSource.userPreferences().map { AppLanguage.fromCode(it.languageOverride) },
-            ) { profile, languagePreference ->
-                profile.copy(language = languagePreference)
-            }.collect { mergedProfile ->
+                userPreferencesDataSource.userPreferences(),
+            ) { profile, preferences ->
+                profile.copy(language = AppLanguage.fromCode(preferences.languageOverride)) to preferences.appTheme
+            }.collect { (mergedProfile, themePreference) ->
                 originalProfile = mergedProfile
-                if (!_state.value.isEditing) {
-                    _state.update {
-                        it.copy(
+                _state.update { current ->
+                    if (current.isEditing) {
+                        current.copy(
+                            isLoading = false,
+                            themePreference = themePreference,
+                        )
+                    } else {
+                        current.copy(
                             currentProfile = mergedProfile,
                             isLoading = false,
+                            themePreference = themePreference,
                         )
                     }
                 }
@@ -111,12 +116,9 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun onThemeChanged(theme: AppTheme) {
-        _state.update { current ->
-            val newProfile = current.currentProfile.copy(theme = theme)
-            current.copy(
-                currentProfile = newProfile,
-                hasUnsavedChanges = newProfile != originalProfile
-            )
+        _state.update { it.copy(themePreference = theme) }
+        viewModelScope.launch {
+            userPreferencesDataSource.updateTheme(theme)
         }
     }
 
@@ -248,4 +250,5 @@ data class ProfileUiState(
     val hasUnsavedChanges: Boolean = false,
     val fieldErrors: Map<ProfileField, Int> = emptyMap(),
     val snackbarMessage: Int? = null,
+    val themePreference: AppTheme = AppTheme.LIGHT,
 )

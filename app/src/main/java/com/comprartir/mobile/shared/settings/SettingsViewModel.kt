@@ -2,8 +2,7 @@ package com.comprartir.mobile.shared.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.comprartir.mobile.core.data.datastore.ThemeMode
-import com.comprartir.mobile.core.data.datastore.UserPreferences
+import com.comprartir.mobile.core.data.datastore.AppTheme
 import com.comprartir.mobile.core.data.datastore.UserPreferencesDataSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -23,34 +22,18 @@ class SettingsViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             userPreferencesDataSource.userPreferences().collect { preferences ->
-                _state.value = _state.value.copy(preferences = preferences)
+                _state.value = _state.value.copy(appTheme = preferences.appTheme)
             }
         }
     }
 
-    fun onThemeSelected(theme: String) {
+    fun onThemeSelected(theme: AppTheme) {
         viewModelScope.launch {
             userPreferencesDataSource.updateTheme(theme)
-        }
-    }
-
-    fun onLanguageSelected(language: String?) {
-        viewModelScope.launch {
-            userPreferencesDataSource.updateLanguage(language)
-        }
-    }
-
-    fun onNotificationsToggled(enabled: Boolean) {
-        viewModelScope.launch {
-            userPreferencesDataSource.updateNotifications(enabled)
         }
     }
 }
 
 data class SettingsUiState(
-    val preferences: UserPreferences = UserPreferences(
-        themeMode = ThemeMode.SYSTEM,
-        languageOverride = null,
-        notificationsEnabled = true,
-    ),
+    val appTheme: AppTheme = AppTheme.LIGHT,
 )
