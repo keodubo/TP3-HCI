@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.comprartir.mobile.R
+import com.comprartir.mobile.core.util.FeatureFlags
 import com.comprartir.mobile.pantry.data.PantryItem
 import com.comprartir.mobile.pantry.data.PantryRepository
 import com.comprartir.mobile.pantry.data.PantrySummary
@@ -29,11 +30,16 @@ import kotlinx.coroutines.launch
 class PantryViewModel @Inject constructor(
     private val repository: PantryRepository,
     private val productsRepository: ProductsRepository,
+    featureFlags: FeatureFlags,
 ) : ViewModel() {
 
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
-    private val _state = MutableStateFlow(PantryUiState())
+    private val _state = MutableStateFlow(
+        PantryUiState(
+            showManagementFeatures = featureFlags.rf15PantryProducts,
+        )
+    )
     val state: StateFlow<PantryUiState> = _state.asStateFlow()
 
     init {
@@ -251,10 +257,12 @@ class PantryViewModel @Inject constructor(
     }
 
     fun onShareEmailChanged(value: String) {
+        if (!_state.value.showManagementFeatures) return
         _state.update { it.copy(shareState = it.shareState.copy(email = value, errorMessageRes = null)) }
     }
 
     fun inviteShare() {
+        if (!_state.value.showManagementFeatures) return
         val pantryId = _state.value.selectedPantryId ?: return
         val email = _state.value.shareState.email.trim()
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
@@ -282,6 +290,7 @@ class PantryViewModel @Inject constructor(
     }
 
     fun removeSharedUser(userId: String) {
+        if (!_state.value.showManagementFeatures) return
         val pantryId = _state.value.selectedPantryId ?: return
         viewModelScope.launch {
             _state.update { it.copy(shareState = it.shareState.copy(removingUserId = userId)) }
@@ -366,6 +375,7 @@ data class PantryUiState(
     val pantryDialog: PantryDialogState = PantryDialogState(),
     val itemDialog: PantryItemDialogState = PantryItemDialogState(),
     val shareState: PantryShareUiState = PantryShareUiState(),
+    val showManagementFeatures: Boolean = false,
 ) {
     val selectedPantry: PantrySummary? get() = pantries.firstOrNull { it.id == selectedPantryId }
 }

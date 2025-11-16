@@ -34,7 +34,9 @@ fun ResponsiveAppScaffold(
     floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
-    val navigationItems = remember { primaryNavigationItems() }
+    val navigationItems = remember(appState.featureFlags) {
+        primaryNavigationItems(appState.featureFlags)
+    }
 
     val navBackStackEntry by appState.navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route

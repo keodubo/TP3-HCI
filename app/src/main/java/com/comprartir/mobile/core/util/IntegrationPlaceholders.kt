@@ -1,27 +1,41 @@
 package com.comprartir.mobile.core.util
 
 /**
- * Holds placeholder contracts for future hardware integrations (RNF7-RNF9).
+ * Centralizes the wiring for optional hardware integrations (RNF7-RNF9).
+ *
+ * The real implementations will replace the current simulated handlers, so we keep a small
+ * publish/subscribe model that UI layers can hook into without changing public APIs.
  */
 object IntegrationPlaceholders {
-    /**
-     * TODO(RNF7): Replace with actual barcode scanner integration once camera permissions flow is defined.
-     */
+
+    interface Listener {
+        fun onBarcodeRequested() {}
+        fun onVoiceRequested() {}
+        fun onPhotoRequested() {}
+    }
+
+    private val listeners = mutableSetOf<Listener>()
+
+    fun registerListener(listener: Listener) {
+        listeners += listener
+    }
+
+    fun unregisterListener(listener: Listener) {
+        listeners -= listener
+    }
+
     fun launchBarcodeScanner() {
-        // Intentionally left blank.
+        if (listeners.isEmpty()) return
+        listeners.toList().forEach { it.onBarcodeRequested() }
     }
 
-    /**
-     * TODO(RNF8): Connect to voice command engine (e.g., Speech Services) for hands-free interactions.
-     */
     fun startVoiceCommandSession() {
-        // Intentionally left blank.
+        if (listeners.isEmpty()) return
+        listeners.toList().forEach { it.onVoiceRequested() }
     }
 
-    /**
-     * TODO(RNF9): Implement photo capture pipeline to attach product images.
-     */
     fun captureProductPhoto() {
-        // Intentionally left blank.
+        if (listeners.isEmpty()) return
+        listeners.toList().forEach { it.onPhotoRequested() }
     }
 }

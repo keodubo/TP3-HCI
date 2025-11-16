@@ -27,6 +27,7 @@ import com.comprartir.mobile.profile.presentation.ProfileRoute
 import com.comprartir.mobile.shared.components.OptionalFeaturePlaceholder
 import com.comprartir.mobile.shared.settings.SettingsRoute
 import com.comprartir.mobile.lists.presentation.AcquireProductRoute
+import com.comprartir.mobile.purchase.presentation.HistoryRoute
 
 @Composable
 fun ComprartirNavHost(
@@ -45,7 +46,7 @@ fun ComprartirNavHost(
         listsGraph(appState, contentPadding)
         settingsGraph()
         pantryGraph(appState)
-        optionalFeaturesGraph(appState)
+        optionalFeaturesGraph(appState, contentPadding)
     }
 }
 
@@ -266,7 +267,10 @@ private fun NavGraphBuilder.pantryGraph(appState: ComprartirAppState) {
     }
 }
 
-private fun NavGraphBuilder.optionalFeaturesGraph(appState: ComprartirAppState) {
+private fun NavGraphBuilder.optionalFeaturesGraph(
+    appState: ComprartirAppState,
+    contentPadding: PaddingValues,
+) {
     if (appState.featureFlags.rf12PasswordRecovery) {
         composable(AppDestination.OptionalPasswordRecovery.route) {
             OptionalFeaturePlaceholder(featureLabel = com.comprartir.mobile.R.string.placeholder_password_recovery)
@@ -274,7 +278,7 @@ private fun NavGraphBuilder.optionalFeaturesGraph(appState: ComprartirAppState) 
     }
     if (appState.featureFlags.rf13History) {
         composable(AppDestination.OptionalHistory.route) {
-            OptionalFeaturePlaceholder(featureLabel = com.comprartir.mobile.R.string.placeholder_history)
+            HistoryRoute(contentPadding = contentPadding)
         }
     }
     if (appState.featureFlags.rf14RecurringLists) {

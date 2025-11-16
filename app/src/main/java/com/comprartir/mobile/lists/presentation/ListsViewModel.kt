@@ -8,6 +8,7 @@ import com.comprartir.mobile.lists.data.ShoppingListsRepository
 import com.comprartir.mobile.R
 import com.comprartir.mobile.feature.lists.model.CreateListUiState
 import com.comprartir.mobile.pantry.data.PantryRepository
+import com.comprartir.mobile.core.util.FeatureFlags
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 class ListsViewModel @Inject constructor(
     private val repository: ShoppingListsRepository,
     private val pantryRepository: PantryRepository,
+    private val featureFlags: FeatureFlags,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ListsUiState())
@@ -35,9 +37,20 @@ class ListsViewModel @Inject constructor(
                 android.util.Log.d(TAG, "observeLists collectLatest: Received ${lists.size} lists from repository")
                 android.util.Log.d(TAG, "observeLists collectLatest: List IDs = ${lists.map { it.id }}")
                 android.util.Log.d(TAG, "observeLists collectLatest: List names = ${lists.map { it.name }}")
+                val showRecurringSection = featureFlags.rf14RecurringLists
+                val recurringLists = if (showRecurringSection) {
+                    lists.filter { it.isRecurring }
+                } else {
+                    emptyList()
+                }
                 _state.update { currentState ->
                     android.util.Log.d(TAG, "observeLists collectLatest: Updating UI state from ${currentState.lists.size} to ${lists.size} lists")
-                    currentState.copy(lists = lists, isLoading = false)
+                    currentState.copy(
+                        lists = lists,
+                        recurringLists = recurringLists,
+                        showRecurringSection = showRecurringSection,
+                        isLoading = false,
+                    )
                 }
                 android.util.Log.d(TAG, "observeLists collectLatest: UI state updated, new state has ${_state.value.lists.size} lists")
             }
@@ -442,6 +455,8 @@ class ListsViewModel @Inject constructor(
 
 data class ListsUiState(
     val lists: List<ShoppingList> = emptyList(),
+    val recurringLists: List<ShoppingList> = emptyList(),
+    val showRecurringSection: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val createListState: CreateListUiState = CreateListUiState(),

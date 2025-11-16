@@ -166,17 +166,20 @@ fun PantryScreen(
                 selectedPantry?.let { pantry ->
                     PantryInfoCard(
                         pantry = pantry,
+                        showManagementFeatures = state.showManagementFeatures,
                         onEdit = { onShowPantryDialog(pantry.id) },
                     )
                 }
 
-                ShareSection(
-                    pantry = selectedPantry,
-                    shareState = state.shareState,
-                    onEmailChanged = onShareEmailChange,
-                    onInvite = onInviteShare,
-                    onRemoveUser = onRemoveSharedUser,
-                )
+                if (state.showManagementFeatures) {
+                    ShareSection(
+                        pantry = selectedPantry,
+                        shareState = state.shareState,
+                        onEmailChanged = onShareEmailChange,
+                        onInvite = onInviteShare,
+                        onRemoveUser = onRemoveSharedUser,
+                    )
+                }
 
                 Text(
                     text = stringResource(id = R.string.pantry_items_heading),
@@ -273,6 +276,7 @@ private fun PantryPickerRow(
 @Composable
 private fun PantryInfoCard(
     pantry: PantrySummary,
+    showManagementFeatures: Boolean,
     onEdit: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
@@ -306,10 +310,12 @@ private fun PantryInfoCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                text = stringResource(id = R.string.pantry_shared_count, pantry.sharedUsers.size),
-                style = MaterialTheme.typography.labelMedium,
-            )
+            if (showManagementFeatures) {
+                Text(
+                    text = stringResource(id = R.string.pantry_shared_count, pantry.sharedUsers.size),
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
         }
     }
 }

@@ -2,12 +2,12 @@ package com.comprartir.mobile.core.util
 
 data class FeatureFlags(
     val rf12PasswordRecovery: Boolean = false,
-    val rf13History: Boolean = false,
-    val rf14RecurringLists: Boolean = false,
-    val rf15PantryProducts: Boolean = false,
-    val rnf7Barcode: Boolean = false,
-    val rnf8VoiceCommands: Boolean = false,
-    val rnf9PhotoCapture: Boolean = false,
+    val rf15PantryProducts: Boolean = true,
+    val rf13History: Boolean = true,          
+    val rf14RecurringLists: Boolean = true, 
+    val rnf7Barcode: Boolean = true,
+    val rnf8VoiceCommands: Boolean = true,
+    val rnf9PhotoCapture: Boolean = true,
 ) {
     companion object {
         val Disabled = FeatureFlags()

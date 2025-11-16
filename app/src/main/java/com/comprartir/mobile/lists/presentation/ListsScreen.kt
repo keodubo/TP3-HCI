@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -155,6 +157,14 @@ fun ListsScreen(
                 ),
             verticalArrangement = Arrangement.Top,
         ) {
+        if (state.showRecurringSection) {
+            RecurringListsSection(
+                lists = state.recurringLists,
+                onListSelected = onListSelected,
+                onCreateList = onShowCreateDialog,
+            )
+            Spacer(modifier = Modifier.height(spacing.large))
+        }
 
         if (state.isLoading && state.lists.isEmpty()) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -260,6 +270,98 @@ fun ListsScreen(
         onDismiss = onDismissDeleteDialog,
         onConfirm = onConfirmDeleteList,
     )
+}
+
+@Composable
+private fun RecurringListsSection(
+    lists: List<ShoppingList>,
+    onListSelected: (String) -> Unit,
+    onCreateList: () -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(spacing.small),
+    ) {
+        Text(
+            text = stringResource(id = R.string.recurring_lists_title),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+        )
+        Text(
+            text = stringResource(id = R.string.recurring_lists_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (lists.isEmpty()) {
+            FilledTonalButton(
+                onClick = onCreateList,
+                modifier = Modifier.align(Alignment.Start),
+            ) {
+                Text(text = stringResource(id = R.string.recurring_lists_action_create))
+            }
+            Text(
+                text = stringResource(id = R.string.recurring_lists_empty),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(spacing.medium),
+                contentPadding = PaddingValues(vertical = spacing.small),
+            ) {
+                items(lists, key = { it.id }) { list ->
+                    RecurringListCard(
+                        list = list,
+                        onOpenList = { onListSelected(list.id) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecurringListCard(
+    list: ShoppingList,
+    onOpenList: () -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    val pendingItems = list.items.count { !it.isAcquired }
+    Card(
+        modifier = Modifier
+            .width(220.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(spacing.small),
+        ) {
+            Text(
+                text = list.name.ifBlank { stringResource(id = R.string.lists_default_title) },
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+            )
+            Text(
+                text = list.description?.takeIf { it.isNotBlank() }
+                    ?: stringResource(id = R.string.lists_no_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+            )
+            Text(
+                text = stringResource(
+                    id = R.string.recurring_lists_items_summary,
+                    pendingItems,
+                ),
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+            )
+            FilledTonalButton(onClick = onOpenList) {
+                Text(text = stringResource(id = R.string.recurring_lists_action_open))
+            }
+        }
+    }
 }
 
 @Composable
