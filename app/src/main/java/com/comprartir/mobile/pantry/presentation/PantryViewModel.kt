@@ -258,6 +258,14 @@ class PantryViewModel @Inject constructor(
         }
     }
 
+    fun increaseItemQuantity(itemId: String) {
+        adjustItemQuantity(itemId, delta = 1.0)
+    }
+
+    fun decreaseItemQuantity(itemId: String) {
+        adjustItemQuantity(itemId, delta = -1.0)
+    }
+
     fun onShareEmailChanged(value: String) {
         if (!_state.value.showManagementFeatures) return
         _state.update { it.copy(shareState = it.shareState.copy(email = value, errorMessageRes = null)) }
@@ -357,6 +365,21 @@ class PantryViewModel @Inject constructor(
                 sortDirection = SortDirection.DESCENDING,
                 pantryTypeFilter = PantryTypeFilter.ALL,
             )
+        }
+    }
+
+    private fun adjustItemQuantity(itemId: String, delta: Double) {
+        viewModelScope.launch {
+            val item = _state.value.allItems.find { it.id == itemId } ?: return@launch
+            val newQuantity = item.quantity + delta
+            runCatching {
+                when {
+                    newQuantity <= 0.0 -> repository.deleteItem(itemId)
+                    else -> repository.upsertItem(item.copy(quantity = newQuantity))
+                }
+            }.onFailure { throwable ->
+                _state.update { it.copy(errorMessage = throwable.message ?: it.errorMessage) }
+            }
         }
     }
 

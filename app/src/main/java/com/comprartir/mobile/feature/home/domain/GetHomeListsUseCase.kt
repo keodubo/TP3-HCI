@@ -84,7 +84,7 @@ class GetHomeListsUseCase @Inject constructor(
         return SharedListUi(
             id = id,
             name = name,
-            ownerId = ownerId.orEmpty(),
+            ownerId = ownerId,
             updatedAt = updatedAt,
             avatarUrl = null,
         )
