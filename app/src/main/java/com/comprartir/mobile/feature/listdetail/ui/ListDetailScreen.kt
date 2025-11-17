@@ -32,9 +32,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -44,6 +46,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -125,6 +128,7 @@ fun ListDetailScreen(
                 onBack = onBack,
                 onEdit = { onEvent(ListDetailEvent.ShowEditDialog) },
                 onDelete = { onEvent(ListDetailEvent.ShowDeleteDialog) },
+                onMarkAllCompleted = { onEvent(ListDetailEvent.MarkAllCompleted) },
             )
         },
         snackbarHost = {
@@ -201,7 +205,7 @@ fun ListDetailScreen(
                         onEvent = onEvent,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = spacing.large),
+                            .padding(horizontal = spacing.small),
                     )
                 }
                 item {
@@ -306,8 +310,11 @@ private fun ListDetailTopBar(
     onBack: () -> Unit,
     onEdit: () -> Unit = {},
     onDelete: () -> Unit = {},
+    onMarkAllCompleted: () -> Unit = {},
 ) {
     val spacing = LocalSpacing.current
+    var showMenu by remember { mutableStateOf(false) }
+    
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 0.dp,
@@ -328,27 +335,63 @@ private fun ListDetailTopBar(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
             )
-            IconButton(
-                onClick = onEdit,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = stringResource(id = R.string.lists_edit),
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = stringResource(id = R.string.lists_delete),
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(20.dp)
-                )
+            Box {
+                IconButton(
+                    onClick = { showMenu = true },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.MoreVert,
+                        contentDescription = stringResource(id = R.string.cd_more_options),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(id = R.string.lists_edit)) },
+                        onClick = {
+                            showMenu = false
+                            onEdit()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Edit,
+                                contentDescription = null
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(id = R.string.list_mark_all_completed)) },
+                        onClick = {
+                            showMenu = false
+                            onMarkAllCompleted()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.CheckCircle,
+                                contentDescription = null
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(id = R.string.lists_delete)) },
+                        onClick = {
+                            showMenu = false
+                            onDelete()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    )
+                }
             }
         }
     }
@@ -370,6 +413,7 @@ private fun ListDetailMainCard(
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
     ) {
         Column(
             modifier = Modifier
@@ -377,37 +421,6 @@ private fun ListDetailMainCard(
                 .padding(spacing.large),
             verticalArrangement = Arrangement.spacedBy(spacing.medium),
         ) {
-            val title = state.name.ifBlank { stringResource(id = R.string.lists_default_title) }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-
-                Row {
-                    IconButton(onClick = { onEvent(com.comprartir.mobile.feature.listdetail.model.ListDetailEvent.ShowEditDialog) }) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = stringResource(R.string.lists_edit)
-                        )
-                    }
-                    IconButton(onClick = { onEvent(com.comprartir.mobile.feature.listdetail.model.ListDetailEvent.ShowDeleteDialog) }) {
-                        Icon(
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = stringResource(R.string.lists_delete),
-                            tint = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                }
-            }
             state.subtitle.takeIf { it.isNotBlank() }?.let {
                 Text(
                     text = it,

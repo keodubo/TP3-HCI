@@ -18,6 +18,7 @@
     <string name="title_share_list">Share List</string>
     <string name="title_acquire_products">Acquire Products</string>
     <string name="cd_back">Back</string>
+    <string name="cd_more_options">More options</string>
     <string name="cd_barcode_scanner">Open barcode scanner (TODO)</string>
     <string name="cd_voice_commands">Start voice command (TODO)</string>
     <string name="cd_photo_capture">Capture product photo (TODO)</string>
@@ -320,6 +321,7 @@
     <string name="error_deleting_list">Failed to delete list. Please try again.</string>
     <string name="lists_edit">Edit</string>
     <string name="lists_delete">Delete</string>
+    <string name="list_mark_all_completed">Mark all as completed</string>
     <string name="lists_edit_dialog_title">Edit List</string>
     <string name="lists_edit_dialog_confirm">Save</string>
     <string name="lists_delete_dialog_title">Delete List?</string>

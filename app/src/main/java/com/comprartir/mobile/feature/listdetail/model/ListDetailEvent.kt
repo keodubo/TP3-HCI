@@ -4,6 +4,7 @@ sealed interface ListDetailEvent {
     data class ToggleItem(val itemId: String, val completed: Boolean) : ListDetailEvent
     data class DeleteItem(val itemId: String) : ListDetailEvent
     data object UndoDelete : ListDetailEvent
+    data object MarkAllCompleted : ListDetailEvent
     data object ToggleHideCompleted : ListDetailEvent
     data object ToggleFilters : ListDetailEvent
     data object ToggleSearch : ListDetailEvent

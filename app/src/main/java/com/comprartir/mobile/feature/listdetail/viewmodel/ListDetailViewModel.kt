@@ -82,6 +82,7 @@ class ListDetailViewModel @Inject constructor(
             is ListDetailEvent.ToggleItem -> toggleItem(event.itemId, event.completed)
             is ListDetailEvent.DeleteItem -> deleteItem(event.itemId)
             ListDetailEvent.UndoDelete -> undoDelete()
+            ListDetailEvent.MarkAllCompleted -> markAllCompleted()
             ListDetailEvent.ToggleHideCompleted -> _state.update { it.copy(hideCompleted = !it.hideCompleted) }
             ListDetailEvent.ToggleFilters -> _state.update { it.copy(filtersExpanded = !it.filtersExpanded) }
             ListDetailEvent.ToggleSearch -> _state.update { it.copy(isSearchExpanded = !it.isSearchExpanded) }
@@ -178,6 +179,18 @@ class ListDetailViewModel @Inject constructor(
                 }.onFailure {
                     _state.update { it.copy(errorMessageRes = R.string.list_detail_error_restore) }
                 }
+        }
+    }
+
+    private fun markAllCompleted() {
+        viewModelScope.launch {
+            val incompleteItems = _state.value.items.filter { !it.isCompleted }
+            incompleteItems.forEach { item ->
+                runCatching { repository.toggleItem(listId, item.id, true) }
+                    .onFailure {
+                        _state.update { it.copy(errorMessageRes = R.string.list_detail_error_toggle) }
+                    }
+            }
         }
     }
 

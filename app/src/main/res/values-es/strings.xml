@@ -17,6 +17,7 @@
     <string name="title_share_list">Compartir lista</string>
     <string name="title_acquire_products">Marcar productos</string>
     <string name="cd_back">Atrás</string>
+    <string name="cd_more_options">Más opciones</string>
     <string name="cd_barcode_scanner">Abrir escáner de códigos (TODO)</string>
     <string name="cd_voice_commands">Iniciar comando de voz (TODO)</string>
     <string name="cd_photo_capture">Capturar foto del producto (TODO)</string>
@@ -279,6 +280,7 @@
     <string name="error_deleting_list">No se pudo eliminar la lista. Intenta de nuevo.</string>
     <string name="lists_edit">Editar</string>
     <string name="lists_delete">Eliminar</string>
+    <string name="list_mark_all_completed">Marcar todo como completado</string>
     <string name="lists_edit_dialog_title">Editar Lista</string>
     <string name="lists_edit_dialog_confirm">Guardar</string>
     <string name="lists_delete_dialog_title">¿Eliminar Lista?</string>

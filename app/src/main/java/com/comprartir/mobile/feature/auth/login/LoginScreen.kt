@@ -223,7 +223,7 @@ private fun LoginFormCard(
 ) {
     val spacing = LocalSpacing.current
     val horizontalPadding = if (isTabletLayout) spacing.xl else spacing.large
-    val verticalPadding = if (isTabletLayout) spacing.xxl else spacing.extraLarge
+    val verticalPadding = if (isTabletLayout) spacing.xxl else spacing.small
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
@@ -233,7 +233,7 @@ private fun LoginFormCard(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(horizontal = horizontalPadding, vertical = verticalPadding),
             horizontalAlignment = contentAlignment,
             verticalArrangement = Arrangement.spacedBy(spacing.large),
