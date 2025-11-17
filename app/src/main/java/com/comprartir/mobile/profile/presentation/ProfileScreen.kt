@@ -27,6 +27,7 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -45,10 +46,12 @@ import com.comprartir.mobile.profile.domain.AppLanguage
 import com.comprartir.mobile.profile.domain.ProfileField
 import com.comprartir.mobile.shared.i18n.rememberLanguageOptions
 import com.comprartir.mobile.core.ui.rememberIsLandscape
+import com.comprartir.mobile.core.ui.rememberIsTablet
 
 @Composable
 fun ProfileRoute(
     contentPadding: PaddingValues = PaddingValues(),
+    windowSizeClass: WindowSizeClass? = null,
     navController: androidx.navigation.NavController? = null,
     viewModel: ProfileViewModel = hiltViewModel(),
     onChangePasswordClick: () -> Unit = {},
@@ -86,10 +89,13 @@ fun ProfileRoute(
         }
     }
 
+    val isTablet = windowSizeClass?.let { rememberIsTablet(it) } ?: false
+
     ProfileScreen(
         state = uiState,
         snackbarHostState = snackbarHostState,
         contentPadding = contentPadding,
+        isTabletLayout = isTablet,
         onEditClick = viewModel::onEditClicked,
         onCancelClick = viewModel::onCancelEdit,
         onSaveClick = viewModel::onSaveClicked,
@@ -109,6 +115,7 @@ fun ProfileScreen(
     state: ProfileUiState,
     snackbarHostState: SnackbarHostState,
     contentPadding: PaddingValues,
+    isTabletLayout: Boolean,
     onEditClick: () -> Unit,
     onCancelClick: () -> Unit,
     onSaveClick: () -> Unit,
@@ -123,6 +130,7 @@ fun ProfileScreen(
 ) {
     val spacing = LocalSpacing.current
     val isLandscape = rememberIsLandscape()
+    val useTwoColumnLayout = isTabletLayout || isLandscape
     
     Box(
         modifier = Modifier
@@ -134,10 +142,11 @@ fun ProfileScreen(
                 modifier = Modifier.align(Alignment.Center),
             )
         } else {
-            if (isLandscape) {
-                ProfileLandscapeContent(
+            if (useTwoColumnLayout) {
+                ProfileTwoColumnContent(
                     state = state,
                     contentPadding = contentPadding,
+                    isTablet = isTabletLayout,
                     onChangePhotoClick = onChangePhotoClick,
                     onRemoveBackgroundClick = onRemoveBackgroundClick,
                     onNameChanged = onNameChanged,
@@ -222,9 +231,10 @@ private fun ProfilePortraitContent(
 }
 
 @Composable
-private fun ProfileLandscapeContent(
+private fun ProfileTwoColumnContent(
     state: ProfileUiState,
     contentPadding: PaddingValues,
+    isTablet: Boolean,
     onChangePhotoClick: () -> Unit,
     onRemoveBackgroundClick: () -> Unit,
     onNameChanged: (String) -> Unit,
@@ -238,18 +248,23 @@ private fun ProfileLandscapeContent(
     onLogoutClick: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
+    val horizontalPadding = if (isTablet) spacing.xl else spacing.medium
+    val verticalPadding = if (isTablet) spacing.large else spacing.medium
+    val columnSpacing = if (isTablet) spacing.xl else spacing.large
+    val leftWeight = 0.5f
+    val rightWeight = 0.5f
     Row(
         modifier = Modifier
             .fillMaxSize()
             .padding(contentPadding)
-            .padding(horizontal = spacing.medium, vertical = spacing.medium),
-        horizontalArrangement = Arrangement.spacedBy(spacing.large),
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
+        horizontalArrangement = Arrangement.spacedBy(columnSpacing),
     ) {
         Column(
             modifier = Modifier
-                .weight(0.4f)
+                .weight(leftWeight)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(if (isTablet) spacing.large else spacing.medium),
         ) {
             ProfileOverviewCard(
                 state = state,
@@ -263,7 +278,7 @@ private fun ProfileLandscapeContent(
         }
         Column(
             modifier = Modifier
-                .weight(0.6f)
+                .weight(rightWeight)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(spacing.medium),
         ) {

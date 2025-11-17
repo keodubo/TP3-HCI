@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +59,7 @@ import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.core.designsystem.textPrimary
 import com.comprartir.mobile.core.designsystem.theme.LocalColorTokens
 import com.comprartir.mobile.core.ui.rememberIsLandscape
+import com.comprartir.mobile.core.ui.rememberIsTablet
 
 @Composable
 fun VerifyScreen(
@@ -65,9 +67,14 @@ fun VerifyScreen(
     onEvent: (VerifyEvent) -> Unit,
     onBackToLogin: () -> Unit,
     modifier: Modifier = Modifier,
+    windowSizeClass: WindowSizeClass? = null,
 ) {
     val spacing = LocalSpacing.current
     val isLandscape = rememberIsLandscape()
+    val isTablet = windowSizeClass?.let { rememberIsTablet(it) } ?: false
+    val useWideLayout = isTablet || isLandscape
+    val backgroundHorizontalPadding = if (isTablet) spacing.xxl else 24.dp
+    val backgroundVerticalPadding = if (isTablet) spacing.xl else 16.dp
 
     Box(
         modifier = modifier
@@ -77,20 +84,23 @@ fun VerifyScreen(
                     listOf(Color(0xFF4DA851), Color(0xFF3E8E47)),
                 )
             )
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = backgroundHorizontalPadding, vertical = backgroundVerticalPadding),
         contentAlignment = Alignment.Center,
     ) {
-        if (isLandscape) {
+        if (useWideLayout) {
+            val brandingWeight = 0.45f
+            val formWeight = 0.55f
+            val rowSpacing = if (isTablet) spacing.xl else spacing.large
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .widthIn(max = 1100.dp),
-                horizontalArrangement = Arrangement.spacedBy(spacing.large),
+                    .widthIn(max = if (isTablet) 1280.dp else 1100.dp),
+                horizontalArrangement = Arrangement.spacedBy(rowSpacing),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 VerifyBrandingPanel(
                     modifier = Modifier
-                        .weight(0.9f)
+                        .weight(brandingWeight)
                         .fillMaxHeight(),
                 )
                 VerifyCard(
@@ -98,9 +108,10 @@ fun VerifyScreen(
                     onEvent = onEvent,
                     onBackToLogin = onBackToLogin,
                     modifier = Modifier
-                        .weight(1.1f)
+                        .weight(formWeight)
                         .fillMaxHeight(),
                     contentAlignment = Alignment.Start,
+                    isTabletLayout = isTablet,
                 )
             }
         } else {
@@ -112,6 +123,7 @@ fun VerifyScreen(
                     .fillMaxWidth()
                     .widthIn(max = 420.dp),
                 contentAlignment = Alignment.CenterHorizontally,
+                isTabletLayout = false,
             )
         }
     }
@@ -124,8 +136,11 @@ private fun VerifyCard(
     onBackToLogin: () -> Unit,
     modifier: Modifier,
     contentAlignment: Alignment.Horizontal,
+    isTabletLayout: Boolean,
 ) {
     val spacing = LocalSpacing.current
+    val horizontalPadding = if (isTabletLayout) spacing.xl else spacing.large
+    val verticalPadding = if (isTabletLayout) spacing.xxl else spacing.extraLarge
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
@@ -136,7 +151,7 @@ private fun VerifyCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = spacing.large, vertical = spacing.extraLarge),
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding),
             horizontalAlignment = contentAlignment,
             verticalArrangement = Arrangement.spacedBy(spacing.large),
         ) {

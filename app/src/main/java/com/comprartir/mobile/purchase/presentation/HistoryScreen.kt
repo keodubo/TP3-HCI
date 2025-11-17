@@ -31,6 +31,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,6 +50,7 @@ import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.pantry.data.PantrySummary
 import com.comprartir.mobile.shared.components.EmptyStateMessage
 import com.comprartir.mobile.core.ui.rememberIsLandscape
+import com.comprartir.mobile.core.ui.rememberIsTablet
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -57,11 +59,13 @@ import java.util.Locale
 @Composable
 fun HistoryRoute(
     contentPadding: PaddingValues,
+    windowSizeClass: WindowSizeClass,
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val isTablet = rememberIsTablet(windowSizeClass)
 
     LaunchedEffect(state.snackbarMessage) {
         val message = state.snackbarMessage ?: return@LaunchedEffect
@@ -73,6 +77,7 @@ fun HistoryRoute(
         state = state,
         snackbarHostState = snackbarHostState,
         contentPadding = contentPadding,
+        isTablet = isTablet,
         onRetry = viewModel::retry,
         onRefresh = viewModel::refresh,
         onDismissError = viewModel::clearError,
@@ -88,6 +93,7 @@ fun HistoryScreen(
     state: PurchaseHistoryUiState,
     snackbarHostState: SnackbarHostState,
     contentPadding: PaddingValues,
+    isTablet: Boolean,
     onRetry: () -> Unit,
     onRefresh: () -> Unit,
     onDismissError: () -> Unit,
@@ -99,6 +105,11 @@ fun HistoryScreen(
 ) {
     val spacing = LocalSpacing.current
     val isLandscape = rememberIsLandscape()
+    val gridColumns = when {
+        isTablet -> 3
+        isLandscape -> 2
+        else -> 1
+    }
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -128,7 +139,8 @@ fun HistoryScreen(
             else -> {
                 HistoryList(
                     state = state,
-                    isLandscape = isLandscape,
+                    isTablet = isTablet,
+                    gridColumns = gridColumns,
                     onRetry = onRetry,
                     onRefresh = onRefresh,
                     onDismissError = onDismissError,
@@ -160,18 +172,18 @@ fun HistoryScreen(
 @Composable
 private fun HistoryList(
     state: PurchaseHistoryUiState,
-    isLandscape: Boolean,
+    isTablet: Boolean,
+    gridColumns: Int,
     onRetry: () -> Unit,
     onRefresh: () -> Unit,
     onDismissError: () -> Unit,
     onRestoreCompletedList: (String) -> Unit,
     onAddListToPantry: (String) -> Unit,
 ) {
-    val spacing = LocalSpacing.current
     val locale = Locale.getDefault()
     val dateFormatter = rememberDateFormatter(locale)
-    if (isLandscape) {
-        HistoryListLandscape(
+    if (gridColumns > 1) {
+        HistoryListGrid(
             state = state,
             locale = locale,
             dateFormatter = dateFormatter,
@@ -180,6 +192,8 @@ private fun HistoryList(
             onDismissError = onDismissError,
             onRestoreCompletedList = onRestoreCompletedList,
             onAddListToPantry = onAddListToPantry,
+            columns = gridColumns,
+            isTablet = isTablet,
         )
     } else {
         HistoryListPortrait(
@@ -327,7 +341,7 @@ private fun HistoryListPortrait(
 }
 
 @Composable
-private fun HistoryListLandscape(
+private fun HistoryListGrid(
     state: PurchaseHistoryUiState,
     locale: Locale,
     dateFormatter: DateTimeFormatter,
@@ -336,15 +350,21 @@ private fun HistoryListLandscape(
     onDismissError: () -> Unit,
     onRestoreCompletedList: (String) -> Unit,
     onAddListToPantry: (String) -> Unit,
+    columns: Int,
+    isTablet: Boolean,
 ) {
     val spacing = LocalSpacing.current
+    val horizontalPadding = if (isTablet) spacing.xl else spacing.large
+    val verticalPadding = if (isTablet) spacing.large else spacing.medium
+    val horizontalSpacing = if (isTablet) spacing.large else spacing.medium
+    val verticalSpacing = if (isTablet) spacing.large else spacing.medium
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Fixed(columns),
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = spacing.large, vertical = spacing.medium),
-        horizontalArrangement = Arrangement.spacedBy(spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(spacing.medium),
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
+        horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
+        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
     ) {
         item(span = { GridItemSpan(maxLineSpan) }, key = "header") {
             Column(

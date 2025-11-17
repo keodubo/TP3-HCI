@@ -10,6 +10,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun VerifyRoute(
     onNavigateToLogin: () -> Unit,
     onVerifySuccess: () -> Unit,
+    windowSizeClass: androidx.compose.material3.windowsizeclass.WindowSizeClass? = null,
     viewModel: VerifyViewModel = hiltViewModel(),
 ) {
     println("VerifyRoute: Composing VerifyRoute")
@@ -26,5 +27,6 @@ fun VerifyRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onBackToLogin = onNavigateToLogin,
+        windowSizeClass = windowSizeClass,
     )
 }

@@ -21,8 +21,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
@@ -81,12 +83,15 @@ import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.core.designsystem.textPrimary
 import com.comprartir.mobile.core.designsystem.theme.LocalColorTokens
 import com.comprartir.mobile.core.ui.rememberIsLandscape
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
+import com.comprartir.mobile.core.ui.rememberIsTablet
 import kotlinx.coroutines.delay
 
 @Composable
 fun RegisterRoute(
     onNavigateToLogin: () -> Unit,
     onNavigateToVerify: (String) -> Unit,
+    windowSizeClass: WindowSizeClass? = null,
     viewModel: RegisterViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -102,6 +107,7 @@ fun RegisterRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onNavigateToLogin = onNavigateToLogin,
+        windowSizeClass = windowSizeClass,
     )
 }
 
@@ -111,9 +117,14 @@ fun RegisterScreen(
     onEvent: (RegisterEvent) -> Unit,
     onNavigateToLogin: () -> Unit,
     modifier: Modifier = Modifier,
+    windowSizeClass: WindowSizeClass? = null,
 ) {
     val spacing = LocalSpacing.current
     val isLandscape = rememberIsLandscape()
+    val isTablet = windowSizeClass?.let { rememberIsTablet(it) } ?: false
+    val useWideLayout = isTablet || isLandscape
+    val horizontalPadding = if (isTablet) spacing.xxl else 24.dp
+    val verticalPadding = if (isTablet) spacing.xl else 16.dp
 
     Box(
         modifier = modifier
@@ -123,20 +134,23 @@ fun RegisterScreen(
                     colors = listOf(Color(0xFF4DA851), Color(0xFF3E8E47)),
                 )
             )
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
         contentAlignment = Alignment.Center,
     ) {
-        if (isLandscape) {
+        if (useWideLayout) {
+            val brandingWeight = if (isTablet) 0.45f else 0.4f
+            val formWeight = 1f - brandingWeight
+            val rowSpacing = if (isTablet) spacing.xl else spacing.large
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .widthIn(max = 1100.dp),
-                horizontalArrangement = Arrangement.spacedBy(spacing.large),
+                    .widthIn(max = if (isTablet) 1280.dp else 1100.dp),
+                horizontalArrangement = Arrangement.spacedBy(rowSpacing),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RegisterBrandingPanel(
                     modifier = Modifier
-                        .weight(0.9f)
+                        .weight(brandingWeight)
                         .fillMaxHeight(),
                 )
                 RegisterFormCard(
@@ -144,11 +158,12 @@ fun RegisterScreen(
                     onEvent = onEvent,
                     onNavigateToLogin = onNavigateToLogin,
                     modifier = Modifier
-                        .weight(1.1f)
+                        .weight(formWeight)
                         .fillMaxHeight(),
                     contentAlignment = Alignment.Start,
                     showBrandingHeader = false,
                     isWideLayout = true,
+                    isTabletLayout = isTablet,
                 )
             }
         } else {
@@ -162,6 +177,7 @@ fun RegisterScreen(
                 contentAlignment = Alignment.CenterHorizontally,
                 showBrandingHeader = true,
                 isWideLayout = false,
+                isTabletLayout = false,
             )
         }
     }
@@ -176,8 +192,12 @@ private fun RegisterFormCard(
     contentAlignment: Alignment.Horizontal,
     showBrandingHeader: Boolean,
     isWideLayout: Boolean,
+    isTabletLayout: Boolean,
 ) {
     val spacing = LocalSpacing.current
+    val horizontalPadding = if (isTabletLayout) spacing.xl else spacing.large
+    val verticalPadding = if (isTabletLayout) spacing.xxl else spacing.extraLarge
+    val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
@@ -192,7 +212,8 @@ private fun RegisterFormCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = spacing.large, vertical = spacing.extraLarge),
+                .verticalScroll(scrollState)
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding),
             horizontalAlignment = contentAlignment,
             verticalArrangement = Arrangement.spacedBy(spacing.large),
         ) {

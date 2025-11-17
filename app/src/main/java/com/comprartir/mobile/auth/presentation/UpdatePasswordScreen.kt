@@ -9,18 +9,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -28,10 +31,12 @@ import com.comprartir.mobile.R
 import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.core.designsystem.ComprartirOutlinedTextField
 import com.comprartir.mobile.core.ui.rememberIsLandscape
+import com.comprartir.mobile.core.ui.rememberIsTablet
 
 @Composable
 fun UpdatePasswordRoute(
     onNavigate: (com.comprartir.mobile.core.navigation.NavigationIntent) -> Unit,
+    windowSizeClass: WindowSizeClass? = null,
     viewModel: UpdatePasswordViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -46,6 +51,7 @@ fun UpdatePasswordRoute(
                 onError = { /* TODO: Show error */ },
             )
         },
+        windowSizeClass = windowSizeClass,
     )
 }
 
@@ -56,50 +62,39 @@ fun UpdatePasswordScreen(
     onNewPasswordChanged: (String) -> Unit,
     onConfirmPasswordChanged: (String) -> Unit,
     onUpdate: () -> Unit,
+    windowSizeClass: WindowSizeClass? = null,
 ) {
     val spacing = LocalSpacing.current
     val isLandscape = rememberIsLandscape()
+    val isTablet = windowSizeClass?.let { rememberIsTablet(it) } ?: false
+    val useWideLayout = isTablet || isLandscape
+    val horizontalPadding = if (isTablet) spacing.xxl * 2 else spacing.xl
+    val verticalPadding = if (isTablet) spacing.xl else spacing.large
+    val cardMaxWidth = if (isTablet) 600.dp else if (useWideLayout) 520.dp else Dp.Unspecified
+    val cardModifier = if (cardMaxWidth == Dp.Unspecified) {
+        Modifier.fillMaxWidth()
+    } else {
+        Modifier
+            .fillMaxWidth()
+            .widthIn(max = cardMaxWidth)
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = spacing.large, vertical = spacing.extraLarge),
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
         contentAlignment = Alignment.Center,
     ) {
-        if (isLandscape) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(),
-                horizontalArrangement = Arrangement.spacedBy(spacing.large),
-            ) {
-                UpdatePasswordInfoCard(
-                    modifier = Modifier
-                        .weight(0.8f)
-                        .fillMaxHeight(),
-                )
-                UpdatePasswordFormCard(
-                    state = state,
-                    onCurrentPasswordChanged = onCurrentPasswordChanged,
-                    onNewPasswordChanged = onNewPasswordChanged,
-                    onConfirmPasswordChanged = onConfirmPasswordChanged,
-                    onUpdate = onUpdate,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                    isLandscape = true,
-                )
-            }
-        } else {
-            UpdatePasswordFormCard(
-                state = state,
-                onCurrentPasswordChanged = onCurrentPasswordChanged,
-                onNewPasswordChanged = onNewPasswordChanged,
-                onConfirmPasswordChanged = onConfirmPasswordChanged,
-                onUpdate = onUpdate,
-                modifier = Modifier.fillMaxWidth(),
-                isLandscape = false,
-            )
-        }
+        UpdatePasswordFormCard(
+            state = state,
+            onCurrentPasswordChanged = onCurrentPasswordChanged,
+            onNewPasswordChanged = onNewPasswordChanged,
+            onConfirmPasswordChanged = onConfirmPasswordChanged,
+            onUpdate = onUpdate,
+            modifier = cardModifier,
+            showInfoPanel = useWideLayout,
+            isWideLayout = useWideLayout,
+            isTabletLayout = isTablet,
+        )
     }
 }
 
@@ -141,9 +136,13 @@ private fun UpdatePasswordFormCard(
     onConfirmPasswordChanged: (String) -> Unit,
     onUpdate: () -> Unit,
     modifier: Modifier = Modifier,
-    isLandscape: Boolean,
+    showInfoPanel: Boolean,
+    isWideLayout: Boolean,
+    isTabletLayout: Boolean,
 ) {
     val spacing = LocalSpacing.current
+    val horizontalPadding = if (isTabletLayout) spacing.xl else spacing.large
+    val verticalPadding = if (isTabletLayout) spacing.xl else spacing.large
     Card(
         modifier = modifier,
         shape = CardDefaults.shape,
@@ -152,10 +151,12 @@ private fun UpdatePasswordFormCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(spacing.large),
-            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding),
+            verticalArrangement = Arrangement.spacedBy(spacing.large),
         ) {
-            if (!isLandscape) {
+            if (showInfoPanel) {
+                UpdatePasswordInfoCard(modifier = Modifier.fillMaxWidth())
+            } else {
                 Text(
                     text = stringResource(id = R.string.headline_update_password),
                     style = MaterialTheme.typography.titleLarge,
@@ -169,7 +170,7 @@ private fun UpdatePasswordFormCard(
                 singleLine = true,
                 placeholder = { Text(stringResource(id = R.string.label_current_password)) },
             )
-            if (isLandscape) {
+            if (isWideLayout) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(spacing.medium),

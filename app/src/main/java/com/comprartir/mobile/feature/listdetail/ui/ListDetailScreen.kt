@@ -25,6 +25,9 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -109,6 +112,7 @@ fun ListDetailScreen(
     val layoutDirection = LocalLayoutDirection.current
     val clipboardManager = LocalClipboardManager.current
     val isLandscape = rememberIsLandscape()
+    val isTablet = isTabletLayout
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -139,7 +143,7 @@ fun ListDetailScreen(
             bottom = innerPadding.calculateBottomPadding() +
                 contentPadding.calculateBottomPadding() + spacing.large,
         )
-        val useExpandedLayout = isTabletLayout || isLandscape
+        val useExpandedLayout = isTablet || isLandscape
         val onCopyShareLink = {
             if (state.shareState.link.isNotBlank()) {
                 clipboardManager.setText(AnnotatedString(state.shareState.link))
@@ -152,12 +156,16 @@ fun ListDetailScreen(
             }
         }
         if (useExpandedLayout) {
+            val sidebarWeight = if (isTablet) 0.3f else 0.4f
+            val itemsWeight = 1f - sidebarWeight
+            val horizontalPadding = if (isTablet) spacing.xl else spacing.large
+            val panelSpacing = if (isTablet) spacing.xl else spacing.large
             Row(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(combinedPadding)
-                    .padding(horizontal = spacing.large),
-                horizontalArrangement = Arrangement.spacedBy(spacing.large),
+                    .padding(horizontal = horizontalPadding),
+                horizontalArrangement = Arrangement.spacedBy(panelSpacing),
                 verticalAlignment = Alignment.Top,
             ) {
                 ListDetailSidebar(
@@ -166,7 +174,7 @@ fun ListDetailScreen(
                     onCopyShareLink = onCopyShareLink,
                     onManageShare = onManageShare,
                     modifier = Modifier
-                        .weight(0.4f)
+                        .weight(sidebarWeight)
                         .fillMaxHeight(),
                 )
                 ListDetailItemsPanel(
@@ -175,8 +183,9 @@ fun ListDetailScreen(
                     onToggle = { id, completed -> onEvent(ListDetailEvent.ToggleItem(id, completed)) },
                     onDelete = { id -> onEvent(ListDetailEvent.DeleteItem(id)) },
                     onEdit = { id -> onEvent(ListDetailEvent.ShowEditProductDialog(id)) },
+                    itemColumns = if (isTablet) 2 else 1,
                     modifier = Modifier
-                        .weight(0.6f)
+                        .weight(itemsWeight)
                         .fillMaxHeight(),
                 )
             }
@@ -489,6 +498,7 @@ private fun ListDetailItemsPanel(
     onToggle: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
     onEdit: (String) -> Unit,
+    itemColumns: Int,
     modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
@@ -501,7 +511,7 @@ private fun ListDetailItemsPanel(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(spacing.large),
-            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(if (itemColumns > 1) spacing.large else spacing.medium),
         ) {
             Text(
                 text = stringResource(id = R.string.list_detail_screen_title),
@@ -514,6 +524,7 @@ private fun ListDetailItemsPanel(
                 onToggle = onToggle,
                 onDelete = onDelete,
                 onEdit = onEdit,
+                columns = itemColumns,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -637,6 +648,7 @@ private fun ListDetailItemsList(
     onToggle: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
     onEdit: (String) -> Unit,
+    columns: Int = 1,
     modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
@@ -655,20 +667,41 @@ private fun ListDetailItemsList(
         }
         return
     }
-    LazyColumn(
-        modifier = modifier
-            .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(spacing.small),
-    ) {
-        items(items, key = { it.id }) { item ->
-            val categoryLabel = categoryLabelFor(item.categoryId, categories)
-            ListItemRow(
-                item = item,
-                categoryLabel = categoryLabel,
-                onToggle = { checked -> onToggle(item.id, checked) },
-                onEdit = { onEdit(item.id) },
-                onDelete = { onDelete(item.id) },
-            )
+    if (columns > 1) {
+        val gridSpacing = spacing.medium
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            modifier = modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(gridSpacing),
+            horizontalArrangement = Arrangement.spacedBy(gridSpacing),
+        ) {
+            items(items, key = { it.id }) { item ->
+                val categoryLabel = categoryLabelFor(item.categoryId, categories)
+                ListItemRow(
+                    item = item,
+                    categoryLabel = categoryLabel,
+                    onToggle = { checked -> onToggle(item.id, checked) },
+                    onEdit = { onEdit(item.id) },
+                    onDelete = { onDelete(item.id) },
+                )
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(spacing.small),
+        ) {
+            items(items, key = { it.id }) { item ->
+                val categoryLabel = categoryLabelFor(item.categoryId, categories)
+                ListItemRow(
+                    item = item,
+                    categoryLabel = categoryLabel,
+                    onToggle = { checked -> onToggle(item.id, checked) },
+                    onEdit = { onEdit(item.id) },
+                    onDelete = { onDelete(item.id) },
+                )
+            }
         }
     }
 }

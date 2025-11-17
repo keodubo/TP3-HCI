@@ -68,6 +68,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.window.DialogProperties
@@ -85,6 +86,7 @@ import com.comprartir.mobile.shared.components.AddFab
 import com.comprartir.mobile.pantry.data.PantryItem
 import com.comprartir.mobile.pantry.data.PantrySummary
 import com.comprartir.mobile.core.ui.rememberIsLandscape
+import com.comprartir.mobile.core.ui.rememberIsTablet
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -92,11 +94,14 @@ import java.util.Locale
 @Composable
 fun PantryRoute(
     onNavigate: (NavigationIntent) -> Unit,
+    windowSizeClass: WindowSizeClass,
     viewModel: PantryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val isTablet = rememberIsTablet(windowSizeClass)
     PantryScreen(
         state = state,
+        isTablet = isTablet,
         onNavigate = onNavigate,
         onRefresh = viewModel::refresh,
         onClearError = viewModel::clearError,
@@ -118,6 +123,7 @@ fun PantryRoute(
 @Composable
 fun PantryScreen(
     state: PantryUiState,
+    isTablet: Boolean,
     onNavigate: (NavigationIntent) -> Unit,
     onRefresh: () -> Unit,
     onClearError: () -> Unit,
@@ -188,11 +194,18 @@ fun PantryScreen(
         )
     }
     val isLandscape = rememberIsLandscape()
+    val columns = when {
+        isTablet -> 3
+        isLandscape -> 2
+        else -> 1
+    }
 
-    if (isLandscape) {
-        PantryScreenLandscape(
+    if (columns > 1) {
+        PantryScreenGrid(
             state = state,
             filteredPantries = filteredPantries,
+            columns = columns,
+            isTablet = isTablet,
             onRefresh = onRefresh,
             onClearError = onClearError,
             onSearchQueryChange = onSearchQueryChange,
@@ -334,9 +347,11 @@ private fun PantryScreenPortrait(
 }
 
 @Composable
-private fun PantryScreenLandscape(
+private fun PantryScreenGrid(
     state: PantryUiState,
     filteredPantries: List<PantrySummary>,
+    columns: Int,
+    isTablet: Boolean,
     onRefresh: () -> Unit,
     onClearError: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
@@ -350,6 +365,11 @@ private fun PantryScreenLandscape(
     onPantryClick: (String) -> Unit,
 ) {
     val spacing = LocalSpacing.current
+    val horizontalPadding = if (isTablet) spacing.xl else spacing.large
+    val verticalPadding = if (isTablet) spacing.large else spacing.medium
+    val horizontalSpacing = if (isTablet) spacing.large else spacing.medium
+    val verticalSpacing = if (isTablet) spacing.large else spacing.medium
+    val fabBottomPadding = if (isTablet) spacing.xl else spacing.large
     Scaffold { padding ->
         Box(
             modifier = Modifier
@@ -357,16 +377,16 @@ private fun PantryScreenLandscape(
                 .padding(padding),
         ) {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                columns = GridCells.Fixed(columns),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
-                    start = spacing.large,
-                    end = spacing.large,
-                    top = spacing.medium,
+                    start = horizontalPadding,
+                    end = horizontalPadding,
+                    top = verticalPadding,
                     bottom = spacing.xxl,
                 ),
-                horizontalArrangement = Arrangement.spacedBy(spacing.medium),
-                verticalArrangement = Arrangement.spacedBy(spacing.medium),
+                horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
+                verticalArrangement = Arrangement.spacedBy(verticalSpacing),
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }, key = "header") {
                     PantryHeader(onRefresh = onRefresh)
@@ -425,7 +445,7 @@ private fun PantryScreenLandscape(
                 contentDescription = stringResource(id = R.string.pantry_add_pantry),
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = spacing.large, bottom = spacing.large)
+                    .padding(end = horizontalPadding, bottom = fabBottomPadding)
                     .size(64.dp),
             )
         }

@@ -66,6 +66,7 @@ private fun NavGraphBuilder.authGraph(
                 }
                 println("AppNavHost: Navigation to Dashboard completed")
             },
+            windowSizeClass = appState.windowSizeClass,
         )
     }
     composable(AppDestination.ForgotPassword.route) {
@@ -120,6 +121,7 @@ private fun NavGraphBuilder.authGraph(
                     launchSingleTop = true
                 }
             },
+            windowSizeClass = appState.windowSizeClass,
         )
     }
     composable(
@@ -136,10 +138,14 @@ private fun NavGraphBuilder.authGraph(
                     launchSingleTop = true
                 }
             },
+            windowSizeClass = appState.windowSizeClass,
         )
     }
     composable(AppDestination.UpdatePassword.route) {
-        UpdatePasswordRoute(onNavigate = appState::navigate)
+        UpdatePasswordRoute(
+            onNavigate = appState::navigate,
+            windowSizeClass = appState.windowSizeClass,
+        )
     }
     composable(AppDestination.AcquireProduct.route) {
         AcquireProductRoute(onNavigate = appState::navigate)
@@ -150,6 +156,7 @@ private fun NavGraphBuilder.profileGraph(contentPadding: PaddingValues, appState
     composable(AppDestination.Profile.route) {
         ProfileRoute(
             contentPadding = contentPadding,
+            windowSizeClass = appState.windowSizeClass,
             navController = appState.navController,
             onChangePasswordClick = {
                 appState.navController.navigate(AppDestination.ChangePassword.route) {
@@ -186,10 +193,16 @@ private fun NavGraphBuilder.productsGraph(
     contentPadding: PaddingValues,
 ) {
     composable(AppDestination.Products.route) {
-        ProductsRoute(onNavigate = appState::navigate)
+        ProductsRoute(
+            onNavigate = appState::navigate,
+            windowSizeClass = appState.windowSizeClass,
+        )
     }
     composable(AppDestination.Categorize.route) {
-        CategorizeProductsRoute(onNavigate = appState::navigate)
+        CategorizeProductsRoute(
+            onNavigate = appState::navigate,
+            windowSizeClass = appState.windowSizeClass,
+        )
     }
     composable(AppDestination.Categories.route) {
         CategoriesRoute(contentPadding = contentPadding)
@@ -213,6 +226,7 @@ private fun NavGraphBuilder.listsGraph(
         android.util.Log.d("AppNavHost", "🔥 Lists route - openCreate=$openCreate")
         ListsRoute(
             onNavigate = appState::navigate,
+            windowSizeClass = appState.windowSizeClass,
             openCreateDialog = openCreate,
             contentPadding = contentPadding,
         )
@@ -263,7 +277,10 @@ private fun NavGraphBuilder.settingsGraph() {
 
 private fun NavGraphBuilder.pantryGraph(appState: ComprartirAppState) {
     composable(AppDestination.Pantry.route) {
-        PantryRoute(onNavigate = appState::navigate)
+        PantryRoute(
+            onNavigate = appState::navigate,
+            windowSizeClass = appState.windowSizeClass,
+        )
     }
     
     composable(
@@ -276,6 +293,7 @@ private fun NavGraphBuilder.pantryGraph(appState: ComprartirAppState) {
         com.comprartir.mobile.pantry.presentation.PantryDetailRoute(
             pantryId = pantryId,
             onNavigateBack = { appState.navController.popBackStack() },
+            windowSizeClass = appState.windowSizeClass,
         )
     }
 }
@@ -291,7 +309,10 @@ private fun NavGraphBuilder.optionalFeaturesGraph(
     }
     if (appState.featureFlags.rf13History) {
         composable(AppDestination.OptionalHistory.route) {
-            HistoryRoute(contentPadding = contentPadding)
+            HistoryRoute(
+                contentPadding = contentPadding,
+                windowSizeClass = appState.windowSizeClass,
+            )
         }
     }
     if (appState.featureFlags.rf14RecurringLists) {

@@ -62,6 +62,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -87,6 +88,7 @@ import com.comprartir.mobile.core.designsystem.searchFilterPill
 import com.comprartir.mobile.core.designsystem.surfaceCard
 import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.core.ui.rememberIsLandscape
+import com.comprartir.mobile.core.ui.rememberIsTablet
 import com.comprartir.mobile.core.navigation.AppDestination
 import com.comprartir.mobile.core.navigation.NavigationIntent
 import com.comprartir.mobile.feature.lists.ui.components.CreateListDialog
@@ -103,6 +105,7 @@ import com.comprartir.mobile.feature.lists.model.SortOption
 @Composable
 fun ListsRoute(
     onNavigate: (NavigationIntent) -> Unit,
+    windowSizeClass: WindowSizeClass,
     viewModel: ListsViewModel = hiltViewModel(),
     openCreateDialog: Boolean = false,
     contentPadding: PaddingValues = PaddingValues(),
@@ -137,10 +140,13 @@ fun ListsRoute(
         viewModel.onSnackbarConsumed()
     }
     
+    val isTablet = rememberIsTablet(windowSizeClass)
+
     ListsScreen(
         state = state,
         snackbarHostState = snackbarHostState,
         contentPadding = contentPadding,
+        isTablet = isTablet,
         onShowCreateDialog = viewModel::showCreateDialog,
         onDismissCreateDialog = viewModel::dismissCreateDialog,
         onCreateListNameChanged = viewModel::onCreateListNameChanged,
@@ -183,6 +189,7 @@ fun ListsScreen(
     state: ListsUiState,
     snackbarHostState: SnackbarHostState,
     contentPadding: PaddingValues = PaddingValues(),
+    isTablet: Boolean,
     onShowCreateDialog: () -> Unit,
     onDismissCreateDialog: () -> Unit,
     onCreateListNameChanged: (String) -> Unit,
@@ -214,11 +221,18 @@ fun ListsScreen(
     onClearError: () -> Unit,
 ) {
     val isLandscape = rememberIsLandscape()
-    if (isLandscape) {
-        ListsScreenLandscape(
+    val gridColumns = when {
+        isTablet -> 4
+        isLandscape -> 2
+        else -> 1
+    }
+    if (gridColumns > 1) {
+        ListsScreenGrid(
             state = state,
             snackbarHostState = snackbarHostState,
             contentPadding = contentPadding,
+            columns = gridColumns,
+            isTablet = isTablet,
             onShowCreateDialog = onShowCreateDialog,
             onSearchQueryChange = onSearchQueryChange,
             onToggleFilters = onToggleFilters,
@@ -451,10 +465,12 @@ private fun ListsScreenPortrait(
 }
 
 @Composable
-private fun ListsScreenLandscape(
+private fun ListsScreenGrid(
     state: ListsUiState,
     snackbarHostState: SnackbarHostState,
     contentPadding: PaddingValues,
+    columns: Int,
+    isTablet: Boolean,
     onShowCreateDialog: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onToggleFilters: () -> Unit,
@@ -471,6 +487,11 @@ private fun ListsScreenLandscape(
     onClearError: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
+    val horizontalPadding = if (isTablet) spacing.xl else spacing.large
+    val verticalPadding = if (isTablet) spacing.large else spacing.medium
+    val horizontalSpacing = if (isTablet) spacing.large else spacing.medium
+    val verticalSpacing = if (isTablet) spacing.large else spacing.medium
+    val fabBottomPadding = if (isTablet) spacing.xl else spacing.large
     val canComplete = state.pantryOptions.isNotEmpty()
     Box(
         modifier = Modifier
@@ -478,16 +499,16 @@ private fun ListsScreenLandscape(
             .padding(contentPadding),
     ) {
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            columns = GridCells.Fixed(columns),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                start = spacing.large,
-                end = spacing.large,
-                top = spacing.medium,
+                start = horizontalPadding,
+                end = horizontalPadding,
+                top = verticalPadding,
                 bottom = spacing.xxl,
             ),
-            horizontalArrangement = Arrangement.spacedBy(spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+            horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
+            verticalArrangement = Arrangement.spacedBy(verticalSpacing),
         ) {
             if (state.showRecurringSection) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
@@ -581,7 +602,7 @@ private fun ListsScreenLandscape(
             contentDescription = stringResource(id = R.string.lists_empty_action),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = spacing.large, bottom = spacing.large)
+                .padding(end = horizontalPadding, bottom = fabBottomPadding)
                 .size(64.dp),
         )
 
@@ -589,7 +610,7 @@ private fun ListsScreenLandscape(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(horizontal = spacing.large)
+                .padding(horizontal = horizontalPadding)
                 .padding(bottom = spacing.large),
         )
     }

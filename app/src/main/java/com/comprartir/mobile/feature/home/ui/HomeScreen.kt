@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -47,7 +46,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,7 +60,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -81,6 +78,7 @@ import com.comprartir.mobile.feature.home.model.ListStatusType
 import com.comprartir.mobile.feature.home.model.RecentListUi
 import com.comprartir.mobile.feature.home.model.SharedListUi
 import com.comprartir.mobile.core.ui.rememberIsLandscape
+import com.comprartir.mobile.core.ui.rememberIsTablet
 
 @Composable
 fun HomeScreen(
@@ -94,11 +92,23 @@ fun HomeScreen(
     windowSizeClass: WindowSizeClass? = null,
     contentPadding: PaddingValues = PaddingValues(),
 ) {
+    val spacing = LocalSpacing.current
     val isLandscape = rememberIsLandscape()
-    val useTwoColumnLayout = windowSizeClass?.widthSizeClass?.let { it >= WindowWidthSizeClass.Medium } ?: false
-    val useGridLayout = isLandscape || useTwoColumnLayout
-    val containerMaxWidth = if (useGridLayout) 900.dp else Dp.Unspecified
+    val isTablet = windowSizeClass?.let { rememberIsTablet(it) } ?: false
+    val columns = when {
+        isTablet -> 4
+        isLandscape -> 3
+        else -> 2
+    }
     val layoutDirection = LocalLayoutDirection.current
+    val horizontalPadding = when {
+        isTablet -> spacing.xl
+        isLandscape -> spacing.large
+        else -> spacing.medium
+    }
+    val verticalPadding = if (isTablet) spacing.large else spacing.medium
+    val horizontalSpacing = if (isTablet) spacing.large else spacing.medium
+    val verticalSpacing = if (isTablet) spacing.large else spacing.medium
 
     Box(
         modifier = modifier
@@ -107,93 +117,48 @@ fun HomeScreen(
         contentAlignment = Alignment.TopCenter,
     ) {
         val combinedPadding = PaddingValues(
-            start = contentPadding.calculateStartPadding(layoutDirection) + 20.dp,
-            end = contentPadding.calculateEndPadding(layoutDirection) + 20.dp,
-            top = contentPadding.calculateTopPadding() + 24.dp,
-            bottom = contentPadding.calculateBottomPadding() + 80.dp,
+            start = contentPadding.calculateStartPadding(layoutDirection) + horizontalPadding,
+            end = contentPadding.calculateEndPadding(layoutDirection) + horizontalPadding,
+            top = contentPadding.calculateTopPadding() + verticalPadding,
+            bottom = contentPadding.calculateBottomPadding() + spacing.xxl,
         )
 
-        if (useGridLayout) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .widthIn(max = containerMaxWidth),
-                contentPadding = combinedPadding,
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = combinedPadding,
+            horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
+            verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                HomeHeroCard(
+                    userName = state.userName,
+                    onCreateList = onCreateList,
+                    onViewAllLists = onViewAllLists,
+                )
+            }
+            state.error?.let { message ->
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    HomeHeroCard(
-                        userName = state.userName,
-                        onCreateList = onCreateList,
-                        onViewAllLists = onViewAllLists,
+                    HomeErrorBanner(
+                        message = message,
+                        onRetry = onRefresh,
                     )
-                }
-                state.error?.let { message ->
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        HomeErrorBanner(
-                            message = message,
-                            onRetry = onRefresh,
-                        )
-                    }
-                }
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    RecentListsSection(
-                        lists = state.recentLists,
-                        onRecentListClick = onRecentListClick,
-                    )
-                }
-                item {
-                    SharedListsSection(
-                        lists = state.sharedLists,
-                        onSharedListClick = onSharedListClick,
-                    )
-                }
-                item {
-                    ActivitySection(items = state.recentActivity)
                 }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .widthIn(max = containerMaxWidth),
-                contentPadding = combinedPadding,
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                item {
-                    HomeHeroCard(
-                        userName = state.userName,
-                        onCreateList = onCreateList,
-                        onViewAllLists = onViewAllLists,
-                    )
-                }
-                state.error?.let { message ->
-                    item {
-                        HomeErrorBanner(
-                            message = message,
-                            onRetry = onRefresh,
-                        )
-                    }
-                }
-                item {
-                    RecentListsSection(
-                        lists = state.recentLists,
-                        onRecentListClick = onRecentListClick,
-                    )
-                }
-                item {
-                    SharedListsSection(
-                        lists = state.sharedLists,
-                        onSharedListClick = onSharedListClick,
-                    )
-                }
-                item {
-                    ActivitySection(
-                        items = state.recentActivity,
-                    )
-                }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                RecentListsSection(
+                    lists = state.recentLists,
+                    onRecentListClick = onRecentListClick,
+                )
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                SharedListsSection(
+                    lists = state.sharedLists,
+                    onSharedListClick = onSharedListClick,
+                )
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                ActivitySection(items = state.recentActivity)
             }
         }
 

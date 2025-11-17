@@ -17,6 +17,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -28,15 +29,19 @@ import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.core.navigation.NavigationIntent
 import com.comprartir.mobile.core.designsystem.ComprartirOutlinedTextField
 import com.comprartir.mobile.core.ui.rememberIsLandscape
+import com.comprartir.mobile.core.ui.rememberIsTablet
 
 @Composable
 fun ProductsRoute(
     onNavigate: (NavigationIntent) -> Unit,
+    windowSizeClass: WindowSizeClass,
     viewModel: ProductsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val isTablet = rememberIsTablet(windowSizeClass)
     ProductsScreen(
         state = state,
+        isTablet = isTablet,
         onSearchQueryChanged = viewModel::onSearchQueryChanged,
         onProductSelected = { productId ->
             // TODO: Navigate to product detail when implemented.
@@ -49,19 +54,27 @@ fun ProductsRoute(
 @Composable
 fun ProductsScreen(
     state: ProductsUiState,
+    isTablet: Boolean,
     onSearchQueryChanged: (String) -> Unit,
     onProductSelected: (String) -> Unit,
     onRefresh: () -> Unit,
     onClearError: () -> Unit,
 ) {
     val isLandscape = rememberIsLandscape()
-    if (isLandscape) {
-        ProductsScreenLandscape(
+    val columns = when {
+        isTablet -> 4
+        isLandscape -> 2
+        else -> 1
+    }
+    if (columns > 1) {
+        ProductsScreenGrid(
             state = state,
             onSearchQueryChanged = onSearchQueryChanged,
             onProductSelected = onProductSelected,
             onRefresh = onRefresh,
             onClearError = onClearError,
+            columns = columns,
+            isTablet = isTablet,
         )
     } else {
         ProductsScreenPortrait(
@@ -107,20 +120,26 @@ private fun ProductsScreenPortrait(
 }
 
 @Composable
-private fun ProductsScreenLandscape(
+private fun ProductsScreenGrid(
     state: ProductsUiState,
     onSearchQueryChanged: (String) -> Unit,
     onProductSelected: (String) -> Unit,
     onRefresh: () -> Unit,
     onClearError: () -> Unit,
+    columns: Int,
+    isTablet: Boolean,
 ) {
     val spacing = LocalSpacing.current
+    val horizontalPadding = if (isTablet) spacing.xl else spacing.large
+    val verticalPadding = if (isTablet) spacing.large else spacing.medium
+    val horizontalSpacing = if (isTablet) spacing.large else spacing.medium
+    val verticalSpacing = if (isTablet) spacing.large else spacing.medium
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Fixed(columns),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = spacing.large, vertical = spacing.medium),
-        horizontalArrangement = Arrangement.spacedBy(spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(spacing.medium),
+        contentPadding = PaddingValues(horizontal = horizontalPadding, vertical = verticalPadding),
+        horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
+        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
     ) {
         item(span = { GridItemSpan(maxLineSpan) }, key = "search") {
             ProductsSearchField(

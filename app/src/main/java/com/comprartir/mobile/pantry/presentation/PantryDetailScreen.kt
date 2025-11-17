@@ -41,6 +41,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +65,7 @@ import com.comprartir.mobile.core.ui.LocalAppBarTitle
 import com.comprartir.mobile.shared.components.AddFab
 import com.comprartir.mobile.pantry.data.PantryItem
 import com.comprartir.mobile.core.ui.rememberIsLandscape
+import com.comprartir.mobile.core.ui.rememberIsTablet
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -72,6 +74,7 @@ import java.util.Locale
 fun PantryDetailRoute(
     pantryId: String,
     onNavigateBack: () -> Unit,
+    windowSizeClass: WindowSizeClass? = null,
     viewModel: PantryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -90,6 +93,7 @@ fun PantryDetailRoute(
     LaunchedEffect(pantryId) {
         viewModel.onSelectPantry(pantryId)
     }
+    val isTablet = windowSizeClass?.let { rememberIsTablet(it) } ?: false
     
     PantryDetailScreen(
         pantry = state.selectedPantry,
@@ -97,6 +101,7 @@ fun PantryDetailRoute(
         isLoading = state.isLoading,
         errorMessage = state.errorMessage,
         itemDialog = state.itemDialog,
+        isTablet = isTablet,
         onNavigateBack = onNavigateBack,
         onRefresh = viewModel::refresh,
         onClearError = viewModel::clearError,
@@ -121,6 +126,7 @@ fun PantryDetailScreen(
     isLoading: Boolean,
     errorMessage: String?,
     itemDialog: PantryItemDialogState,
+    isTablet: Boolean,
     onNavigateBack: () -> Unit,
     onRefresh: () -> Unit,
     onClearError: () -> Unit,
@@ -137,9 +143,10 @@ fun PantryDetailScreen(
 ) {
     val spacing = LocalSpacing.current
     val isLandscape = rememberIsLandscape()
+    val showWideLayout = isTablet || isLandscape
 
-    LaunchedEffect(isLandscape, itemDialog.isVisible) {
-        if (isLandscape && !itemDialog.isVisible) {
+    LaunchedEffect(showWideLayout, itemDialog.isVisible) {
+        if (showWideLayout && !itemDialog.isVisible) {
             onShowItemDialog(null)
         }
     }
@@ -173,7 +180,7 @@ fun PantryDetailScreen(
             )
         },
         floatingActionButton = {
-            if (!isLandscape) {
+            if (!showWideLayout) {
                 AddFab(
                     onClick = { onShowItemDialog(null) },
                     contentDescription = stringResource(id = R.string.pantry_add_item),
@@ -181,14 +188,15 @@ fun PantryDetailScreen(
             }
         },
     ) { padding ->
-        if (isLandscape) {
-            PantryDetailLandscape(
+        if (showWideLayout) {
+            PantryDetailWideContent(
                 pantry = pantry,
                 items = items,
                 isLoading = isLoading,
                 errorMessage = errorMessage,
                 itemDialog = itemDialog,
                 padding = padding,
+                isTablet = isTablet,
                 onClearError = onClearError,
                 onShowItemDialog = onShowItemDialog,
                 onItemNameChange = onItemNameChange,
@@ -218,7 +226,7 @@ fun PantryDetailScreen(
         }
     }
 
-    if (!isLandscape && itemDialog.isVisible) {
+    if (!showWideLayout && itemDialog.isVisible) {
         PantryItemDialog(
             state = itemDialog,
             onNameChange = onItemNameChange,
@@ -313,13 +321,14 @@ private fun PantryDetailPortrait(
 }
 
 @Composable
-private fun PantryDetailLandscape(
+private fun PantryDetailWideContent(
     pantry: com.comprartir.mobile.pantry.data.PantrySummary?,
     items: List<PantryItem>,
     isLoading: Boolean,
     errorMessage: String?,
     itemDialog: PantryItemDialogState,
     padding: PaddingValues,
+    isTablet: Boolean,
     onClearError: () -> Unit,
     onShowItemDialog: (String?) -> Unit,
     onItemNameChange: (String) -> Unit,
@@ -333,18 +342,23 @@ private fun PantryDetailLandscape(
     onDecreaseQuantity: (String) -> Unit,
 ) {
     val spacing = LocalSpacing.current
+    val sidebarWeight = if (isTablet) 0.3f else 0.4f
+    val contentWeight = 1f - sidebarWeight
+    val horizontalPadding = if (isTablet) spacing.xl else spacing.large
+    val verticalPadding = if (isTablet) spacing.large else spacing.medium
+    val sectionSpacing = if (isTablet) spacing.xl else spacing.large
     Row(
         modifier = Modifier
             .fillMaxSize()
             .padding(padding)
-            .padding(horizontal = spacing.large, vertical = spacing.medium),
-        horizontalArrangement = Arrangement.spacedBy(spacing.large),
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
+        horizontalArrangement = Arrangement.spacedBy(sectionSpacing),
     ) {
         Column(
             modifier = Modifier
-                .weight(0.4f)
+                .weight(sidebarWeight)
                 .fillMaxHeight(),
-            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(if (isTablet) spacing.large else spacing.medium),
         ) {
             pantry?.let {
                 Text(
@@ -371,12 +385,13 @@ private fun PantryDetailLandscape(
         }
         Column(
             modifier = Modifier
-                .weight(0.6f)
+                .weight(contentWeight)
                 .fillMaxHeight(),
         ) {
             PantryItemsGrid(
                 items = items,
                 isLoading = isLoading,
+                columns = if (isTablet) 2 else 1,
                 onShowItemDialog = onShowItemDialog,
                 onDeleteItem = onDeleteItem,
                 onIncreaseQuantity = onIncreaseQuantity,
@@ -390,12 +405,14 @@ private fun PantryDetailLandscape(
 private fun PantryItemsGrid(
     items: List<PantryItem>,
     isLoading: Boolean,
+    columns: Int,
     onShowItemDialog: (String?) -> Unit,
     onDeleteItem: (String) -> Unit,
     onIncreaseQuantity: (String) -> Unit,
     onDecreaseQuantity: (String) -> Unit,
 ) {
     val spacing = LocalSpacing.current
+    val gridSpacing = if (columns > 1) spacing.large else spacing.medium
     when {
         isLoading && items.isEmpty() -> {
             Box(
@@ -419,10 +436,10 @@ private fun PantryItemsGrid(
         }
         else -> {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                columns = GridCells.Fixed(columns),
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(spacing.medium),
-                horizontalArrangement = Arrangement.spacedBy(spacing.medium),
+                verticalArrangement = Arrangement.spacedBy(gridSpacing),
+                horizontalArrangement = Arrangement.spacedBy(gridSpacing),
             ) {
                 items(items, key = { it.id }) { item ->
                     PantryItemCard(

@@ -77,6 +77,7 @@ import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.core.designsystem.textPrimary
 import com.comprartir.mobile.core.designsystem.theme.LocalColorTokens
 import com.comprartir.mobile.core.ui.rememberIsLandscape
+import com.comprartir.mobile.core.ui.rememberIsTablet
 import java.util.Locale
 
 @Composable
@@ -118,31 +119,38 @@ fun LoginScreen(
         listOf(Color(0xFF4DA851), Color(0xFF3E8E47))
     }
     val locale = rememberLocale()
+    val isTablet = windowSizeClass?.let { rememberIsTablet(it) } ?: false
     val containerMaxWidth = if (windowSizeClass?.widthSizeClass == WindowWidthSizeClass.Expanded) {
         600.dp
     } else {
         420.dp
     }
     val isLandscape = rememberIsLandscape()
+    val useWideLayout = isTablet || isLandscape
+    val backgroundHorizontalPadding = if (isTablet) spacing.xxl else 24.dp
+    val backgroundVerticalPadding = if (isTablet) spacing.xl else 16.dp
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(gradientColors))
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = backgroundHorizontalPadding, vertical = backgroundVerticalPadding),
         contentAlignment = Alignment.Center,
     ) {
-        if (isLandscape) {
+        if (useWideLayout) {
+            val brandingWeight = if (isTablet) 0.45f else 0.5f
+            val formWeight = 1f - brandingWeight
+            val horizontalSpacing = if (isTablet) spacing.xl else spacing.large
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .widthIn(max = 1100.dp),
-                horizontalArrangement = Arrangement.spacedBy(spacing.large),
+                    .widthIn(max = if (isTablet) 1280.dp else 1100.dp),
+                horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 LoginBrandingPanel(
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(brandingWeight)
                         .fillMaxHeight(),
                 )
                 LoginFormCard(
@@ -155,8 +163,9 @@ fun LoginScreen(
                     locale = locale,
                     showBrandingHeader = false,
                     contentAlignment = Alignment.Start,
+                    isTabletLayout = isTablet,
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(formWeight)
                         .fillMaxHeight(),
                 )
             }
@@ -178,6 +187,7 @@ fun LoginScreen(
                     locale = locale,
                     showBrandingHeader = true,
                     contentAlignment = Alignment.CenterHorizontally,
+                    isTabletLayout = isTablet,
                     modifier = Modifier
                         .fillMaxWidth()
                         .widthIn(max = 420.dp),
@@ -208,9 +218,12 @@ private fun LoginFormCard(
     locale: Locale,
     showBrandingHeader: Boolean,
     contentAlignment: Alignment.Horizontal,
+    isTabletLayout: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
+    val horizontalPadding = if (isTabletLayout) spacing.xl else spacing.large
+    val verticalPadding = if (isTabletLayout) spacing.xxl else spacing.extraLarge
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(24.dp),
@@ -221,7 +234,7 @@ private fun LoginFormCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = spacing.large, vertical = spacing.extraLarge),
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding),
             horizontalAlignment = contentAlignment,
             verticalArrangement = Arrangement.spacedBy(spacing.large),
         ) {
