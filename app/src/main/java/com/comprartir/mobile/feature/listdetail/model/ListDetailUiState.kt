@@ -61,7 +61,7 @@ data class ListItemUi(
 data class AddProductUiState(
     val name: String = "",
     val quantity: String = "",
-    val unit: String = "",
+    val unit: String = com.comprartir.mobile.core.model.Unit.getDefault().value,
     val isSubmitting: Boolean = false,
     val categoryId: String? = null,
     val categoryChanged: Boolean = false,

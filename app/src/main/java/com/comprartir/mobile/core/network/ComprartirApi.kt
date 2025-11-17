@@ -421,7 +421,7 @@ data class ProductDto(
 
 @Serializable
 data class CategoryRef(
-    val id: Int,
+    @SerialName("id") val id: Int,
 )
 
 @Serializable
@@ -505,7 +505,7 @@ data class AddListItemResponse(
 
 @Serializable
 data class ProductRef(
-    val id: Int,
+    @SerialName("id") val id: Int,
 )
 
 @Serializable
@@ -624,16 +624,14 @@ data class SharePantryRequest(
 @Serializable
 data class PurchaseDto(
     val id: String,
-    @SerialName("list_id") val listId: String,
-    val list: ShoppingListDto? = null,
-    @SerialName("purchased_at")
-    @Serializable(with = InstantIsoSerializer::class)
+    val list: ShoppingListDto,
+    @SerialName("createdAt")
+    @Serializable(with = BackendDateSerializer::class)
     val purchasedAt: Instant,
-    @SerialName("restored_at")
-    @Serializable(with = InstantIsoSerializer::class)
-    val restoredAt: Instant? = null,
     val metadata: JsonObject? = null,
-)
+) {
+    val listId: String get() = list.id
+}
 // endregion
 
 // region Shared responses

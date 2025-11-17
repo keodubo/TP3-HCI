@@ -40,6 +40,7 @@ class ListsViewModel @Inject constructor(
                 android.util.Log.d(TAG, "observeLists collectLatest: Received ${lists.size} lists from repository")
                 android.util.Log.d(TAG, "observeLists collectLatest: List IDs = ${lists.map { it.id }}")
                 android.util.Log.d(TAG, "observeLists collectLatest: List names = ${lists.map { it.name }}")
+                
                 val showRecurringSection = featureFlags.rf14RecurringLists
                 val recurringLists = if (showRecurringSection) {
                     lists.filter { it.isRecurring }
@@ -243,7 +244,9 @@ class ListsViewModel @Inject constructor(
         source: List<ShoppingList>,
         state: ListsUiState,
     ): List<ShoppingList> {
-        var filtered = source
+        var filtered = source.filterNot { list ->
+            list.items.isNotEmpty() && list.items.all { it.isAcquired }
+        }
 
         if (state.searchQuery.isNotBlank()) {
             filtered = filtered.filter { list ->
@@ -284,6 +287,10 @@ class ListsViewModel @Inject constructor(
 
     fun clearError() {
         _state.update { it.copy(errorMessage = null) }
+    }
+
+    fun onSnackbarConsumed() {
+        _state.update { it.copy(snackbarMessage = null) }
     }
 
     // Edit list functions
@@ -469,6 +476,9 @@ class ListsViewModel @Inject constructor(
     }
 
     fun dismissCompleteDialog() {
+        val listId = _state.value.completeListState.listId
+        // Remove from the set so it won't show again on next observation
+        // This is intentional - if user cancels, we don't bother them again
         _state.update { it.copy(completeListState = CompleteListUiState()) }
     }
 
@@ -483,11 +493,11 @@ class ListsViewModel @Inject constructor(
         }
     }
 
-    fun confirmCompleteList() {
+    fun confirmCompleteList(addItemsToPantry: Boolean) {
         val currentState = _state.value.completeListState
         if (!currentState.isVisible || currentState.isSubmitting) return
         val pantryId = currentState.selectedPantryId
-        if (pantryId.isNullOrBlank()) {
+        if (addItemsToPantry && pantryId.isNullOrBlank()) {
             _state.update {
                 it.copy(
                     completeListState = currentState.copy(
@@ -498,6 +508,8 @@ class ListsViewModel @Inject constructor(
             return
         }
 
+        val selectedList = _state.value.allLists.firstOrNull { it.id == currentState.listId }
+
         _state.update {
             it.copy(
                 completeListState = currentState.copy(
@@ -507,20 +519,40 @@ class ListsViewModel @Inject constructor(
             )
         }
 
-        val submittingState = _state.value.completeListState
+        val pantryName = pantryId?.let { id ->
+            _state.value.pantryOptions.firstOrNull { it.id == id }?.name
+        }
+        val listItems = selectedList?.items.orEmpty()
+
         viewModelScope.launch {
             runCatching {
-                repository.purchaseList(currentState.listId)
-                repository.moveListToPantry(currentState.listId, pantryId)
-                repository.resetList(currentState.listId)
+                repository.markListAsCompleted(currentState.listId)
+                if (addItemsToPantry && pantryId != null && listItems.isNotEmpty()) {
+                    pantryRepository.addItemsFromList(pantryId, listItems)
+                }
                 pantryRepository.refresh()
                 repository.refresh()
             }.onSuccess {
-                _state.update { it.copy(completeListState = CompleteListUiState()) }
+                val message = if (addItemsToPantry && pantryName != null) {
+                    ListsSnackbarMessage(
+                        messageRes = R.string.lists_completed_with_pantry,
+                        messageArgs = listOf(pantryName),
+                    )
+                } else {
+                    ListsSnackbarMessage(
+                        messageRes = R.string.lists_completed_without_pantry,
+                    )
+                }
+                _state.update {
+                    it.copy(
+                        completeListState = CompleteListUiState(),
+                        snackbarMessage = message,
+                    )
+                }
             }.onFailure { throwable ->
                 _state.update {
                     it.copy(
-                        completeListState = submittingState.copy(
+                        completeListState = currentState.copy(
                             isSubmitting = false,
                             errorMessageRes = R.string.lists_complete_error,
                         ),
@@ -543,6 +575,7 @@ data class ListsUiState(
     val showRecurringSection: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    val snackbarMessage: ListsSnackbarMessage? = null,
     val createListState: CreateListUiState = CreateListUiState(),
     val editListState: EditListUiState = EditListUiState(),
     val deleteListState: DeleteListUiState = DeleteListUiState(),
@@ -587,4 +620,9 @@ data class CompleteListUiState(
     val selectedPantryId: String? = null,
     val isSubmitting: Boolean = false,
     @StringRes val errorMessageRes: Int? = null,
+)
+
+data class ListsSnackbarMessage(
+    @StringRes val messageRes: Int,
+    val messageArgs: List<String> = emptyList(),
 )

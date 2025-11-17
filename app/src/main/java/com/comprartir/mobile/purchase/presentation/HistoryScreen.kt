@@ -10,20 +10,30 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -32,6 +42,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.comprartir.mobile.R
 import com.comprartir.mobile.core.designsystem.LocalSpacing
+import com.comprartir.mobile.pantry.data.PantrySummary
 import com.comprartir.mobile.shared.components.EmptyStateMessage
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -44,22 +55,41 @@ fun HistoryRoute(
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    LaunchedEffect(state.snackbarMessage) {
+        val message = state.snackbarMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(context.getString(message))
+        viewModel.onSnackbarConsumed()
+    }
+
     HistoryScreen(
         state = state,
+        snackbarHostState = snackbarHostState,
         contentPadding = contentPadding,
         onRetry = viewModel::retry,
         onRefresh = viewModel::refresh,
         onDismissError = viewModel::clearError,
+        onRestoreCompletedList = viewModel::restoreList,
+        onAddListToPantry = viewModel::showAddToPantryDialog,
+        onSelectPantry = viewModel::addListToPantry,
+        onDismissAddToPantryDialog = viewModel::dismissAddToPantryDialog,
     )
 }
 
 @Composable
 fun HistoryScreen(
     state: PurchaseHistoryUiState,
+    snackbarHostState: SnackbarHostState,
     contentPadding: PaddingValues,
     onRetry: () -> Unit,
     onRefresh: () -> Unit,
     onDismissError: () -> Unit,
+    onRestoreCompletedList: (String) -> Unit,
+    onAddListToPantry: (String) -> Unit,
+    onSelectPantry: (String) -> Unit,
+    onDismissAddToPantryDialog: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
@@ -69,11 +99,11 @@ fun HistoryScreen(
             .padding(contentPadding),
     ) {
         when {
-            state.isLoading && state.sections.isEmpty() -> {
+            state.isLoading && state.sections.isEmpty() && state.completedLists.isEmpty() -> {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
 
-            state.errorMessage != null && state.sections.isEmpty() -> {
+            state.errorMessage != null && state.sections.isEmpty() && state.completedLists.isEmpty() -> {
                 HistoryError(
                     message = state.errorMessage,
                     onRetry = onRetry,
@@ -81,7 +111,7 @@ fun HistoryScreen(
                 )
             }
 
-            state.sections.isEmpty() -> {
+            state.sections.isEmpty() && state.completedLists.isEmpty() -> {
                 EmptyStateMessage(
                     title = stringResource(id = R.string.history_empty_title),
                     subtitle = stringResource(id = R.string.history_empty_subtitle),
@@ -95,8 +125,27 @@ fun HistoryScreen(
                     onRetry = onRetry,
                     onRefresh = onRefresh,
                     onDismissError = onDismissError,
+                    onRestoreCompletedList = onRestoreCompletedList,
+                    onAddListToPantry = onAddListToPantry,
                 )
             }
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = spacing.large)
+                .padding(bottom = spacing.large),
+        )
+
+        if (state.showAddToPantryDialog) {
+            AddToPantryDialog(
+                pantries = state.pantries,
+                isLoading = state.isAddingToPantry,
+                onSelectPantry = onSelectPantry,
+                onDismiss = onDismissAddToPantryDialog,
+            )
         }
     }
 }
@@ -107,6 +156,8 @@ private fun HistoryList(
     onRetry: () -> Unit,
     onRefresh: () -> Unit,
     onDismissError: () -> Unit,
+    onRestoreCompletedList: (String) -> Unit,
+    onAddListToPantry: (String) -> Unit,
 ) {
     val spacing = LocalSpacing.current
     val locale = Locale.getDefault()
@@ -146,6 +197,45 @@ private fun HistoryList(
                         onDismissError()
                         onRetry()
                     },
+                )
+            }
+        }
+
+        if (state.completedLists.isNotEmpty()) {
+            item(key = "completed-header") {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(spacing.xs),
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.history_completed_lists_section),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = stringResource(id = R.string.history_completed_lists_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            items(
+                items = state.completedLists,
+                key = { it.id },
+            ) { completed ->
+                CompletedListCard(
+                    item = completed,
+                    onRestore = onRestoreCompletedList,
+                    onAddToPantry = onAddListToPantry,
+                    dateFormatter = dateFormatter,
+                )
+            }
+
+            item(key = "completed-divider") {
+                Divider(
+                    modifier = Modifier.padding(vertical = spacing.small),
+                    color = MaterialTheme.colorScheme.outlineVariant,
                 )
             }
         }
@@ -198,7 +288,10 @@ private fun PurchaseCard(
 ) {
     val spacing = LocalSpacing.current
     val timeFormatter = rememberTimeFormatter(locale)
-    val timeText = item.purchasedAt.atZone(ZoneId.systemDefault()).format(timeFormatter)
+    val timeText = item.purchasedAt
+        .atZone(ZoneId.systemDefault())
+        .toLocalTime()
+        .format(timeFormatter)
     val listName = item.listName?.ifBlank { null } ?: stringResource(
         id = R.string.history_fallback_list_name,
         item.listId.takeLast(6),
@@ -246,13 +339,80 @@ private fun PurchaseCard(
                 ),
                 style = MaterialTheme.typography.bodyMedium,
             )
-            if (item.restoredAt != null) {
-                val restoredText = item.restoredAt.atZone(ZoneId.systemDefault()).format(timeFormatter)
-                Text(
-                    text = stringResource(id = R.string.history_restored_label, restoredText),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+        }
+    }
+}
+
+@Composable
+private fun CompletedListCard(
+    item: CompletedListHistoryItem,
+    onRestore: (String) -> Unit,
+    onAddToPantry: (String) -> Unit,
+    dateFormatter: DateTimeFormatter,
+) {
+    val spacing = LocalSpacing.current
+    val completedText = item.completedAt
+        ?.atZone(ZoneId.systemDefault())
+        ?.toLocalDate()
+        ?.format(dateFormatter)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(spacing.small),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(spacing.small),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
                 )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = item.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    completedText?.let { text ->
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            Text(
+                text = stringResource(id = R.string.history_completed_list_items, item.totalItems),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(spacing.small, Alignment.CenterHorizontally),
+            ) {
+                FilledTonalButton(
+                    onClick = { onAddToPantry(item.id) },
+                    shape = RoundedCornerShape(50),
+                ) {
+                    Text(text = stringResource(id = R.string.history_add_to_pantry_button))
+                }
+                FilledTonalButton(
+                    onClick = { onRestore(item.id) },
+                    shape = RoundedCornerShape(50),
+                ) {
+                    Text(text = stringResource(id = R.string.history_restore_button))
+                }
             }
         }
     }
@@ -298,5 +458,79 @@ private fun rememberDateFormatter(locale: Locale): DateTimeFormatter {
 private fun rememberTimeFormatter(locale: Locale): DateTimeFormatter {
     return remember(locale) {
         DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale)
+    }
+}
+
+@Composable
+private fun AddToPantryDialog(
+    pantries: List<PantrySummary>,
+    isLoading: Boolean,
+    onSelectPantry: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = { if (!isLoading) onDismiss() },
+        confirmButton = {},
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = { if (!isLoading) onDismiss() }) {
+                Text(text = stringResource(id = R.string.dialog_cancel))
+            }
+        },
+        title = {
+            Text(
+                text = stringResource(id = R.string.history_add_to_pantry_title),
+                style = MaterialTheme.typography.titleLarge,
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = spacing.small),
+                verticalArrangement = Arrangement.spacedBy(spacing.small),
+            ) {
+                Text(
+                    text = stringResource(id = R.string.history_add_to_pantry_message),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (pantries.isEmpty()) {
+                    Text(
+                        text = stringResource(id = R.string.lists_complete_dialog_no_pantry),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                } else {
+                    pantries.forEach { pantry: PantrySummary ->
+                        PantryOption(
+                            name = pantry.name,
+                            isLoading = isLoading,
+                            onClick = { onSelectPantry(pantry.id) },
+                        )
+                    }
+                }
+            }
+        },
+    )
+}
+
+@Composable
+private fun PantryOption(
+    name: String,
+    isLoading: Boolean,
+    onClick: () -> Unit,
+) {
+    Button(
+        onClick = onClick,
+        enabled = !isLoading,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.padding(end = 8.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+        Text(text = name)
     }
 }

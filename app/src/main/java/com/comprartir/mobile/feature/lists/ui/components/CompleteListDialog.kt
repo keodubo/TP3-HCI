@@ -26,6 +26,7 @@ fun CompleteListDialog(
     onPantrySelected: (String) -> Unit,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
+    onCompleteWithoutPantry: () -> Unit,
 ) {
     if (!state.isVisible) return
 
@@ -37,17 +38,17 @@ fun CompleteListDialog(
                 onClick = onConfirm,
                 enabled = !state.isSubmitting && state.pantryOptions.isNotEmpty(),
             ) {
-                Text(text = stringResource(id = R.string.lists_complete_dialog_confirm))
+                Text(text = stringResource(id = R.string.lists_complete_yes_pantry))
             }
         },
         dismissButton = {
-            TextButton(onClick = { if (!state.isSubmitting) onDismiss() }) {
-                Text(text = stringResource(id = R.string.dialog_cancel))
+            TextButton(onClick = { if (!state.isSubmitting) onCompleteWithoutPantry() }) {
+                Text(text = stringResource(id = R.string.lists_complete_no_pantry))
             }
         },
         title = {
             Text(
-                text = stringResource(id = R.string.lists_complete_dialog_title, state.listName),
+                text = stringResource(id = R.string.lists_complete_dialog_title_new),
                 style = MaterialTheme.typography.titleLarge,
             )
         },
@@ -60,7 +61,7 @@ fun CompleteListDialog(
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(spacing.small),
             ) {
                 Text(
-                    text = stringResource(id = R.string.lists_complete_dialog_message),
+                    text = stringResource(id = R.string.lists_complete_dialog_message_new),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 if (state.pantryOptions.isEmpty()) {

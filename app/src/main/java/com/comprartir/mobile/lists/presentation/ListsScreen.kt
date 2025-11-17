@@ -53,6 +53,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -66,6 +68,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -100,6 +103,8 @@ fun ListsRoute(
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
     
     // Usar rememberSaveable para recordar si ya manejamos el openCreate
     // Esto evita que se reabra el diálogo al volver del detalle de una lista
@@ -118,9 +123,18 @@ fun ListsRoute(
     androidx.compose.runtime.LaunchedEffect(state.createListState.isVisible) {
         android.util.Log.d("ListsRoute", "createListState.isVisible changed to: ${state.createListState.isVisible}")
     }
+
+    LaunchedEffect(state.snackbarMessage) {
+        val message = state.snackbarMessage ?: return@LaunchedEffect
+        val args = message.messageArgs.toTypedArray()
+        val text = context.getString(message.messageRes, *args)
+        snackbarHostState.showSnackbar(text)
+        viewModel.onSnackbarConsumed()
+    }
     
     ListsScreen(
         state = state,
+        snackbarHostState = snackbarHostState,
         contentPadding = contentPadding,
         onShowCreateDialog = viewModel::showCreateDialog,
         onDismissCreateDialog = viewModel::dismissCreateDialog,
@@ -162,6 +176,7 @@ fun ListsRoute(
 @Composable
 fun ListsScreen(
     state: ListsUiState,
+    snackbarHostState: SnackbarHostState,
     contentPadding: PaddingValues = PaddingValues(),
     onShowCreateDialog: () -> Unit,
     onDismissCreateDialog: () -> Unit,
@@ -189,7 +204,7 @@ fun ListsScreen(
     onShowCompleteDialog: (ShoppingList) -> Unit,
     onDismissCompleteDialog: () -> Unit,
     onCompletePantrySelected: (String) -> Unit,
-    onConfirmCompleteList: () -> Unit,
+    onConfirmCompleteList: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     onClearError: () -> Unit,
 ) {
@@ -324,6 +339,14 @@ fun ListsScreen(
                 )
                 .size(64.dp),
         )
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = spacing.large)
+                .padding(bottom = spacing.large),
+        )
     }
 
     CreateListDialog(
@@ -363,6 +386,14 @@ fun ListsScreen(
         state = state.deleteListState,
         onDismiss = onDismissDeleteDialog,
         onConfirm = onConfirmDeleteList,
+    )
+
+    CompleteListDialog(
+        state = state.completeListState,
+        onPantrySelected = onCompletePantrySelected,
+        onDismiss = onDismissCompleteDialog,
+        onConfirm = { onConfirmCompleteList(true) },
+        onCompleteWithoutPantry = { onConfirmCompleteList(false) },
     )
 }
 

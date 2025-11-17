@@ -89,6 +89,12 @@
     <string name="lists_complete_dialog_confirm">Mover productos</string>
     <string name="lists_complete_select_pantry_error">Seleccioná una despensa para continuar.</string>
     <string name="lists_complete_error">No pudimos mover los productos a la despensa.</string>
+    <string name="lists_complete_dialog_title_new">¿Agregar productos a la despensa?</string>
+    <string name="lists_complete_dialog_message_new">¿Deseás agregar los productos de esta lista a alguna de tus despensas?</string>
+    <string name="lists_complete_no_pantry">No, solo completar</string>
+    <string name="lists_complete_yes_pantry">Sí, agregar</string>
+    <string name="lists_completed_with_pantry">Lista completada y productos agregados a %s</string>
+    <string name="lists_completed_without_pantry">Lista completada</string>
     <string name="acquire_products_heading">Marca productos como adquiridos</string>
     <string name="pantry_heading">Despensa</string>
     <string name="pantry_add_item">Agregar producto a la despensa</string>
@@ -336,6 +342,15 @@
     <string name="history_items_summary">%1$d de %2$d productos comprados</string>
     <string name="history_restored_label">Restaurada a las %1$s</string>
     <string name="history_error_generic">No pudimos cargar el historial</string>
+    <string name="history_completed_lists_section">Listas completadas</string>
+    <string name="history_completed_lists_subtitle">Restaurá las listas que ya terminaste.</string>
+    <string name="history_completed_list_items">%1$d productos</string>
+    <string name="history_restore_button">Restaurar</string>
+    <string name="history_add_to_pantry_button">Agregar a despensa</string>
+    <string name="history_add_to_pantry_title">Seleccionar una despensa</string>
+    <string name="history_add_to_pantry_message">Seleccioná la despensa donde querés agregar los productos de esta lista:</string>
+    <string name="history_add_to_pantry_success">Productos agregados a la despensa</string>
+    <string name="history_list_restored">Lista restaurada</string>
     <string name="recurring_lists_title">Listas recurrentes</string>
     <string name="recurring_lists_subtitle">Reutilizá tus listas favoritas para no empezar desde cero.</string>
     <string name="recurring_lists_empty">Todavía no configuraste listas recurrentes.</string>
@@ -412,4 +427,13 @@
     <string name="home_shared_owner_unknown">Desconocido</string>
     <string name="verify_error_generic">No pudimos verificar tu cuenta</string>
     <string name="cd_logo_comprartir">Logo de Comprartir</string>
+
+    <!-- Units -->
+    <string name="unit_kg">Kilogramo</string>
+    <string name="unit_g">Gramo</string>
+    <string name="unit_l">Litro</string>
+    <string name="unit_ml">Mililitro</string>
+    <string name="unit_units">Unidades</string>
+    <string name="unit_package">Paquete</string>
+    <string name="unit_dozen">Docena</string>
 </resources>

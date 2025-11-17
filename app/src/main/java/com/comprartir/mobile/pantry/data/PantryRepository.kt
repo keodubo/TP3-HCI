@@ -12,6 +12,7 @@ import com.comprartir.mobile.core.network.SharePantryRequest
 import com.comprartir.mobile.core.network.fetchAllPages
 import com.comprartir.mobile.core.network.UserSummaryDto
 import com.comprartir.mobile.core.network.PantryDto
+import com.comprartir.mobile.lists.data.ListItem
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -58,6 +59,7 @@ interface PantryRepository {
     fun observePantries(): Flow<List<PantrySummary>>
     fun observePantry(): Flow<List<PantryItem>>
     suspend fun refresh()
+    suspend fun addItemsFromList(pantryId: String, items: List<ListItem>)
     suspend fun createPantry(name: String, description: String?)
     suspend fun updatePantry(pantryId: String, name: String, description: String?)
     suspend fun deletePantry(pantryId: String)
@@ -87,6 +89,34 @@ class DefaultPantryRepository @Inject constructor(
 
     override suspend fun refresh() {
         withContext(Dispatchers.IO) { refreshPantryInternal() }
+    }
+
+    override suspend fun addItemsFromList(pantryId: String, items: List<ListItem>) {
+        if (items.isEmpty()) return
+        withContext(Dispatchers.IO) {
+            val errors = mutableListOf<String>()
+            items.forEach { item ->
+                runCatching {
+                    Log.d(TAG, "addItemsFromList: Adding item ${item.name} (productId=${item.productId}) to pantry $pantryId")
+                    val payload = PantryItemUpsertRequest(
+                        productId = item.productId,
+                        quantity = item.quantity,
+                        unit = item.unit,
+                    )
+                    val response = api.addPantryItem(pantryId, payload)
+                    pantryDao.upsert(response.copy(pantryId = response.pantryId ?: pantryId).toEntity())
+                    Log.d(TAG, "addItemsFromList: Successfully added ${item.name} to pantry")
+                }.onFailure { throwable ->
+                    Log.e(TAG, "addItemsFromList: Failed to add ${item.name} to pantry $pantryId", throwable)
+                    errors.add(item.name)
+                }
+            }
+            if (errors.isNotEmpty()) {
+                Log.w(TAG, "addItemsFromList: Failed to add ${errors.size} items: ${errors.joinToString()}")
+                // Don't throw, just log the error and continue with successful items
+            }
+            refreshPantryInternal()
+        }
     }
 
     override suspend fun createPantry(name: String, description: String?) {

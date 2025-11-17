@@ -18,7 +18,6 @@ data class Purchase(
     val listId: String,
     val listName: String?,
     val purchasedAt: Instant,
-    val restoredAt: Instant?,
     val totalItems: Int,
     val acquiredItems: Int,
     val isRecurring: Boolean,
@@ -73,16 +72,15 @@ class DefaultPurchaseRepository @Inject constructor(
 }
 
 private fun PurchaseDto.toDomain(): Purchase {
-    val items = list?.items.orEmpty()
+    val items = list.items
     val acquired = items.count { it.purchased || it.isAcquired == true }
     return Purchase(
         id = id,
         listId = listId,
-        listName = list?.name,
+        listName = list.name,
         purchasedAt = purchasedAt,
-        restoredAt = restoredAt,
         totalItems = items.size,
         acquiredItems = acquired,
-        isRecurring = list?.recurring ?: false,
+        isRecurring = list.recurring ?: false,
     )
 }

@@ -83,6 +83,7 @@ class ItemAlreadyExistsException(message: String? = null, cause: Throwable? = nu
 interface ShoppingListsRepository {
     fun observeLists(): Flow<List<ShoppingList>>
     fun observeList(listId: String): Flow<ShoppingList?>
+    suspend fun getCompletedLists(): List<ShoppingList>
     suspend fun refresh()
     suspend fun refreshListItems(listId: String)
     suspend fun createList(name: String, description: String? = null, isRecurring: Boolean = false)
@@ -93,6 +94,8 @@ interface ShoppingListsRepository {
     suspend fun updateItem(listId: String, itemId: String, productId: String, quantity: Double, unit: String? = null)
     suspend fun deleteItem(listId: String, itemId: String)
     suspend fun purchaseList(listId: String)
+    suspend fun markListAsCompleted(listId: String)
+    suspend fun restoreList(listId: String)
     suspend fun resetList(listId: String)
     suspend fun moveListToPantry(listId: String, pantryId: String)
     suspend fun shareList(listId: String, email: String): ShareListResult
@@ -164,6 +167,18 @@ class DefaultShoppingListsRepository @Inject constructor(
                 }
             }
         }.onStart { ensureSynced() }
+
+    override suspend fun getCompletedLists(): List<ShoppingList> {
+        ensureSynced()
+        val userId = authRepository.currentUser.firstOrNull()?.id.orEmpty()
+        if (userId.isEmpty()) return emptyList()
+        val listEntities = shoppingListDao.observeLists(userId).firstOrNull().orEmpty()
+        val allItems = listItemDao.observeAllItems(userId).firstOrNull().orEmpty()
+        val groupedItems = allItems.groupBy { it.listId }
+        return listEntities
+            .map { entity -> entity.toDomainModel(groupedItems[entity.id].orEmpty()) }
+            .filter { list -> list.items.isNotEmpty() && list.items.all { it.isAcquired } }
+    }
 
     override suspend fun refresh() {
         Log.d(TAG, "refresh: Manual refresh requested")
@@ -367,14 +382,27 @@ class DefaultShoppingListsRepository @Inject constructor(
     }
 
     override suspend fun purchaseList(listId: String) {
+        markListAsCompleted(listId)
+    }
+
+    override suspend fun markListAsCompleted(listId: String) {
         withContext(Dispatchers.IO) {
-            api.markListPurchased(listId, ShoppingListPurchaseRequest())
+            val response = api.markListPurchased(listId, ShoppingListPurchaseRequest())
+            persistListSnapshot(response)
+        }
+    }
+
+    override suspend fun restoreList(listId: String) {
+        withContext(Dispatchers.IO) {
+            val response = api.resetList(listId)
+            persistListSnapshot(response)
         }
     }
 
     override suspend fun resetList(listId: String) {
         withContext(Dispatchers.IO) {
-            api.resetList(listId)
+            val response = api.resetList(listId)
+            persistListSnapshot(response)
         }
     }
 
@@ -463,6 +491,14 @@ class DefaultShoppingListsRepository @Inject constructor(
         } catch (throwable: Throwable) {
             Log.w(TAG, "Failed to refresh shopping lists", throwable)
             throw throwable
+        }
+    }
+
+    private suspend fun persistListSnapshot(dto: ShoppingListDto) {
+        shoppingListDao.upsert(dto.toEntity())
+        listItemDao.deleteByList(dto.id)
+        if (dto.items.isNotEmpty()) {
+            listItemDao.upsertAll(dto.items.map { it.toEntity(dto.id) })
         }
     }
 

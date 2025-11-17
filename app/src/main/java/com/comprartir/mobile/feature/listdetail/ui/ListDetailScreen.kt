@@ -743,13 +743,10 @@ private fun AddProductPanel(
                     singleLine = true,
                     placeholder = { Text(text = stringResource(id = R.string.list_detail_add_quantity)) },
                 )
-                OutlinedTextField(
+                UnitDropdownField(
                     modifier = Modifier.weight(1f),
-                    value = state.unit,
-                    onValueChange = onUnitChange,
-                    shape = ComprartirPillShape,
-                    singleLine = true,
-                    placeholder = { Text(text = stringResource(id = R.string.list_detail_add_unit)) },
+                    selectedUnit = state.unit,
+                    onUnitSelected = onUnitChange,
                 )
             }
             CategoryDropdownField(
@@ -824,12 +821,10 @@ private fun EditProductDialog(
                         singleLine = true,
                         placeholder = { Text(text = stringResource(id = R.string.list_detail_add_quantity)) },
                     )
-                    OutlinedTextField(
-                        value = state.unit,
-                        onValueChange = onUnitChange,
+                    UnitDropdownField(
                         modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        placeholder = { Text(text = stringResource(id = R.string.list_detail_add_unit)) },
+                        selectedUnit = state.unit,
+                        onUnitSelected = onUnitChange,
                     )
                 }
                 CategoryDropdownField(
@@ -969,6 +964,52 @@ private fun CategoryDropdownField(
 @Composable
 private fun categoryDisplayName(category: CategoryUi): String =
     category.name ?: category.nameRes?.let { stringResource(id = it) } ?: ""
+
+@Composable
+private fun UnitDropdownField(
+    selectedUnit: String,
+    onUnitSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val units = com.comprartir.mobile.core.model.Unit.entries
+    val selected = com.comprartir.mobile.core.model.Unit.fromValue(selectedUnit) ?: com.comprartir.mobile.core.model.Unit.getDefault()
+    val displayLabel = stringResource(id = selected.labelRes)
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = modifier,
+    ) {
+        OutlinedTextField(
+            value = displayLabel,
+            onValueChange = {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
+            readOnly = true,
+            placeholder = { Text(text = stringResource(id = R.string.list_detail_add_unit)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            shape = ComprartirPillShape,
+            singleLine = true,
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(Color.White),
+        ) {
+            units.forEach { unit ->
+                DropdownMenuItem(
+                    text = { Text(text = stringResource(id = unit.labelRes)) },
+                    onClick = {
+                        expanded = false
+                        onUnitSelected(unit.value)
+                    },
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun SharePanel(
