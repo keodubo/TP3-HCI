@@ -84,6 +84,8 @@ class ListDetailViewModel @Inject constructor(
             ListDetailEvent.UndoDelete -> undoDelete()
             ListDetailEvent.ToggleHideCompleted -> _state.update { it.copy(hideCompleted = !it.hideCompleted) }
             ListDetailEvent.ToggleFilters -> _state.update { it.copy(filtersExpanded = !it.filtersExpanded) }
+            ListDetailEvent.ToggleSearch -> _state.update { it.copy(isSearchExpanded = !it.isSearchExpanded) }
+            is ListDetailEvent.SearchQueryChanged -> _state.update { it.copy(searchQuery = event.value) }
             is ListDetailEvent.AddProductNameChanged -> updateAddProductState { it.copy(name = event.value, errorMessageRes = null) }
             is ListDetailEvent.AddProductQuantityChanged -> updateAddProductState { it.copy(quantity = event.value) }
             is ListDetailEvent.AddProductUnitChanged -> updateAddProductState { it.copy(unit = event.value) }
@@ -122,9 +124,10 @@ class ListDetailViewModel @Inject constructor(
         }
         viewModelScope.launch {
             repository.observeList(listId).collectLatest { detail ->
+                android.util.Log.d("ListDetailViewModel", "observeList: detail.title = ${detail.title}")
                 _state.update { current ->
                     current.copy(
-                        title = detail.title,
+                        name = detail.title,
                         subtitle = formatLastUpdated(detail),
                         items = detail.items,
                         shareState = current.shareState.copy(
@@ -134,6 +137,7 @@ class ListDetailViewModel @Inject constructor(
                         errorMessageRes = null,
                     )
                 }
+                android.util.Log.d("ListDetailViewModel", "observeList: state.name = ${_state.value.name}")
             }
         }
     }
@@ -295,7 +299,7 @@ class ListDetailViewModel @Inject constructor(
         selection?.takeIf { id -> options.any { it.id == id } }
 
     private fun showEditDialog() {
-        val currentTitle = _state.value.title
+        val currentTitle = _state.value.name
         _state.update {
             it.copy(
                 editListState = EditListDialogState(

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.comprartir.mobile.R
 import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.core.designsystem.theme.ColorTokens
+import com.comprartir.mobile.core.ui.LocalAppBarTitle
 import com.comprartir.mobile.core.navigation.AppDestination
 
 @Composable
@@ -39,6 +40,8 @@ fun ComprartirTopBar(
     onBack: () -> Unit,
     onProfileClick: () -> Unit = {},
 ) {
+    val appBarTitleState = LocalAppBarTitle.current
+    val customTitle = appBarTitleState.value?.takeIf { it.isNotBlank() }
     val title = remember(destinationRoute) {
         when {
             destinationRoute == AppDestination.Dashboard.route -> R.string.title_dashboard
@@ -84,8 +87,9 @@ fun ComprartirTopBar(
                         Icon(imageVector = Icons.Outlined.ArrowBack, contentDescription = stringResource(id = R.string.cd_back))
                     }
                 }
+                val fallbackTitle = stringResource(id = title)
                 Text(
-                    text = stringResource(id = title),
+                    text = customTitle ?: fallbackTitle,
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,

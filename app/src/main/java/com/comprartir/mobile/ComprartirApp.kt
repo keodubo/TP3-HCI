@@ -8,8 +8,11 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalConfiguration
@@ -23,6 +26,7 @@ import com.comprartir.mobile.core.navigation.ComprartirNavHost
 import com.comprartir.mobile.core.navigation.SessionViewModel
 import com.comprartir.mobile.core.navigation.AppDestination
 import com.comprartir.mobile.core.navigation.rememberComprartirAppState
+import com.comprartir.mobile.core.ui.LocalAppBarTitle
 import com.comprartir.mobile.core.ui.ResponsiveAppScaffold
 import com.comprartir.mobile.core.util.FeatureFlags
 import com.comprartir.mobile.shared.components.ComprartirTopBar
@@ -73,49 +77,53 @@ fun ComprartirApp(
             else -> spacing.mobileGutter
         }
 
-        if (isAuthRoute) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-            ) {
-                ComprartirNavHost(
-                    appState = appState,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-        } else {
-            ResponsiveAppScaffold(
-                appState = appState,
-                isLandscape = isLandscape,
-                topBar = {
-                    ComprartirTopBar(
-                        destinationRoute = appState.currentDestinationRoute,
-                        showBack = appState.navController.previousBackStackEntry != null,
-                        onBack = appState::onBack,
-                        onProfileClick = {
-                            appState.navController.navigate(AppDestination.Profile.route) {
-                                launchSingleTop = true
-                            }
-                        },
-                    )
-                },
-            ) { paddingValues ->
+        val appBarTitleState = remember { mutableStateOf<String?>(null) }
+
+        CompositionLocalProvider(LocalAppBarTitle provides appBarTitleState) {
+            if (isAuthRoute) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize(),
+                        .fillMaxSize()
                 ) {
+                    ComprartirNavHost(
+                        appState = appState,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            } else {
+                ResponsiveAppScaffold(
+                    appState = appState,
+                    isLandscape = isLandscape,
+                    topBar = {
+                        ComprartirTopBar(
+                            destinationRoute = appState.currentDestinationRoute,
+                            showBack = appState.navController.previousBackStackEntry != null,
+                            onBack = appState::onBack,
+                            onProfileClick = {
+                                appState.navController.navigate(AppDestination.Profile.route) {
+                                    launchSingleTop = true
+                                }
+                            },
+                        )
+                    },
+                ) { paddingValues ->
                     Box(
                         modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .fillMaxSize()
-                            .padding(horizontal = horizontalPadding)
-                            .widthIn(max = spacing.maxContentWidth),
+                            .fillMaxSize(),
                     ) {
-                        ComprartirNavHost(
-                            appState = appState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = paddingValues,
-                        )
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .fillMaxSize()
+                                .padding(horizontal = horizontalPadding)
+                                .widthIn(max = spacing.maxContentWidth),
+                        ) {
+                            ComprartirNavHost(
+                                appState = appState,
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = paddingValues,
+                            )
+                        }
                     }
                 }
             }

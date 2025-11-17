@@ -325,7 +325,8 @@
     <string name="lists_delete_dialog_confirm">Delete</string>
     <string name="lists_items_count">%1$d items</string>
     <string name="lists_no_items">Empty list</string>
-    <string name="list_detail_filters_title">Filters</string>
+    <string name="list_detail_filters_label">Filters</string>
+    <string name="list_detail_screen_title">List</string>
     <string name="list_detail_hide_completed">Hide completed items</string>
     <string name="list_detail_empty_items">No products added yet.</string>
     <string name="list_detail_add_title">Add products</string>

@@ -10,11 +10,13 @@ enum class CategorySelectionTarget {
 
 data class ListDetailUiState(
     val listId: String,
-    val title: String = "",
+    val name: String = "",
     val subtitle: String = "",
     val items: List<ListDetailItem> = emptyList(),
     val hideCompleted: Boolean = false,
-    val filtersExpanded: Boolean = true,
+    val filtersExpanded: Boolean = false,
+    val isSearchExpanded: Boolean = false,
+    val searchQuery: String = "",
     val selectedCategoryFilterId: String? = null,
     val isLoading: Boolean = true,
     @StringRes val errorMessageRes: Int? = null,
@@ -30,23 +32,27 @@ data class ListDetailUiState(
     val completedItems: Int get() = items.count { it.isCompleted }
     val progressFraction: Float
         get() = if (totalItems == 0) 0f else completedItems / totalItems.toFloat()
+    
     val visibleItems: List<ListItemUi>
-        get() = items
-            .filter { item ->
-                (!hideCompleted || !item.isCompleted) &&
-                    (selectedCategoryFilterId.isNullOrBlank() || item.categoryId == selectedCategoryFilterId)
-            }
-            .map { item ->
-                val unitLabel = item.unit?.takeIf { it.isNotBlank() }?.let { " $it" } ?: ""
-                ListItemUi(
-                    id = item.id,
-                    name = item.name,
-                    quantityLabel = item.quantity + unitLabel,
-                    isCompleted = item.isCompleted,
-                    notes = item.notes,
-                    categoryId = item.categoryId,
-                )
-            }
+        get() {
+            return items
+                .filter { item ->
+                    (!hideCompleted || !item.isCompleted) &&
+                    (selectedCategoryFilterId == null || item.categoryId == selectedCategoryFilterId) &&
+                    (searchQuery.isBlank() || item.name.contains(searchQuery.trim(), ignoreCase = true))
+                }
+                .map { item ->
+                    val unitLabel = item.unit?.takeIf { it.isNotBlank() }?.let { " $it" } ?: ""
+                    ListItemUi(
+                        id = item.id,
+                        name = item.name,
+                        quantityLabel = item.quantity + unitLabel,
+                        isCompleted = item.isCompleted,
+                        notes = item.notes,
+                        categoryId = item.categoryId,
+                    )
+                }
+        }
 }
 
 data class ListItemUi(

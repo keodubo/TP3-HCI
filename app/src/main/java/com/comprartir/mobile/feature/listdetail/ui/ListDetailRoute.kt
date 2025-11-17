@@ -6,12 +6,15 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.comprartir.mobile.R
+import com.comprartir.mobile.core.ui.LocalAppBarTitle
 import com.comprartir.mobile.feature.listdetail.model.ListDetailEffect
 import com.comprartir.mobile.feature.listdetail.model.ListDetailEvent
 import com.comprartir.mobile.feature.listdetail.viewmodel.ListDetailViewModel
@@ -25,10 +28,12 @@ fun ListDetailRoute(
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: ListDetailViewModel = hiltViewModel(),
 ) {
-    val state = viewModel.state.collectAsStateWithLifecycle().value
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val isTabletLayout = windowSizeClass?.widthSizeClass?.let { it >= WindowWidthSizeClass.Medium } ?: false
+    val appBarTitleState = LocalAppBarTitle.current
+    val resolvedAppBarTitle = state.name.ifBlank { context.getString(R.string.lists_default_title) }
 
     LaunchedEffect(Unit) {
         viewModel.effects.collectLatest { effect ->
@@ -53,6 +58,13 @@ fun ListDetailRoute(
                 }
             }
         }
+    }
+
+    LaunchedEffect(resolvedAppBarTitle) {
+        appBarTitleState.value = resolvedAppBarTitle
+    }
+    DisposableEffect(Unit) {
+        onDispose { appBarTitleState.value = null }
     }
 
     ListDetailScreen(

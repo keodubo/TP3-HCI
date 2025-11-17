@@ -6,6 +6,8 @@ sealed interface ListDetailEvent {
     data object UndoDelete : ListDetailEvent
     data object ToggleHideCompleted : ListDetailEvent
     data object ToggleFilters : ListDetailEvent
+    data object ToggleSearch : ListDetailEvent
+    data class SearchQueryChanged(val value: String) : ListDetailEvent
     data class AddProductNameChanged(val value: String) : ListDetailEvent
     data class AddProductQuantityChanged(val value: String) : ListDetailEvent
     data class AddProductUnitChanged(val value: String) : ListDetailEvent

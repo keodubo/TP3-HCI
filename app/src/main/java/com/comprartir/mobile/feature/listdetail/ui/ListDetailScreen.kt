@@ -112,8 +112,10 @@ fun ListDetailScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = ColorTokens.NeutralSurface,
         topBar = {
+            val title = state.name.ifBlank { stringResource(id = R.string.lists_default_title) }
+            android.util.Log.d("ListDetailScreen", "TopBar title: $title, state.name: ${state.name}")
             ListDetailTopBar(
-                title = state.title.ifBlank { stringResource(id = R.string.lists_default_title) },
+                title = title,
                 onBack = onBack,
                 onEdit = { onEvent(ListDetailEvent.ShowEditDialog) },
                 onDelete = { onEvent(ListDetailEvent.ShowDeleteDialog) },
@@ -187,7 +189,7 @@ fun ListDetailScreen(
                                 },
                                 onManage = {
                                     if (state.listId.isNotBlank()) {
-                                        onOpenShareManagement(state.listId, state.title)
+                                        onOpenShareManagement(state.listId, state.name)
                                     }
                                 },
                             )
@@ -240,7 +242,7 @@ fun ListDetailScreen(
                         },
                         onManage = {
                             if (state.listId.isNotBlank()) {
-                                onOpenShareManagement(state.listId, state.title)
+                                onOpenShareManagement(state.listId, state.name)
                             }
                         },
                         modifier = Modifier
@@ -284,7 +286,7 @@ fun ListDetailScreen(
                 state = com.comprartir.mobile.lists.presentation.DeleteListUiState(
                     isVisible = state.deleteListState.isVisible,
                     listId = state.listId,
-                    listName = state.title,
+                    listName = state.name,
                     isDeleting = state.deleteListState.isDeleting,
                 ),
                 onDismiss = { onEvent(ListDetailEvent.DismissDeleteDialog) },
@@ -391,7 +393,7 @@ private fun ListDetailMainCard(
                 .padding(spacing.large),
             verticalArrangement = Arrangement.spacedBy(spacing.medium),
         ) {
-            val title = state.title.ifBlank { stringResource(id = R.string.lists_default_title) }
+            val title = state.name.ifBlank { stringResource(id = R.string.lists_default_title) }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -509,7 +511,7 @@ private fun ListDetailFilterCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = stringResource(id = R.string.list_detail_filters_title),
+                    text = stringResource(id = R.string.list_detail_filters_label),
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
                 )

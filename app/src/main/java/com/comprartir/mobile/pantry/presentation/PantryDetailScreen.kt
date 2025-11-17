@@ -36,11 +36,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,6 +53,7 @@ import com.comprartir.mobile.R
 import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.core.designsystem.darkNavy
 import com.comprartir.mobile.core.designsystem.textMuted
+import com.comprartir.mobile.core.ui.LocalAppBarTitle
 import com.comprartir.mobile.shared.components.AddFab
 import com.comprartir.mobile.pantry.data.PantryItem
 import java.time.ZoneId
@@ -64,6 +67,17 @@ fun PantryDetailRoute(
     viewModel: PantryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val appBarTitleState = LocalAppBarTitle.current
+    val pantryTitle = state.selectedPantry?.name?.takeIf { it.isNotBlank() }
+        ?: context.getString(R.string.title_pantry)
+
+    LaunchedEffect(pantryTitle) {
+        appBarTitleState.value = pantryTitle
+    }
+    DisposableEffect(Unit) {
+        onDispose { appBarTitleState.value = null }
+    }
     
     LaunchedEffect(pantryId) {
         viewModel.onSelectPantry(pantryId)
@@ -120,9 +134,9 @@ fun PantryDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = pantry?.name ?: stringResource(id = R.string.pantry_heading),
+                        text = pantry?.name ?: "",
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        overflow = TextOverflow.Ellipsis
                     )
                 },
                 navigationIcon = {
