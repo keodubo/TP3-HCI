@@ -1,17 +1,23 @@
 package com.comprartir.mobile.pantry.presentation
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -52,10 +58,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.comprartir.mobile.R
 import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.core.designsystem.darkNavy
+import com.comprartir.mobile.core.designsystem.surfaceCard
 import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.core.ui.LocalAppBarTitle
 import com.comprartir.mobile.shared.components.AddFab
 import com.comprartir.mobile.pantry.data.PantryItem
+import com.comprartir.mobile.core.ui.rememberIsLandscape
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -128,6 +136,13 @@ fun PantryDetailScreen(
     onDecreaseQuantity: (String) -> Unit,
 ) {
     val spacing = LocalSpacing.current
+    val isLandscape = rememberIsLandscape()
+
+    LaunchedEffect(isLandscape, itemDialog.isVisible) {
+        if (isLandscape && !itemDialog.isVisible) {
+            onShowItemDialog(null)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -158,100 +173,52 @@ fun PantryDetailScreen(
             )
         },
         floatingActionButton = {
-            AddFab(
-                onClick = { onShowItemDialog(null) },
-                contentDescription = stringResource(id = R.string.pantry_add_item),
-            )
-        },
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(
-                start = spacing.large,
-                end = spacing.large,
-                top = spacing.medium,
-                bottom = 80.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(spacing.small),
-        ) {
-            // Error banner
-            if (errorMessage != null) {
-                item(key = "error") {
-                    ErrorBanner(
-                        message = errorMessage,
-                        onDismiss = onClearError,
-                    )
-                }
-            }
-
-            // Pantry description
-            if (pantry != null && !pantry.description.isNullOrBlank()) {
-                item(key = "description") {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        ),
-                    ) {
-                        Text(
-                            text = pantry.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(spacing.medium),
-                        )
-                    }
-                }
-            }
-
-            // Loading state
-            if (isLoading && items.isEmpty()) {
-                item(key = "loading") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(spacing.xl),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-            }
-
-            // Empty state
-            if (!isLoading && items.isEmpty()) {
-                item(key = "empty") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = spacing.xl),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(spacing.medium),
-                    ) {
-                        Text(
-                            text = stringResource(id = R.string.pantry_empty_items),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-
-            // Items list
-            items(items, key = { it.id }) { item ->
-                PantryItemCard(
-                    item = item,
-                    onEdit = { onShowItemDialog(item.id) },
-                    onDelete = { onDeleteItem(item.id) },
-                    onIncrease = { onIncreaseQuantity(item.id) },
-                    onDecrease = { onDecreaseQuantity(item.id) },
+            if (!isLandscape) {
+                AddFab(
+                    onClick = { onShowItemDialog(null) },
+                    contentDescription = stringResource(id = R.string.pantry_add_item),
                 )
             }
+        },
+    ) { padding ->
+        if (isLandscape) {
+            PantryDetailLandscape(
+                pantry = pantry,
+                items = items,
+                isLoading = isLoading,
+                errorMessage = errorMessage,
+                itemDialog = itemDialog,
+                padding = padding,
+                onClearError = onClearError,
+                onShowItemDialog = onShowItemDialog,
+                onItemNameChange = onItemNameChange,
+                onItemQuantityChange = onItemQuantityChange,
+                onItemUnitChange = onItemUnitChange,
+                onItemExpirationChange = onItemExpirationChange,
+                onSaveItem = onSaveItem,
+                onDismissItemDialog = onDismissItemDialog,
+                onDeleteItem = onDeleteItem,
+                onIncreaseQuantity = onIncreaseQuantity,
+                onDecreaseQuantity = onDecreaseQuantity,
+            )
+        } else {
+            PantryDetailPortrait(
+                pantry = pantry,
+                items = items,
+                isLoading = isLoading,
+                errorMessage = errorMessage,
+                itemDialog = itemDialog,
+                padding = padding,
+                onClearError = onClearError,
+                onShowItemDialog = onShowItemDialog,
+                onDeleteItem = onDeleteItem,
+                onIncreaseQuantity = onIncreaseQuantity,
+                onDecreaseQuantity = onDecreaseQuantity,
+            )
         }
     }
 
-    if (itemDialog.isVisible) {
+    if (!isLandscape && itemDialog.isVisible) {
         PantryItemDialog(
             state = itemDialog,
             onNameChange = onItemNameChange,
@@ -261,6 +228,329 @@ fun PantryDetailScreen(
             onDismiss = onDismissItemDialog,
             onSave = onSaveItem,
         )
+    }
+}
+
+@Composable
+private fun PantryDetailPortrait(
+    pantry: com.comprartir.mobile.pantry.data.PantrySummary?,
+    items: List<PantryItem>,
+    isLoading: Boolean,
+    errorMessage: String?,
+    itemDialog: PantryItemDialogState,
+    padding: PaddingValues,
+    onClearError: () -> Unit,
+    onShowItemDialog: (String?) -> Unit,
+    onDeleteItem: (String) -> Unit,
+    onIncreaseQuantity: (String) -> Unit,
+    onDecreaseQuantity: (String) -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(padding),
+        contentPadding = PaddingValues(
+            start = spacing.large,
+            end = spacing.large,
+            top = spacing.medium,
+            bottom = 80.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(spacing.small),
+    ) {
+        if (errorMessage != null) {
+            item(key = "error") {
+                ErrorBanner(
+                    message = errorMessage,
+                    onDismiss = onClearError,
+                )
+            }
+        }
+        if (pantry != null && !pantry.description.isNullOrBlank()) {
+            item(key = "description") {
+                PantryDescriptionCard(description = pantry.description)
+            }
+        }
+        if (isLoading && items.isEmpty()) {
+            item(key = "loading") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(spacing.xl),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+        if (!isLoading && items.isEmpty()) {
+            item(key = "empty") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = spacing.xl),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(spacing.medium),
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.pantry_empty_items),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        items(items, key = { it.id }) { item ->
+            PantryItemCard(
+                item = item,
+                onEdit = { onShowItemDialog(item.id) },
+                onDelete = { onDeleteItem(item.id) },
+                onIncrease = { onIncreaseQuantity(item.id) },
+                onDecrease = { onDecreaseQuantity(item.id) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun PantryDetailLandscape(
+    pantry: com.comprartir.mobile.pantry.data.PantrySummary?,
+    items: List<PantryItem>,
+    isLoading: Boolean,
+    errorMessage: String?,
+    itemDialog: PantryItemDialogState,
+    padding: PaddingValues,
+    onClearError: () -> Unit,
+    onShowItemDialog: (String?) -> Unit,
+    onItemNameChange: (String) -> Unit,
+    onItemQuantityChange: (String) -> Unit,
+    onItemUnitChange: (String) -> Unit,
+    onItemExpirationChange: (String) -> Unit,
+    onSaveItem: () -> Unit,
+    onDismissItemDialog: () -> Unit,
+    onDeleteItem: (String) -> Unit,
+    onIncreaseQuantity: (String) -> Unit,
+    onDecreaseQuantity: (String) -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
+            .padding(horizontal = spacing.large, vertical = spacing.medium),
+        horizontalArrangement = Arrangement.spacedBy(spacing.large),
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(0.4f)
+                .fillMaxHeight(),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+        ) {
+            pantry?.let {
+                Text(
+                    text = it.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                it.description?.takeIf { desc -> desc.isNotBlank() }?.let { desc ->
+                    PantryDescriptionCard(description = desc)
+                }
+            }
+            if (errorMessage != null) {
+                ErrorBanner(message = errorMessage, onDismiss = onClearError)
+            }
+            PantryItemInlineForm(
+                state = itemDialog,
+                onNameChange = onItemNameChange,
+                onQuantityChange = onItemQuantityChange,
+                onUnitChange = onItemUnitChange,
+                onExpirationChange = onItemExpirationChange,
+                onSave = onSaveItem,
+                onCancel = onDismissItemDialog,
+            )
+        }
+        Column(
+            modifier = Modifier
+                .weight(0.6f)
+                .fillMaxHeight(),
+        ) {
+            PantryItemsGrid(
+                items = items,
+                isLoading = isLoading,
+                onShowItemDialog = onShowItemDialog,
+                onDeleteItem = onDeleteItem,
+                onIncreaseQuantity = onIncreaseQuantity,
+                onDecreaseQuantity = onDecreaseQuantity,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PantryItemsGrid(
+    items: List<PantryItem>,
+    isLoading: Boolean,
+    onShowItemDialog: (String?) -> Unit,
+    onDeleteItem: (String) -> Unit,
+    onIncreaseQuantity: (String) -> Unit,
+    onDecreaseQuantity: (String) -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    when {
+        isLoading && items.isEmpty() -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        !isLoading && items.isEmpty() -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stringResource(id = R.string.pantry_empty_items),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        else -> {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(spacing.medium),
+                horizontalArrangement = Arrangement.spacedBy(spacing.medium),
+            ) {
+                items(items, key = { it.id }) { item ->
+                    PantryItemCard(
+                        item = item,
+                        onEdit = { onShowItemDialog(item.id) },
+                        onDelete = { onDeleteItem(item.id) },
+                        onIncrease = { onIncreaseQuantity(item.id) },
+                        onDecrease = { onDecreaseQuantity(item.id) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PantryDescriptionCard(description: String) {
+    val spacing = LocalSpacing.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(spacing.medium),
+        )
+    }
+}
+
+@Composable
+private fun PantryItemInlineForm(
+    state: PantryItemDialogState,
+    onNameChange: (String) -> Unit,
+    onQuantityChange: (String) -> Unit,
+    onUnitChange: (String) -> Unit,
+    onExpirationChange: (String) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
+        shape = RoundedCornerShape(24.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(spacing.large),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+        ) {
+            Text(
+                text = if (state.isEditing) {
+                    stringResource(id = R.string.pantry_edit_item)
+                } else {
+                    stringResource(id = R.string.pantry_add_item)
+                },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            OutlinedTextField(
+                value = state.name,
+                onValueChange = onNameChange,
+                enabled = !state.isSubmitting,
+                singleLine = true,
+                placeholder = { Text(text = stringResource(id = R.string.pantry_item_name_label)) },
+                isError = state.errorMessageRes != null,
+            )
+            OutlinedTextField(
+                value = state.quantity,
+                onValueChange = onQuantityChange,
+                enabled = !state.isSubmitting,
+                singleLine = true,
+                placeholder = { Text(text = stringResource(id = R.string.pantry_item_quantity_label)) },
+            )
+            OutlinedTextField(
+                value = state.unit,
+                onValueChange = onUnitChange,
+                enabled = !state.isSubmitting,
+                singleLine = true,
+                placeholder = { Text(text = stringResource(id = R.string.pantry_item_unit_label)) },
+            )
+            OutlinedTextField(
+                value = state.expirationDate,
+                onValueChange = onExpirationChange,
+                enabled = !state.isSubmitting,
+                singleLine = true,
+                placeholder = { Text(text = stringResource(id = R.string.pantry_item_expiration_label)) },
+            )
+            state.errorMessageRes?.let { resId ->
+                Text(
+                    text = stringResource(id = resId),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(spacing.small),
+            ) {
+                Button(
+                    onClick = onSave,
+                    enabled = !state.isSubmitting,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    if (state.isSubmitting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Text(text = stringResource(id = R.string.dialog_save))
+                    }
+                }
+                TextButton(
+                    onClick = onCancel,
+                    enabled = !state.isSubmitting,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = stringResource(id = R.string.dialog_cancel))
+                }
+            }
+        }
     }
 }
 

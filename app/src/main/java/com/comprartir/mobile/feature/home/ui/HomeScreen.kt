@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -79,6 +80,7 @@ import com.comprartir.mobile.feature.home.model.HomeUiState
 import com.comprartir.mobile.feature.home.model.ListStatusType
 import com.comprartir.mobile.feature.home.model.RecentListUi
 import com.comprartir.mobile.feature.home.model.SharedListUi
+import com.comprartir.mobile.core.ui.rememberIsLandscape
 
 @Composable
 fun HomeScreen(
@@ -92,8 +94,10 @@ fun HomeScreen(
     windowSizeClass: WindowSizeClass? = null,
     contentPadding: PaddingValues = PaddingValues(),
 ) {
+    val isLandscape = rememberIsLandscape()
     val useTwoColumnLayout = windowSizeClass?.widthSizeClass?.let { it >= WindowWidthSizeClass.Medium } ?: false
-    val containerMaxWidth = if (useTwoColumnLayout) 900.dp else Dp.Unspecified
+    val useGridLayout = isLandscape || useTwoColumnLayout
+    val containerMaxWidth = if (useGridLayout) 900.dp else Dp.Unspecified
     val layoutDirection = LocalLayoutDirection.current
 
     Box(
@@ -109,56 +113,89 @@ fun HomeScreen(
             bottom = contentPadding.calculateBottomPadding() + 80.dp,
         )
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .widthIn(max = containerMaxWidth),
-            contentPadding = combinedPadding,
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-                    item {
-                        HomeHeroCard(
-                            userName = state.userName,
-                            onCreateList = onCreateList,
-                            onViewAllLists = onViewAllLists,
+        if (useGridLayout) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = containerMaxWidth),
+                contentPadding = combinedPadding,
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    HomeHeroCard(
+                        userName = state.userName,
+                        onCreateList = onCreateList,
+                        onViewAllLists = onViewAllLists,
+                    )
+                }
+                state.error?.let { message ->
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        HomeErrorBanner(
+                            message = message,
+                            onRetry = onRefresh,
                         )
-                    }
-                    state.error?.let { message ->
-                        item {
-                            HomeErrorBanner(
-                                message = message,
-                                onRetry = onRefresh,
-                            )
-                        }
-                    }
-                    item {
-                        RecentListsSection(
-                            lists = state.recentLists,
-                            onRecentListClick = onRecentListClick,
-                        )
-                    }
-                    if (useTwoColumnLayout) {
-                        item {
-                            HomeDualColumnSection(
-                                sharedLists = state.sharedLists,
-                                activityItems = state.recentActivity,
-                                onSharedListClick = onSharedListClick,
-                            )
-                        }
-                    } else {
-                        item {
-                            SharedListsSection(
-                                lists = state.sharedLists,
-                                onSharedListClick = onSharedListClick,
-                            )
-                        }
-                        item {
-                            ActivitySection(
-                                items = state.recentActivity,
-                            )
-                        }
                     }
                 }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    RecentListsSection(
+                        lists = state.recentLists,
+                        onRecentListClick = onRecentListClick,
+                    )
+                }
+                item {
+                    SharedListsSection(
+                        lists = state.sharedLists,
+                        onSharedListClick = onSharedListClick,
+                    )
+                }
+                item {
+                    ActivitySection(items = state.recentActivity)
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = containerMaxWidth),
+                contentPadding = combinedPadding,
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                item {
+                    HomeHeroCard(
+                        userName = state.userName,
+                        onCreateList = onCreateList,
+                        onViewAllLists = onViewAllLists,
+                    )
+                }
+                state.error?.let { message ->
+                    item {
+                        HomeErrorBanner(
+                            message = message,
+                            onRetry = onRefresh,
+                        )
+                    }
+                }
+                item {
+                    RecentListsSection(
+                        lists = state.recentLists,
+                        onRecentListClick = onRecentListClick,
+                    )
+                }
+                item {
+                    SharedListsSection(
+                        lists = state.sharedLists,
+                        onSharedListClick = onSharedListClick,
+                    )
+                }
+                item {
+                    ActivitySection(
+                        items = state.recentActivity,
+                    )
+                }
+            }
+        }
 
         if (state.isLoading) {
             val loadingDescription = stringResource(id = R.string.cd_loading_home)

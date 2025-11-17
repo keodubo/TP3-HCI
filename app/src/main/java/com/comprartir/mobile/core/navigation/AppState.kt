@@ -6,12 +6,15 @@ import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.comprartir.mobile.core.util.FeatureFlags
+import com.comprartir.mobile.core.ui.BottomNavItem
+import com.comprartir.mobile.core.ui.primaryNavigationItems
 
 data class ComprartirAppState(
     val navController: NavHostController,
     val windowSizeClass: WindowSizeClass,
     val isLandscape: Boolean,
     val featureFlags: FeatureFlags,
+    val navigationItems: List<BottomNavItem>,
 ) {
     val currentDestinationRoute: String?
         get() = navController.currentBackStackEntry?.destination?.route
@@ -52,11 +55,15 @@ fun rememberComprartirAppState(
     isLandscape: Boolean,
     featureFlags: FeatureFlags,
     navController: NavHostController = rememberNavController(),
-): ComprartirAppState = remember(windowSizeClass, isLandscape, featureFlags, navController) {
-    ComprartirAppState(
-        navController = navController,
-        windowSizeClass = windowSizeClass,
-        isLandscape = isLandscape,
-        featureFlags = featureFlags,
-    )
+): ComprartirAppState {
+    val navigationItems = remember(featureFlags) { primaryNavigationItems(featureFlags) }
+    return remember(windowSizeClass, isLandscape, featureFlags, navController, navigationItems) {
+        ComprartirAppState(
+            navController = navController,
+            windowSizeClass = windowSizeClass,
+            isLandscape = isLandscape,
+            featureFlags = featureFlags,
+            navigationItems = navigationItems,
+        )
+    }
 }

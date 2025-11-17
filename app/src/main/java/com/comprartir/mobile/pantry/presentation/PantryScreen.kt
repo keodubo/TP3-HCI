@@ -21,6 +21,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
@@ -80,6 +84,7 @@ import com.comprartir.mobile.core.navigation.NavigationIntent
 import com.comprartir.mobile.shared.components.AddFab
 import com.comprartir.mobile.pantry.data.PantryItem
 import com.comprartir.mobile.pantry.data.PantrySummary
+import com.comprartir.mobile.core.ui.rememberIsLandscape
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -129,7 +134,6 @@ fun PantryScreen(
     onDeletePantry: () -> Unit,
     onDismissPantryDialog: () -> Unit,
 ) {
-    val spacing = LocalSpacing.current
     val filteredPantries = remember(
         state.pantries,
         state.searchQuery,
@@ -175,6 +179,79 @@ fun PantryScreen(
             )
     }
 
+    val openPantry: (String) -> Unit = { pantryId ->
+        onNavigate(
+            NavigationIntent(
+                destination = com.comprartir.mobile.core.navigation.AppDestination.PantryDetail,
+                arguments = mapOf("pantryId" to pantryId),
+            ),
+        )
+    }
+    val isLandscape = rememberIsLandscape()
+
+    if (isLandscape) {
+        PantryScreenLandscape(
+            state = state,
+            filteredPantries = filteredPantries,
+            onRefresh = onRefresh,
+            onClearError = onClearError,
+            onSearchQueryChange = onSearchQueryChange,
+            onToggleFilters = onToggleFilters,
+            onSortOptionChange = onSortOptionChange,
+            onSortDirectionChange = onSortDirectionChange,
+            onPantryTypeFilterChange = onPantryTypeFilterChange,
+            onClearFilters = onClearFilters,
+            onShowPantryDialog = onShowPantryDialog,
+            onDeletePantry = onDeletePantry,
+            onPantryClick = openPantry,
+        )
+    } else {
+        PantryScreenPortrait(
+            state = state,
+            filteredPantries = filteredPantries,
+            onRefresh = onRefresh,
+            onClearError = onClearError,
+            onSearchQueryChange = onSearchQueryChange,
+            onToggleFilters = onToggleFilters,
+            onSortOptionChange = onSortOptionChange,
+            onSortDirectionChange = onSortDirectionChange,
+            onPantryTypeFilterChange = onPantryTypeFilterChange,
+            onClearFilters = onClearFilters,
+            onShowPantryDialog = onShowPantryDialog,
+            onDeletePantry = onDeletePantry,
+            onPantryClick = openPantry,
+        )
+    }
+
+    if (state.pantryDialog.isVisible) {
+        PantryDialog(
+            state = state.pantryDialog,
+            onNameChange = onPantryNameChange,
+            onDescriptionChange = onPantryDescriptionChange,
+            onDismiss = onDismissPantryDialog,
+            onSave = onSavePantry,
+            onDelete = if (state.pantryDialog.pantryId != null) onDeletePantry else null,
+        )
+    }
+}
+
+@Composable
+private fun PantryScreenPortrait(
+    state: PantryUiState,
+    filteredPantries: List<PantrySummary>,
+    onRefresh: () -> Unit,
+    onClearError: () -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onToggleFilters: () -> Unit,
+    onSortOptionChange: (PantrySortOption) -> Unit,
+    onSortDirectionChange: (SortDirection) -> Unit,
+    onPantryTypeFilterChange: (PantryTypeFilter) -> Unit,
+    onClearFilters: () -> Unit,
+    onShowPantryDialog: (String?) -> Unit,
+    onDeletePantry: () -> Unit,
+    onPantryClick: (String) -> Unit,
+) {
+    val spacing = LocalSpacing.current
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold { padding ->
             LazyColumn(
@@ -189,99 +266,63 @@ fun PantryScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(spacing.small),
             ) {
-            // Header with refresh button
-            item(key = "header") {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = spacing.small),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.pantry_heading),
-                        style = MaterialTheme.typography.headlineSmall,
+                item(key = "header") {
+                    PantryHeader(onRefresh = onRefresh)
+                }
+                if (state.errorMessage != null) {
+                    item(key = "error") {
+                        ErrorBanner(
+                            message = state.errorMessage,
+                            onDismiss = onClearError,
+                        )
+                    }
+                }
+                item(key = "search-filter") {
+                    SearchAndFilterBar(
+                        searchQuery = state.searchQuery,
+                        onSearchQueryChange = onSearchQueryChange,
+                        onFilterClick = onToggleFilters,
                     )
-                    IconButton(onClick = onRefresh) {
-                        Icon(
-                            imageVector = Icons.Outlined.Refresh,
-                            contentDescription = stringResource(id = R.string.common_retry),
+                }
+                item(key = "filters") {
+                    FilterPanel(
+                        isExpanded = state.isFiltersExpanded,
+                        sortOption = state.sortOption,
+                        sortDirection = state.sortDirection,
+                        pantryType = state.pantryTypeFilter,
+                        onSortOptionChange = onSortOptionChange,
+                        onSortDirectionChange = onSortDirectionChange,
+                        onPantryTypeChange = onPantryTypeFilterChange,
+                        onClearFilters = onClearFilters,
+                    )
+                }
+                if (filteredPantries.isEmpty()) {
+                    item(key = "empty") {
+                        EmptyPantryState(onCreatePantry = { onShowPantryDialog(null) })
+                    }
+                } else {
+                    items(filteredPantries, key = { it.id }) { pantry ->
+                        val pantryItemCount = state.allItems.count { it.pantryId == pantry.id }
+                        PantryCard(
+                            pantry = pantry,
+                            itemCount = pantryItemCount,
+                            onPantryClick = { onPantryClick(pantry.id) },
+                            onEditClick = { onShowPantryDialog(pantry.id) },
+                            onDeleteClick = {
+                                onDeletePantry()
+                            },
+                            onShareClick = { },
+                            showManagementFeatures = state.showManagementFeatures,
                         )
                     }
                 }
             }
-
-            // Error banner
-            if (state.errorMessage != null) {
-                item(key = "error") {
-                    ErrorBanner(
-                        message = state.errorMessage,
-                        onDismiss = onClearError,
-                    )
-                }
-            }
-
-            // Search and filters pill
-            item(key = "search-filter") {
-                SearchAndFilterBar(
-                    searchQuery = state.searchQuery,
-                    onSearchQueryChange = onSearchQueryChange,
-                    onFilterClick = onToggleFilters,
-                )
-            }
-
-            // Filter panel
-            item(key = "filters") {
-                FilterPanel(
-                    isExpanded = state.isFiltersExpanded,
-                    sortOption = state.sortOption,
-                    sortDirection = state.sortDirection,
-                    pantryType = state.pantryTypeFilter,
-                    onSortOptionChange = onSortOptionChange,
-                    onSortDirectionChange = onSortDirectionChange,
-                    onPantryTypeChange = onPantryTypeFilterChange,
-                    onClearFilters = onClearFilters,
-                )
-            }
-
-            // Empty state
-            if (filteredPantries.isEmpty()) {
-                item(key = "empty") {
-                    EmptyPantryState(onCreatePantry = { onShowPantryDialog(null) })
-                }
-            } else {
-                // Pantry cards
-                items(filteredPantries, key = { it.id }) { pantry ->
-                    val pantryItemCount = state.allItems.count { it.pantryId == pantry.id }
-                    PantryCard(
-                        pantry = pantry,
-                        itemCount = pantryItemCount,
-                        onPantryClick = {
-                            onNavigate(
-                                NavigationIntent(
-                                    destination = com.comprartir.mobile.core.navigation.AppDestination.PantryDetail,
-                                    arguments = mapOf("pantryId" to pantry.id),
-                                )
-                            )
-                        },
-                        onEditClick = { onShowPantryDialog(pantry.id) },
-                        onDeleteClick = {
-                            // TODO: Show confirmation dialog
-                            onDeletePantry()
-                        },
-                        onShareClick = { /* TODO: Navigate to share screen */ },
-                        showManagementFeatures = state.showManagementFeatures,
-                    )
-                }
-            }
         }
-        }
-        
-        // FAB positioned absolutely to avoid being hidden by bottom nav
+
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 3.dp, bottom = 153.dp)
+                .padding(end = 3.dp, bottom = 153.dp),
         ) {
             AddFab(
                 onClick = { onShowPantryDialog(null) },
@@ -290,16 +331,127 @@ fun PantryScreen(
             )
         }
     }
+}
 
-    if (state.pantryDialog.isVisible) {
-        PantryDialog(
-            state = state.pantryDialog,
-            onNameChange = onPantryNameChange,
-            onDescriptionChange = onPantryDescriptionChange,
-            onDismiss = onDismissPantryDialog,
-            onSave = onSavePantry,
-            onDelete = if (state.pantryDialog.pantryId != null) onDeletePantry else null,
+@Composable
+private fun PantryScreenLandscape(
+    state: PantryUiState,
+    filteredPantries: List<PantrySummary>,
+    onRefresh: () -> Unit,
+    onClearError: () -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onToggleFilters: () -> Unit,
+    onSortOptionChange: (PantrySortOption) -> Unit,
+    onSortDirectionChange: (SortDirection) -> Unit,
+    onPantryTypeFilterChange: (PantryTypeFilter) -> Unit,
+    onClearFilters: () -> Unit,
+    onShowPantryDialog: (String?) -> Unit,
+    onDeletePantry: () -> Unit,
+    onPantryClick: (String) -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    Scaffold { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = spacing.large,
+                    end = spacing.large,
+                    top = spacing.medium,
+                    bottom = spacing.xxl,
+                ),
+                horizontalArrangement = Arrangement.spacedBy(spacing.medium),
+                verticalArrangement = Arrangement.spacedBy(spacing.medium),
+            ) {
+                item(span = { GridItemSpan(maxLineSpan) }, key = "header") {
+                    PantryHeader(onRefresh = onRefresh)
+                }
+                if (state.errorMessage != null) {
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "error") {
+                        ErrorBanner(
+                            message = state.errorMessage,
+                            onDismiss = onClearError,
+                        )
+                    }
+                }
+                item(span = { GridItemSpan(maxLineSpan) }, key = "search-filter") {
+                    SearchAndFilterBar(
+                        searchQuery = state.searchQuery,
+                        onSearchQueryChange = onSearchQueryChange,
+                        onFilterClick = onToggleFilters,
+                    )
+                }
+                item(span = { GridItemSpan(maxLineSpan) }, key = "filters") {
+                    FilterPanel(
+                        isExpanded = state.isFiltersExpanded,
+                        sortOption = state.sortOption,
+                        sortDirection = state.sortDirection,
+                        pantryType = state.pantryTypeFilter,
+                        onSortOptionChange = onSortOptionChange,
+                        onSortDirectionChange = onSortDirectionChange,
+                        onPantryTypeChange = onPantryTypeFilterChange,
+                        onClearFilters = onClearFilters,
+                    )
+                }
+                if (filteredPantries.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }, key = "empty") {
+                        EmptyPantryState(onCreatePantry = { onShowPantryDialog(null) })
+                    }
+                } else {
+                    items(filteredPantries, key = { it.id }) { pantry ->
+                        val pantryItemCount = state.allItems.count { it.pantryId == pantry.id }
+                        PantryCard(
+                            pantry = pantry,
+                            itemCount = pantryItemCount,
+                            onPantryClick = { onPantryClick(pantry.id) },
+                            onEditClick = { onShowPantryDialog(pantry.id) },
+                            onDeleteClick = {
+                                onDeletePantry()
+                            },
+                            onShareClick = { },
+                            showManagementFeatures = state.showManagementFeatures,
+                        )
+                    }
+                }
+            }
+
+            AddFab(
+                onClick = { onShowPantryDialog(null) },
+                contentDescription = stringResource(id = R.string.pantry_add_pantry),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = spacing.large, bottom = spacing.large)
+                    .size(64.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PantryHeader(onRefresh: () -> Unit) {
+    val spacing = LocalSpacing.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = spacing.small),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(id = R.string.pantry_heading),
+            style = MaterialTheme.typography.headlineSmall,
         )
+        IconButton(onClick = onRefresh) {
+            Icon(
+                imageVector = Icons.Outlined.Refresh,
+                contentDescription = stringResource(id = R.string.common_retry),
+            )
+        }
     }
 }
 

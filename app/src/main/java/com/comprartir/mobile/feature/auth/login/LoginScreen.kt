@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -75,6 +76,7 @@ import com.comprartir.mobile.core.designsystem.surfaceCard
 import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.core.designsystem.textPrimary
 import com.comprartir.mobile.core.designsystem.theme.LocalColorTokens
+import com.comprartir.mobile.core.ui.rememberIsLandscape
 import java.util.Locale
 
 @Composable
@@ -121,6 +123,7 @@ fun LoginScreen(
     } else {
         420.dp
     }
+    val isLandscape = rememberIsLandscape()
 
     Box(
         modifier = modifier
@@ -129,170 +132,56 @@ fun LoginScreen(
             .padding(horizontal = 24.dp, vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = containerMaxWidth),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(spacing.large),
-        ) {
-            Card(
+        if (isLandscape) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .widthIn(max = 420.dp),
-                shape = RoundedCornerShape(24.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.borderDefault),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    .widthIn(max = 1100.dp),
+                horizontalArrangement = Arrangement.spacedBy(spacing.large),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(
+                LoginBrandingPanel(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                )
+                LoginFormCard(
+                    state = state,
+                    onEmailChanged = onEmailChanged,
+                    onPasswordChanged = onPasswordChanged,
+                    onLogin = onLogin,
+                    onRecoverPassword = onRecoverPassword,
+                    onRegister = onRegister,
+                    locale = locale,
+                    showBrandingHeader = false,
+                    contentAlignment = Alignment.Start,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = containerMaxWidth),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(spacing.large),
+            ) {
+                LoginFormCard(
+                    state = state,
+                    onEmailChanged = onEmailChanged,
+                    onPasswordChanged = onPasswordChanged,
+                    onLogin = onLogin,
+                    onRecoverPassword = onRecoverPassword,
+                    onRegister = onRegister,
+                    locale = locale,
+                    showBrandingHeader = true,
+                    contentAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = spacing.large, vertical = spacing.extraLarge),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(spacing.large),
-                ) {
-                    val logoRes = if (LocalColorTokens.current.isDark) {
-                        R.drawable.logo_comprartir_nobg
-                    } else {
-                        R.drawable.logo_comprartir
-                    }
-                    Image(
-                        painter = painterResource(id = logoRes),
-                        contentDescription = stringResource(id = R.string.cd_logo_comprartir),
-                        modifier = Modifier
-                            .size(100.dp),
-                    )
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(spacing.small),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = stringResource(id = R.string.login_title),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.textPrimary,
-                            textAlign = TextAlign.Center,
-                        )
-                        Text(
-                            text = stringResource(id = R.string.login_subtitle),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.textMuted,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    var isPasswordVisible by remember { mutableStateOf(false) }
-                    OutlinedTextField(
-                        modifier = Modifier.fillMaxWidth(),
-                        value = state.email,
-                        onValueChange = onEmailChanged,
-                        singleLine = true,
-                        placeholder = { Text(text = stringResource(id = R.string.label_email)) },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Mail,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.textMuted,
-                            )
-                        },
-                        textStyle = MaterialTheme.typography.bodyLarge,
-                        shape = RoundedCornerShape(999.dp),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next,
-                        ),
-                        colors = textFieldColors(),
-                    )
-                    OutlinedTextField(
-                        modifier = Modifier.fillMaxWidth(),
-                        value = state.password,
-                        onValueChange = onPasswordChanged,
-                        singleLine = true,
-                        placeholder = { Text(text = stringResource(id = R.string.label_password)) },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Lock,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.textMuted,
-                            )
-                        },
-                        trailingIcon = {
-                            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                                Icon(
-                                    imageVector = if (isPasswordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                    contentDescription = stringResource(id = R.string.login_toggle_password_visibility),
-                                    tint = MaterialTheme.colorScheme.textMuted,
-                                )
-                            }
-                        },
-                        textStyle = MaterialTheme.typography.bodyLarge,
-                        visualTransformation = if (isPasswordVisible) {
-                            VisualTransformation.None
-                        } else {
-                            PasswordVisualTransformation()
-                        },
-                        shape = RoundedCornerShape(999.dp),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done,
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = { onLogin() },
-                        ),
-                        colors = textFieldColors(),
-                    )
-                    Button(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        onClick = onLogin,
-                        shape = RoundedCornerShape(999.dp),
-                        enabled = state.isLoginEnabled && !state.isLoading,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFA5D8A5),
-                            contentColor = MaterialTheme.colorScheme.textPrimary,
-                            disabledContainerColor = MaterialTheme.colorScheme.textMuted.copy(alpha = 0.2f),
-                            disabledContentColor = MaterialTheme.colorScheme.textMuted,
-                        ),
-                    ) {
-                        if (state.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.brandDark,
-                            )
-                        } else {
-                            Text(
-                                text = stringResource(id = R.string.action_sign_in).uppercase(locale),
-                                style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp),
-                            )
-                        }
-                    }
-                    state.errorMessage?.let { message ->
-                        Text(
-                            text = message,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(spacing.small),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        LinkRow(
-                            prompt = stringResource(id = R.string.login_forgot_prompt),
-                            action = stringResource(id = R.string.login_forgot_action),
-                            onClick = onRecoverPassword,
-                        )
-                        LinkRow(
-                            prompt = stringResource(id = R.string.login_register_prompt),
-                            action = stringResource(id = R.string.login_register_action),
-                            onClick = onRegister,
-                        )
-                    }
-                }
+                        .widthIn(max = 420.dp),
+                )
             }
         }
     }
@@ -309,14 +198,292 @@ private fun textFieldColors() = TextFieldDefaults.outlinedTextFieldColors(
 )
 
 @Composable
+private fun LoginFormCard(
+    state: LoginUiState,
+    onEmailChanged: (String) -> Unit,
+    onPasswordChanged: (String) -> Unit,
+    onLogin: () -> Unit,
+    onRecoverPassword: () -> Unit,
+    onRegister: () -> Unit,
+    locale: Locale,
+    showBrandingHeader: Boolean,
+    contentAlignment: Alignment.Horizontal,
+    modifier: Modifier = Modifier,
+) {
+    val spacing = LocalSpacing.current
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.borderDefault),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = spacing.large, vertical = spacing.extraLarge),
+            horizontalAlignment = contentAlignment,
+            verticalArrangement = Arrangement.spacedBy(spacing.large),
+        ) {
+            if (showBrandingHeader) {
+                LoginBrandingContent(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    textAlign = TextAlign.Center,
+                    showSubtitle = true,
+                )
+            }
+            LoginFormFields(
+                state = state,
+                onEmailChanged = onEmailChanged,
+                onPasswordChanged = onPasswordChanged,
+                onLogin = onLogin,
+                onRecoverPassword = onRecoverPassword,
+                onRegister = onRegister,
+                locale = locale,
+                horizontalAlignment = contentAlignment,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoginFormFields(
+    state: LoginUiState,
+    onEmailChanged: (String) -> Unit,
+    onPasswordChanged: (String) -> Unit,
+    onLogin: () -> Unit,
+    onRecoverPassword: () -> Unit,
+    onRegister: () -> Unit,
+    locale: Locale,
+    horizontalAlignment: Alignment.Horizontal,
+) {
+    val spacing = LocalSpacing.current
+    val isCentered = horizontalAlignment == Alignment.CenterHorizontally
+    var isPasswordVisible by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = horizontalAlignment,
+        verticalArrangement = Arrangement.spacedBy(spacing.medium),
+    ) {
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = state.email,
+            onValueChange = onEmailChanged,
+            singleLine = true,
+            placeholder = { Text(text = stringResource(id = R.string.label_email)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.Mail,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.textMuted,
+                )
+            },
+            textStyle = MaterialTheme.typography.bodyLarge,
+            shape = RoundedCornerShape(999.dp),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next,
+            ),
+            colors = textFieldColors(),
+        )
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = state.password,
+            onValueChange = onPasswordChanged,
+            singleLine = true,
+            placeholder = { Text(text = stringResource(id = R.string.label_password)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.Lock,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.textMuted,
+                )
+            },
+            trailingIcon = {
+                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                    Icon(
+                        imageVector = if (isPasswordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                        contentDescription = stringResource(id = R.string.login_toggle_password_visibility),
+                        tint = MaterialTheme.colorScheme.textMuted,
+                    )
+                }
+            },
+            textStyle = MaterialTheme.typography.bodyLarge,
+            visualTransformation = if (isPasswordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
+            shape = RoundedCornerShape(999.dp),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done,
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = { onLogin() },
+            ),
+            colors = textFieldColors(),
+        )
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            onClick = onLogin,
+            shape = RoundedCornerShape(999.dp),
+            enabled = state.isLoginEnabled && !state.isLoading,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFA5D8A5),
+                contentColor = MaterialTheme.colorScheme.textPrimary,
+                disabledContainerColor = MaterialTheme.colorScheme.textMuted.copy(alpha = 0.2f),
+                disabledContentColor = MaterialTheme.colorScheme.textMuted,
+            ),
+        ) {
+            if (state.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.brandDark,
+                )
+            } else {
+                Text(
+                    text = stringResource(id = R.string.action_sign_in).uppercase(locale),
+                    style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp),
+                )
+            }
+        }
+        state.errorMessage?.let { message ->
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = if (isCentered) TextAlign.Center else TextAlign.Start,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(spacing.small),
+            horizontalAlignment = horizontalAlignment,
+        ) {
+            LinkRow(
+                prompt = stringResource(id = R.string.login_forgot_prompt),
+                action = stringResource(id = R.string.login_forgot_action),
+                onClick = onRecoverPassword,
+                centered = isCentered,
+            )
+            LinkRow(
+                prompt = stringResource(id = R.string.login_register_prompt),
+                action = stringResource(id = R.string.login_register_action),
+                onClick = onRegister,
+                centered = isCentered,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoginBrandingPanel(
+    modifier: Modifier = Modifier,
+) {
+    val spacing = LocalSpacing.current
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.borderDefault),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = spacing.extraLarge, vertical = spacing.extraLarge),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.Start,
+        ) {
+            LoginBrandingContent(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.Start,
+                textAlign = TextAlign.Start,
+                showSubtitle = false,
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(spacing.small),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                Text(
+                    text = stringResource(id = R.string.login_subtitle),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.textMuted,
+                    textAlign = TextAlign.Start,
+                )
+                Text(
+                    text = stringResource(id = R.string.login_register_prompt),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.textPrimary,
+                    textAlign = TextAlign.Start,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoginBrandingContent(
+    modifier: Modifier = Modifier,
+    horizontalAlignment: Alignment.Horizontal = Alignment.CenterHorizontally,
+    textAlign: TextAlign = TextAlign.Center,
+    showSubtitle: Boolean = true,
+) {
+    val spacing = LocalSpacing.current
+    val logoRes = if (LocalColorTokens.current.isDark) {
+        R.drawable.logo_comprartir_nobg
+    } else {
+        R.drawable.logo_comprartir
+    }
+    Column(
+        modifier = modifier,
+        horizontalAlignment = horizontalAlignment,
+        verticalArrangement = Arrangement.spacedBy(spacing.small),
+    ) {
+        Image(
+            painter = painterResource(id = logoRes),
+            contentDescription = stringResource(id = R.string.cd_logo_comprartir),
+            modifier = Modifier.size(100.dp),
+        )
+        Column(
+            verticalArrangement = Arrangement.spacedBy(spacing.small),
+            horizontalAlignment = horizontalAlignment,
+        ) {
+            Text(
+                text = stringResource(id = R.string.login_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.textPrimary,
+                textAlign = textAlign,
+            )
+            if (showSubtitle) {
+                Text(
+                    text = stringResource(id = R.string.login_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.textMuted,
+                    textAlign = textAlign,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun LinkRow(
     prompt: String,
     action: String,
     onClick: () -> Unit,
+    centered: Boolean = true,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
+        horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -56,6 +57,7 @@ import com.comprartir.mobile.core.designsystem.surfaceCard
 import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.core.designsystem.textPrimary
 import com.comprartir.mobile.core.designsystem.theme.LocalColorTokens
+import com.comprartir.mobile.core.ui.rememberIsLandscape
 
 @Composable
 fun VerifyScreen(
@@ -65,6 +67,7 @@ fun VerifyScreen(
     modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
+    val isLandscape = rememberIsLandscape()
 
     Box(
         modifier = modifier
@@ -77,170 +80,261 @@ fun VerifyScreen(
             .padding(horizontal = 24.dp, vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 420.dp),
-            shape = RoundedCornerShape(24.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.borderDefault),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        ) {
-            Column(
+        if (isLandscape) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = spacing.large, vertical = spacing.extraLarge),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(spacing.large),
+                    .widthIn(max = 1100.dp),
+                horizontalArrangement = Arrangement.spacedBy(spacing.large),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                    val logoRes = if (LocalColorTokens.current.isDark) {
-                        R.drawable.logo_comprartir_nobg
-                    } else {
-                        R.drawable.logo_comprartir
-                    }
-                    Image(
-                        painter = painterResource(id = logoRes),
-                    contentDescription = stringResource(id = R.string.app_name),
-                    modifier = Modifier.size(100.dp),
-                )
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(spacing.small),
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.verify_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.textPrimary,
-                        textAlign = TextAlign.Center,
-                    )
-                    Text(
-                        text = stringResource(id = R.string.verify_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.textMuted,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-
-                if (state.errorMessage != null) {
-                    ErrorBanner(message = state.errorMessage) {
-                        onEvent(VerifyEvent.DismissError)
-                    }
-                }
-
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(spacing.medium),
-                ) {
-                    OutlinedTextField(
-                        value = state.email,
-                        onValueChange = {},
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(text = stringResource(id = R.string.label_email)) },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Mail,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.textMuted,
-                            )
-                        },
-                        enabled = false,
-                        readOnly = true,
-                        shape = RoundedCornerShape(999.dp),
-                        colors = pillTextFieldColors(
-                            disabledTextColor = MaterialTheme.colorScheme.textPrimary,
-                            disabledLabelColor = MaterialTheme.colorScheme.textMuted,
-                            disabledBorderColor = MaterialTheme.colorScheme.borderDefault,
-                            disabledLeadingIconColor = MaterialTheme.colorScheme.textMuted,
-                            disabledTrailingIconColor = MaterialTheme.colorScheme.textMuted,
-                        ),
-                    )
-                    OutlinedTextField(
-                        value = state.code,
-                        onValueChange = { raw ->
-                            val sanitized = raw.filter { it.isLetterOrDigit() }.take(16)
-                            onEvent(VerifyEvent.CodeChanged(sanitized))
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(text = stringResource(id = R.string.verify_code_label)) },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Ascii,
-                            imeAction = ImeAction.Done,
-                        ),
-                        keyboardActions = KeyboardActions(onDone = { onEvent(VerifyEvent.Submit) }),
-                        singleLine = true,
-                        isError = state.codeError != null,
-                        shape = RoundedCornerShape(999.dp),
-                        colors = pillTextFieldColors(),
-                    )
-                    state.codeError?.let { error ->
-                        Text(
-                            text = error,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                }
-
-                Button(
-                    onClick = { onEvent(VerifyEvent.Submit) },
-                    enabled = !state.isLoading && state.code.length == 16,
+                VerifyBrandingPanel(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(999.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.brand,
-                        disabledContainerColor = Color(0xFF8CC28D),
-                    ),
-                ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp,
-                            color = Color.White,
-                        )
-                    } else {
-                        Text(
-                            text = stringResource(id = R.string.verify_button),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                }
+                        .weight(0.9f)
+                        .fillMaxHeight(),
+                )
+                VerifyCard(
+                    state = state,
+                    onEvent = onEvent,
+                    onBackToLogin = onBackToLogin,
+                    modifier = Modifier
+                        .weight(1.1f)
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.Start,
+                )
+            }
+        } else {
+            VerifyCard(
+                state = state,
+                onEvent = onEvent,
+                onBackToLogin = onBackToLogin,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 420.dp),
+                contentAlignment = Alignment.CenterHorizontally,
+            )
+        }
+    }
+}
 
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(spacing.small),
-                ) {
-                    val resendText = if (state.isResendEnabled) {
-                        stringResource(id = R.string.verify_resend)
-                    } else {
-                        stringResource(id = R.string.verify_resend_countdown, state.countdownSeconds)
-                    }
-                    Text(
-                        text = resendText,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (state.isResendEnabled) MaterialTheme.colorScheme.brand else MaterialTheme.colorScheme.textMuted,
-                        modifier = Modifier
-                            .semantics { role = Role.Button }
-                            .clickable(enabled = state.isResendEnabled) { onEvent(VerifyEvent.ResendCode) },
-                        textAlign = TextAlign.Center,
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        Text(
-                            text = stringResource(id = R.string.verify_back_to_login),
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.brand,
-                            modifier = Modifier
-                                .clickable(onClick = onBackToLogin)
-                                .semantics { role = Role.Button },
-                        )
-                    }
+@Composable
+private fun VerifyCard(
+    state: VerifyUiState,
+    onEvent: (VerifyEvent) -> Unit,
+    onBackToLogin: () -> Unit,
+    modifier: Modifier,
+    contentAlignment: Alignment.Horizontal,
+) {
+    val spacing = LocalSpacing.current
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.borderDefault),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = spacing.large, vertical = spacing.extraLarge),
+            horizontalAlignment = contentAlignment,
+            verticalArrangement = Arrangement.spacedBy(spacing.large),
+        ) {
+            val logoRes = if (LocalColorTokens.current.isDark) {
+                R.drawable.logo_comprartir_nobg
+            } else {
+                R.drawable.logo_comprartir
+            }
+            Image(
+                painter = painterResource(id = logoRes),
+                contentDescription = stringResource(id = R.string.app_name),
+                modifier = Modifier.size(100.dp),
+            )
+            Column(
+                horizontalAlignment = contentAlignment,
+                verticalArrangement = Arrangement.spacedBy(spacing.small),
+            ) {
+                Text(
+                    text = stringResource(id = R.string.verify_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.textPrimary,
+                    textAlign = if (contentAlignment == Alignment.CenterHorizontally) TextAlign.Center else TextAlign.Start,
+                )
+                Text(
+                    text = stringResource(id = R.string.verify_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.textMuted,
+                    textAlign = if (contentAlignment == Alignment.CenterHorizontally) TextAlign.Center else TextAlign.Start,
+                )
+            }
+            if (state.errorMessage != null) {
+                ErrorBanner(message = state.errorMessage) {
+                    onEvent(VerifyEvent.DismissError)
                 }
+            }
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(spacing.medium),
+            ) {
+                OutlinedTextField(
+                    value = state.email,
+                    onValueChange = {},
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(text = stringResource(id = R.string.label_email)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Mail,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.textMuted,
+                        )
+                    },
+                    enabled = false,
+                    readOnly = true,
+                    shape = RoundedCornerShape(999.dp),
+                    colors = pillTextFieldColors(
+                        disabledTextColor = MaterialTheme.colorScheme.textPrimary,
+                        disabledLabelColor = MaterialTheme.colorScheme.textMuted,
+                        disabledBorderColor = MaterialTheme.colorScheme.borderDefault,
+                        disabledLeadingIconColor = MaterialTheme.colorScheme.textMuted,
+                        disabledTrailingIconColor = MaterialTheme.colorScheme.textMuted,
+                    ),
+                )
+                OutlinedTextField(
+                    value = state.code,
+                    onValueChange = { raw ->
+                        val sanitized = raw.filter { it.isLetterOrDigit() }.take(16)
+                        onEvent(VerifyEvent.CodeChanged(sanitized))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(text = stringResource(id = R.string.verify_code_label)) },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Ascii,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { onEvent(VerifyEvent.Submit) }),
+                    singleLine = true,
+                    isError = state.codeError != null,
+                    shape = RoundedCornerShape(999.dp),
+                    colors = pillTextFieldColors(),
+                )
+                state.codeError?.let { error ->
+                    Text(
+                        text = error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+            Button(
+                onClick = { onEvent(VerifyEvent.Submit) },
+                enabled = !state.isLoading && state.code.length == 16,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(999.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.brand,
+                    disabledContainerColor = Color(0xFF8CC28D),
+                ),
+            ) {
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White,
+                    )
+                } else {
+                    Text(
+                        text = stringResource(id = R.string.verify_button),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+            Column(
+                horizontalAlignment = contentAlignment,
+                verticalArrangement = Arrangement.spacedBy(spacing.small),
+            ) {
+                val resendText = if (state.isResendEnabled) {
+                    stringResource(id = R.string.verify_resend)
+                } else {
+                    stringResource(id = R.string.verify_resend_countdown, state.countdownSeconds)
+                }
+                Text(
+                    text = resendText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (state.isResendEnabled) MaterialTheme.colorScheme.brand else MaterialTheme.colorScheme.textMuted,
+                    modifier = Modifier
+                        .semantics { role = Role.Button }
+                        .clickable(enabled = state.isResendEnabled) { onEvent(VerifyEvent.ResendCode) },
+                    textAlign = if (contentAlignment == Alignment.CenterHorizontally) TextAlign.Center else TextAlign.Start,
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.verify_back_to_login),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.brand,
+                        modifier = Modifier
+                            .clickable(onClick = onBackToLogin)
+                            .semantics { role = Role.Button },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VerifyBrandingPanel(
+    modifier: Modifier = Modifier,
+) {
+    val spacing = LocalSpacing.current
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.borderDefault),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = spacing.extraLarge, vertical = spacing.extraLarge),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.Start,
+        ) {
+            val logoRes = if (LocalColorTokens.current.isDark) {
+                R.drawable.logo_comprartir_nobg
+            } else {
+                R.drawable.logo_comprartir
+            }
+            Image(
+                painter = painterResource(id = logoRes),
+                contentDescription = stringResource(id = R.string.app_name),
+                modifier = Modifier.size(90.dp),
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(spacing.small),
+            ) {
+                Text(
+                    text = stringResource(id = R.string.verify_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(id = R.string.verify_subtitle),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.textMuted,
+                )
+                Text(
+                    text = stringResource(id = R.string.verify_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.textPrimary,
+                )
             }
         }
     }

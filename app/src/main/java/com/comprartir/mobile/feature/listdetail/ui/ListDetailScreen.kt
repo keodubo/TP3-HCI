@@ -91,6 +91,7 @@ import com.comprartir.mobile.feature.listdetail.model.EditProductDialogState
 import com.comprartir.mobile.feature.listdetail.model.ListDetailEvent
 import com.comprartir.mobile.feature.listdetail.model.ListDetailUiState
 import com.comprartir.mobile.feature.listdetail.model.ListItemUi
+import com.comprartir.mobile.core.ui.rememberIsLandscape
 import androidx.compose.animation.core.animateFloatAsState
 
 @Composable
@@ -107,6 +108,7 @@ fun ListDetailScreen(
     val spacing = LocalSpacing.current
     val layoutDirection = LocalLayoutDirection.current
     val clipboardManager = LocalClipboardManager.current
+    val isLandscape = rememberIsLandscape()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -137,65 +139,46 @@ fun ListDetailScreen(
             bottom = innerPadding.calculateBottomPadding() +
                 contentPadding.calculateBottomPadding() + spacing.large,
         )
-        if (isTabletLayout) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = combinedPadding,
-                verticalArrangement = Arrangement.Top,
+        val useExpandedLayout = isTabletLayout || isLandscape
+        val onCopyShareLink = {
+            if (state.shareState.link.isNotBlank()) {
+                clipboardManager.setText(AnnotatedString(state.shareState.link))
+                onEvent(ListDetailEvent.LinkCopied)
+            }
+        }
+        val onManageShare = {
+            if (state.listId.isNotBlank()) {
+                onOpenShareManagement(state.listId, state.name)
+            }
+        }
+        if (useExpandedLayout) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(combinedPadding)
+                    .padding(horizontal = spacing.large),
+                horizontalArrangement = Arrangement.spacedBy(spacing.large),
+                verticalAlignment = Alignment.Top,
             ) {
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 0.dp)
-                            .padding(horizontal = spacing.large),
-                        horizontalArrangement = Arrangement.spacedBy(spacing.large),
-                        verticalAlignment = Alignment.Top,
-                    ) {
-                        ListDetailMainCard(
-                            state = state,
-                            onEvent = onEvent,
-                            modifier = Modifier
-                                .weight(1.5f)
-                                .fillMaxHeight(),
-                        )
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                            verticalArrangement = Arrangement.spacedBy(spacing.large),
-                        ) {
-                            AddProductPanel(
-                                state = state.addProductState,
-                                categories = state.categories,
-                                onNameChange = { onEvent(ListDetailEvent.AddProductNameChanged(it)) },
-                                onQuantityChange = { onEvent(ListDetailEvent.AddProductQuantityChanged(it)) },
-                                onUnitChange = { onEvent(ListDetailEvent.AddProductUnitChanged(it)) },
-                                onCategorySelected = { onEvent(ListDetailEvent.AddProductCategoryChanged(it)) },
-                                onCreateCategory = { onEvent(ListDetailEvent.ShowCreateCategoryDialog(CategorySelectionTarget.AddProduct)) },
-                                onSubmit = { onEvent(ListDetailEvent.SubmitNewProduct) },
-                            )
-                            SharePanel(
-                                email = state.shareState.email,
-                                link = state.shareState.link,
-                                isInviting = state.shareState.isInviting,
-                                onEmailChange = { onEvent(ListDetailEvent.ShareEmailChanged(it)) },
-                                onInvite = { onEvent(ListDetailEvent.SubmitShareInvite) },
-                                onCopyLink = {
-                                    if (state.shareState.link.isNotBlank()) {
-                                        clipboardManager.setText(AnnotatedString(state.shareState.link))
-                                        onEvent(ListDetailEvent.LinkCopied)
-                                    }
-                                },
-                                onManage = {
-                                    if (state.listId.isNotBlank()) {
-                                        onOpenShareManagement(state.listId, state.name)
-                                    }
-                                },
-                            )
-                        }
-                    }
-                }
+                ListDetailSidebar(
+                    state = state,
+                    onEvent = onEvent,
+                    onCopyShareLink = onCopyShareLink,
+                    onManageShare = onManageShare,
+                    modifier = Modifier
+                        .weight(0.4f)
+                        .fillMaxHeight(),
+                )
+                ListDetailItemsPanel(
+                    items = state.visibleItems,
+                    categories = state.categories,
+                    onToggle = { id, completed -> onEvent(ListDetailEvent.ToggleItem(id, completed)) },
+                    onDelete = { id -> onEvent(ListDetailEvent.DeleteItem(id)) },
+                    onEdit = { id -> onEvent(ListDetailEvent.ShowEditProductDialog(id)) },
+                    modifier = Modifier
+                        .weight(0.6f)
+                        .fillMaxHeight(),
+                )
             }
         } else {
             LazyColumn(
@@ -234,17 +217,8 @@ fun ListDetailScreen(
                         isInviting = state.shareState.isInviting,
                         onEmailChange = { onEvent(ListDetailEvent.ShareEmailChanged(it)) },
                         onInvite = { onEvent(ListDetailEvent.SubmitShareInvite) },
-                        onCopyLink = {
-                            if (state.shareState.link.isNotBlank()) {
-                                clipboardManager.setText(AnnotatedString(state.shareState.link))
-                                onEvent(ListDetailEvent.LinkCopied)
-                            }
-                        },
-                        onManage = {
-                            if (state.listId.isNotBlank()) {
-                                onOpenShareManagement(state.listId, state.name)
-                            }
-                        },
+                        onCopyLink = onCopyShareLink,
+                        onManage = onManageShare,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = spacing.large),
@@ -380,6 +354,7 @@ private fun ListDetailMainCard(
     state: ListDetailUiState,
     onEvent: (ListDetailEvent) -> Unit,
     modifier: Modifier = Modifier,
+    showItemsList: Boolean = true,
 ) {
     val spacing = LocalSpacing.current
     Card(
@@ -448,12 +423,98 @@ private fun ListDetailMainCard(
                     color = MaterialTheme.colorScheme.error,
                 )
             }
+            if (showItemsList) {
+                ListDetailItemsList(
+                    items = state.visibleItems,
+                    categories = state.categories,
+                    onToggle = { id, completed -> onEvent(ListDetailEvent.ToggleItem(id, completed)) },
+                    onDelete = { id -> onEvent(ListDetailEvent.DeleteItem(id)) },
+                    onEdit = { id -> onEvent(ListDetailEvent.ShowEditProductDialog(id)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ListDetailSidebar(
+    state: ListDetailUiState,
+    onEvent: (ListDetailEvent) -> Unit,
+    onCopyShareLink: () -> Unit,
+    onManageShare: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val spacing = LocalSpacing.current
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(spacing.large),
+    ) {
+        ListDetailMainCard(
+            state = state,
+            onEvent = onEvent,
+            modifier = Modifier.fillMaxWidth(),
+            showItemsList = false,
+        )
+        AddProductPanel(
+            state = state.addProductState,
+            categories = state.categories,
+            onNameChange = { onEvent(ListDetailEvent.AddProductNameChanged(it)) },
+            onQuantityChange = { onEvent(ListDetailEvent.AddProductQuantityChanged(it)) },
+            onUnitChange = { onEvent(ListDetailEvent.AddProductUnitChanged(it)) },
+            onCategorySelected = { onEvent(ListDetailEvent.AddProductCategoryChanged(it)) },
+            onCreateCategory = { onEvent(ListDetailEvent.ShowCreateCategoryDialog(CategorySelectionTarget.AddProduct)) },
+            onSubmit = { onEvent(ListDetailEvent.SubmitNewProduct) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        SharePanel(
+            email = state.shareState.email,
+            link = state.shareState.link,
+            isInviting = state.shareState.isInviting,
+            onEmailChange = { onEvent(ListDetailEvent.ShareEmailChanged(it)) },
+            onInvite = { onEvent(ListDetailEvent.SubmitShareInvite) },
+            onCopyLink = onCopyShareLink,
+            onManage = onManageShare,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
+private fun ListDetailItemsPanel(
+    items: List<ListItemUi>,
+    categories: List<CategoryUi>,
+    onToggle: (String, Boolean) -> Unit,
+    onDelete: (String) -> Unit,
+    onEdit: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val spacing = LocalSpacing.current
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(spacing.large),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+        ) {
+            Text(
+                text = stringResource(id = R.string.list_detail_screen_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
             ListDetailItemsList(
-                items = state.visibleItems,
-                categories = state.categories,
-                onToggle = { id, completed -> onEvent(ListDetailEvent.ToggleItem(id, completed)) },
-                onDelete = { id -> onEvent(ListDetailEvent.DeleteItem(id)) },
-                onEdit = { id -> onEvent(ListDetailEvent.ShowEditProductDialog(id)) },
+                items = items,
+                categories = categories,
+                onToggle = onToggle,
+                onDelete = onDelete,
+                onEdit = onEdit,
+                modifier = Modifier.fillMaxSize(),
             )
         }
     }
@@ -576,11 +637,12 @@ private fun ListDetailItemsList(
     onToggle: (String, Boolean) -> Unit,
     onDelete: (String) -> Unit,
     onEdit: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
     if (items.isEmpty()) {
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .height(160.dp),
             contentAlignment = Alignment.Center,
@@ -594,9 +656,8 @@ private fun ListDetailItemsList(
         return
     }
     LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(max = 420.dp),
+        modifier = modifier
+            .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(spacing.small),
     ) {
         items(items, key = { it.id }) { item ->

@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -44,6 +48,7 @@ import com.comprartir.mobile.R
 import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.pantry.data.PantrySummary
 import com.comprartir.mobile.shared.components.EmptyStateMessage
+import com.comprartir.mobile.core.ui.rememberIsLandscape
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -93,6 +98,7 @@ fun HistoryScreen(
     modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
+    val isLandscape = rememberIsLandscape()
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -122,6 +128,7 @@ fun HistoryScreen(
             else -> {
                 HistoryList(
                     state = state,
+                    isLandscape = isLandscape,
                     onRetry = onRetry,
                     onRefresh = onRefresh,
                     onDismissError = onDismissError,
@@ -153,6 +160,7 @@ fun HistoryScreen(
 @Composable
 private fun HistoryList(
     state: PurchaseHistoryUiState,
+    isLandscape: Boolean,
     onRetry: () -> Unit,
     onRefresh: () -> Unit,
     onDismissError: () -> Unit,
@@ -162,6 +170,43 @@ private fun HistoryList(
     val spacing = LocalSpacing.current
     val locale = Locale.getDefault()
     val dateFormatter = rememberDateFormatter(locale)
+    if (isLandscape) {
+        HistoryListLandscape(
+            state = state,
+            locale = locale,
+            dateFormatter = dateFormatter,
+            onRetry = onRetry,
+            onRefresh = onRefresh,
+            onDismissError = onDismissError,
+            onRestoreCompletedList = onRestoreCompletedList,
+            onAddListToPantry = onAddListToPantry,
+        )
+    } else {
+        HistoryListPortrait(
+            state = state,
+            locale = locale,
+            dateFormatter = dateFormatter,
+            onRetry = onRetry,
+            onRefresh = onRefresh,
+            onDismissError = onDismissError,
+            onRestoreCompletedList = onRestoreCompletedList,
+            onAddListToPantry = onAddListToPantry,
+        )
+    }
+}
+
+@Composable
+private fun HistoryListPortrait(
+    state: PurchaseHistoryUiState,
+    locale: Locale,
+    dateFormatter: DateTimeFormatter,
+    onRetry: () -> Unit,
+    onRefresh: () -> Unit,
+    onDismissError: () -> Unit,
+    onRestoreCompletedList: (String) -> Unit,
+    onAddListToPantry: (String) -> Unit,
+) {
+    val spacing = LocalSpacing.current
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -267,6 +312,130 @@ private fun HistoryList(
         }
 
         item(key = "refresh-cta") {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = spacing.small),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                Button(onClick = onRefresh) {
+                    Text(text = stringResource(id = R.string.history_action_refresh))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HistoryListLandscape(
+    state: PurchaseHistoryUiState,
+    locale: Locale,
+    dateFormatter: DateTimeFormatter,
+    onRetry: () -> Unit,
+    onRefresh: () -> Unit,
+    onDismissError: () -> Unit,
+    onRestoreCompletedList: (String) -> Unit,
+    onAddListToPantry: (String) -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = spacing.large, vertical = spacing.medium),
+        horizontalArrangement = Arrangement.spacedBy(spacing.medium),
+        verticalArrangement = Arrangement.spacedBy(spacing.medium),
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }, key = "header") {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(spacing.xs),
+            ) {
+                Text(
+                    text = stringResource(id = R.string.title_history),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(id = R.string.history_header_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (state.isRefreshing) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+            }
+        }
+        if (state.errorMessage != null) {
+            item(span = { GridItemSpan(maxLineSpan) }, key = "error-banner") {
+                HistoryError(
+                    message = state.errorMessage,
+                    onRetry = {
+                        onDismissError()
+                        onRetry()
+                    },
+                )
+            }
+        }
+        if (state.completedLists.isNotEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }, key = "completed-header") {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(spacing.xs),
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.history_completed_lists_section),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = stringResource(id = R.string.history_completed_lists_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            items(
+                items = state.completedLists,
+                key = { "completed-${it.id}" },
+                span = { GridItemSpan(maxLineSpan) },
+            ) { completed ->
+                CompletedListCard(
+                    item = completed,
+                    onRestore = onRestoreCompletedList,
+                    onAddToPantry = onAddListToPantry,
+                    dateFormatter = dateFormatter,
+                )
+            }
+            item(span = { GridItemSpan(maxLineSpan) }, key = "completed-divider") {
+                Divider(
+                    modifier = Modifier.padding(vertical = spacing.small),
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                )
+            }
+        }
+        state.sections.forEach { section ->
+            item(span = { GridItemSpan(maxLineSpan) }, key = "section-${section.date.toEpochDay()}") {
+                Text(
+                    text = section.date.format(dateFormatter),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            section.purchases.forEach { purchase ->
+                item(
+                    key = "purchase-${purchase.id}",
+                    span = { GridItemSpan(1) },
+                ) {
+                    PurchaseCard(
+                        item = purchase,
+                        locale = locale,
+                    )
+                }
+            }
+        }
+        item(span = { GridItemSpan(maxLineSpan) }, key = "refresh-cta") {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

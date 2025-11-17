@@ -2,12 +2,34 @@ package com.comprartir.mobile.profile.presentation
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -22,6 +44,7 @@ import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.profile.domain.AppLanguage
 import com.comprartir.mobile.profile.domain.ProfileField
 import com.comprartir.mobile.shared.i18n.rememberLanguageOptions
+import com.comprartir.mobile.core.ui.rememberIsLandscape
 
 @Composable
 fun ProfileRoute(
@@ -31,7 +54,8 @@ fun ProfileRoute(
     onChangePasswordClick: () -> Unit = {},
     onLogout: () -> Unit = {},
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val state = viewModel.state.collectAsStateWithLifecycle()
+    val uiState = state.value
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     
@@ -54,8 +78,8 @@ fun ProfileRoute(
             }
     }
     
-    LaunchedEffect(state.snackbarMessage) {
-        state.snackbarMessage?.let { messageRes ->
+    LaunchedEffect(uiState.snackbarMessage) {
+        uiState.snackbarMessage?.let { messageRes ->
             val message = context.getString(messageRes)
             snackbarHostState.showSnackbar(message = message)
             viewModel.onSnackbarConsumed()
@@ -63,7 +87,7 @@ fun ProfileRoute(
     }
 
     ProfileScreen(
-        state = state,
+        state = uiState,
         snackbarHostState = snackbarHostState,
         contentPadding = contentPadding,
         onEditClick = viewModel::onEditClicked,
@@ -98,6 +122,7 @@ fun ProfileScreen(
     onLogoutClick: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
+    val isLandscape = rememberIsLandscape()
     
     Box(
         modifier = Modifier
@@ -109,132 +134,38 @@ fun ProfileScreen(
                 modifier = Modifier.align(Alignment.Center),
             )
         } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(contentPadding)
-                    .padding(
-                        horizontal = spacing.medium,
-                        vertical = spacing.medium,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(spacing.medium),
-            ) {
-                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                    val isWideScreen = maxWidth > 600.dp
-                    
-                    OutlinedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.outlinedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(spacing.large),
-                            verticalArrangement = Arrangement.spacedBy(spacing.medium),
-                        ) {
-                            // Header with title
-                            Text(
-                                text = stringResource(R.string.title_profile),
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            
-                            if (isWideScreen) {
-                            // Wide screen: Avatar on left, fields on right
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(spacing.large),
-                            ) {
-                                // Avatar section
-                                ProfileAvatarSection(
-                                    isEditing = state.isEditing,
-                                    onChangePhotoClick = onChangePhotoClick,
-                                    onRemoveBackgroundClick = onRemoveBackgroundClick,
-                                    modifier = Modifier.width(180.dp),
-                                )
-                                
-                                // Fields section
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(spacing.medium),
-                                ) {
-                                    ProfileFields(
-                                        state = state,
-                                        onNameChanged = onNameChanged,
-                                        onSurnameChanged = onSurnameChanged,
-                                        onLanguageChanged = onLanguageChanged,
-                                        onThemeChanged = onThemeChanged,
-                                    )
-                                }
-                            }
-                        } else {
-                            // Narrow screen: Avatar on top, fields below
-                            ProfileAvatarSection(
-                                isEditing = state.isEditing,
-                                onChangePhotoClick = onChangePhotoClick,
-                                onRemoveBackgroundClick = onRemoveBackgroundClick,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            
-                            ProfileFields(
-                                state = state,
-                                onNameChanged = onNameChanged,
-                                onSurnameChanged = onSurnameChanged,
-                                onLanguageChanged = onLanguageChanged,
-                                onThemeChanged = onThemeChanged,
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(spacing.small))
-                        
-                            // Action buttons
-                            ProfileActionButtons(
-                                isEditing = state.isEditing,
-                                isSaving = state.isSaving,
-                                canSave = state.hasUnsavedChanges && state.fieldErrors.isEmpty(),
-                                onEditClick = onEditClick,
-                                onSaveClick = onSaveClick,
-                                onCancelClick = onCancelClick,
-                            )
-                        }
-                    }
-                }
-
-                // Security section
-                Spacer(modifier = Modifier.height(spacing.medium))
-
-                OutlinedButton(
-                    onClick = onChangePasswordClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(999.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary,
-                    ),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-                ) {
-                    Text(text = stringResource(R.string.profile_change_password_button))
-                }
-
-                // Logout button at the bottom
-                Spacer(modifier = Modifier.height(spacing.small))
-
-                OutlinedButton(
-                    onClick = onLogoutClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(999.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error,
-                    ),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
-                ) {
-                    Text(text = stringResource(R.string.action_logout))
-                }
+            if (isLandscape) {
+                ProfileLandscapeContent(
+                    state = state,
+                    contentPadding = contentPadding,
+                    onChangePhotoClick = onChangePhotoClick,
+                    onRemoveBackgroundClick = onRemoveBackgroundClick,
+                    onNameChanged = onNameChanged,
+                    onSurnameChanged = onSurnameChanged,
+                    onLanguageChanged = onLanguageChanged,
+                    onThemeChanged = onThemeChanged,
+                    onEditClick = onEditClick,
+                    onCancelClick = onCancelClick,
+                    onSaveClick = onSaveClick,
+                    onChangePasswordClick = onChangePasswordClick,
+                    onLogoutClick = onLogoutClick,
+                )
+            } else {
+                ProfilePortraitContent(
+                    state = state,
+                    contentPadding = contentPadding,
+                    onChangePhotoClick = onChangePhotoClick,
+                    onRemoveBackgroundClick = onRemoveBackgroundClick,
+                    onNameChanged = onNameChanged,
+                    onSurnameChanged = onSurnameChanged,
+                    onLanguageChanged = onLanguageChanged,
+                    onThemeChanged = onThemeChanged,
+                    onEditClick = onEditClick,
+                    onCancelClick = onCancelClick,
+                    onSaveClick = onSaveClick,
+                    onChangePasswordClick = onChangePasswordClick,
+                    onLogoutClick = onLogoutClick,
+                )
             }
         }
         
@@ -243,6 +174,284 @@ fun ProfileScreen(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
+    }
+}
+
+@Composable
+private fun ProfilePortraitContent(
+    state: ProfileUiState,
+    contentPadding: PaddingValues,
+    onChangePhotoClick: () -> Unit,
+    onRemoveBackgroundClick: () -> Unit,
+    onNameChanged: (String) -> Unit,
+    onSurnameChanged: (String) -> Unit,
+    onLanguageChanged: (AppLanguage) -> Unit,
+    onThemeChanged: (AppTheme) -> Unit,
+    onEditClick: () -> Unit,
+    onCancelClick: () -> Unit,
+    onSaveClick: () -> Unit,
+    onChangePasswordClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(contentPadding)
+            .padding(horizontal = spacing.medium, vertical = spacing.medium),
+        verticalArrangement = Arrangement.spacedBy(spacing.medium),
+    ) {
+        ProfileDetailsCard(
+            state = state,
+            onChangePhotoClick = onChangePhotoClick,
+            onRemoveBackgroundClick = onRemoveBackgroundClick,
+            onNameChanged = onNameChanged,
+            onSurnameChanged = onSurnameChanged,
+            onLanguageChanged = onLanguageChanged,
+            onThemeChanged = onThemeChanged,
+            onEditClick = onEditClick,
+            onCancelClick = onCancelClick,
+            onSaveClick = onSaveClick,
+        )
+        ProfileSecurityActions(
+            onChangePasswordClick = onChangePasswordClick,
+            onLogoutClick = onLogoutClick,
+        )
+    }
+}
+
+@Composable
+private fun ProfileLandscapeContent(
+    state: ProfileUiState,
+    contentPadding: PaddingValues,
+    onChangePhotoClick: () -> Unit,
+    onRemoveBackgroundClick: () -> Unit,
+    onNameChanged: (String) -> Unit,
+    onSurnameChanged: (String) -> Unit,
+    onLanguageChanged: (AppLanguage) -> Unit,
+    onThemeChanged: (AppTheme) -> Unit,
+    onEditClick: () -> Unit,
+    onCancelClick: () -> Unit,
+    onSaveClick: () -> Unit,
+    onChangePasswordClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding)
+            .padding(horizontal = spacing.medium, vertical = spacing.medium),
+        horizontalArrangement = Arrangement.spacedBy(spacing.large),
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(0.4f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+        ) {
+            ProfileOverviewCard(
+                state = state,
+                onChangePhotoClick = onChangePhotoClick,
+                onRemoveBackgroundClick = onRemoveBackgroundClick,
+            )
+            ProfileSecurityActions(
+                onChangePasswordClick = onChangePasswordClick,
+                onLogoutClick = onLogoutClick,
+            )
+        }
+        Column(
+            modifier = Modifier
+                .weight(0.6f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+        ) {
+            ProfileDetailsCard(
+                state = state,
+                onChangePhotoClick = onChangePhotoClick,
+                onRemoveBackgroundClick = onRemoveBackgroundClick,
+                onNameChanged = onNameChanged,
+                onSurnameChanged = onSurnameChanged,
+                onLanguageChanged = onLanguageChanged,
+                onThemeChanged = onThemeChanged,
+                onEditClick = onEditClick,
+                onCancelClick = onCancelClick,
+                onSaveClick = onSaveClick,
+                forceHorizontalLayout = true,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileDetailsCard(
+    state: ProfileUiState,
+    onChangePhotoClick: () -> Unit,
+    onRemoveBackgroundClick: () -> Unit,
+    onNameChanged: (String) -> Unit,
+    onSurnameChanged: (String) -> Unit,
+    onLanguageChanged: (AppLanguage) -> Unit,
+    onThemeChanged: (AppTheme) -> Unit,
+    onEditClick: () -> Unit,
+    onCancelClick: () -> Unit,
+    onSaveClick: () -> Unit,
+    forceHorizontalLayout: Boolean = false,
+) {
+    val spacing = LocalSpacing.current
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val isWideScreen = forceHorizontalLayout || maxWidth > 600.dp
+        OutlinedCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.outlinedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(spacing.large),
+                verticalArrangement = Arrangement.spacedBy(spacing.medium),
+            ) {
+                Text(
+                    text = stringResource(R.string.title_profile),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (isWideScreen) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(spacing.large),
+                    ) {
+                        ProfileAvatarSection(
+                            isEditing = state.isEditing,
+                            onChangePhotoClick = onChangePhotoClick,
+                            onRemoveBackgroundClick = onRemoveBackgroundClick,
+                            modifier = Modifier.width(200.dp),
+                        )
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+                        ) {
+                            ProfileFields(
+                                state = state,
+                                onNameChanged = onNameChanged,
+                                onSurnameChanged = onSurnameChanged,
+                                onLanguageChanged = onLanguageChanged,
+                                onThemeChanged = onThemeChanged,
+                            )
+                        }
+                    }
+                } else {
+                    ProfileAvatarSection(
+                        isEditing = state.isEditing,
+                        onChangePhotoClick = onChangePhotoClick,
+                        onRemoveBackgroundClick = onRemoveBackgroundClick,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    ProfileFields(
+                        state = state,
+                        onNameChanged = onNameChanged,
+                        onSurnameChanged = onSurnameChanged,
+                        onLanguageChanged = onLanguageChanged,
+                        onThemeChanged = onThemeChanged,
+                    )
+                }
+                Spacer(modifier = Modifier.height(spacing.small))
+                ProfileActionButtons(
+                    isEditing = state.isEditing,
+                    isSaving = state.isSaving,
+                    canSave = state.hasUnsavedChanges && state.fieldErrors.isEmpty(),
+                    onEditClick = onEditClick,
+                    onSaveClick = onSaveClick,
+                    onCancelClick = onCancelClick,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileOverviewCard(
+    state: ProfileUiState,
+    onChangePhotoClick: () -> Unit,
+    onRemoveBackgroundClick: () -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(spacing.large),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = stringResource(R.string.title_profile),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            ProfileAvatarSection(
+                isEditing = state.isEditing,
+                onChangePhotoClick = onChangePhotoClick,
+                onRemoveBackgroundClick = onRemoveBackgroundClick,
+            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = state.currentProfile.name.ifBlank { stringResource(id = R.string.profile_first_name) },
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = state.currentProfile.email,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileSecurityActions(
+    onChangePasswordClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    Column(
+        verticalArrangement = Arrangement.spacedBy(spacing.small),
+    ) {
+        OutlinedButton(
+            onClick = onChangePasswordClick,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(999.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+        ) {
+            Text(text = stringResource(R.string.profile_change_password_button))
+        }
+        OutlinedButton(
+            onClick = onLogoutClick,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(999.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error,
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+        ) {
+            Text(text = stringResource(R.string.action_logout))
+        }
     }
 }
 

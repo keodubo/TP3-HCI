@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -53,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -78,6 +80,8 @@ import com.comprartir.mobile.core.designsystem.surfaceCard
 import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.core.designsystem.textPrimary
 import com.comprartir.mobile.core.designsystem.theme.LocalColorTokens
+import com.comprartir.mobile.core.ui.rememberIsLandscape
+import kotlinx.coroutines.delay
 
 @Composable
 fun RegisterRoute(
@@ -89,8 +93,7 @@ fun RegisterRoute(
 
     LaunchedEffect(state.isSuccess) {
         if (state.isSuccess) {
-            println("RegisterRoute: Success! Navigating to verify with email: ${state.email.trim()}")
-            kotlinx.coroutines.delay(1500) // Show success banner for 1.5 seconds
+            delay(1500)
             onNavigateToVerify(state.email.trim())
         }
     }
@@ -110,9 +113,7 @@ fun RegisterScreen(
     modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
-    val focusManager = LocalFocusManager.current
-    var passwordVisible by remember { mutableStateOf(false) }
-    var confirmPasswordVisible by remember { mutableStateOf(false) }
+    val isLandscape = rememberIsLandscape()
 
     Box(
         modifier = modifier
@@ -125,145 +126,162 @@ fun RegisterScreen(
             .padding(horizontal = 24.dp, vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 420.dp),
-            shape = RoundedCornerShape(24.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.borderDefault),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        ) {
-            Column(
+        if (isLandscape) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = spacing.large, vertical = spacing.extraLarge),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(spacing.large),
+                    .widthIn(max = 1100.dp),
+                horizontalArrangement = Arrangement.spacedBy(spacing.large),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                AnimatedVisibility(visible = state.isSuccess) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(
-                                width = 1.dp,
-                                color = Color(0xFFB7E4C7),
-                                shape = RoundedCornerShape(16.dp),
-                            )
-                            .background(
-                                color = Color(0xFFEAF6EA),
-                                shape = RoundedCornerShape(16.dp),
-                            )
-                            .padding(12.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.CheckCircle,
-                                contentDescription = null,
-                                tint = Color(0xFF2D6A4F),
-                                modifier = Modifier.size(24.dp),
-                            )
-                            Text(
-                                text = stringResource(id = R.string.register_success_message),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF1B4332),
-                                modifier = Modifier.weight(1f),
-                            )
-                            IconButton(onClick = { onEvent(RegisterEvent.DismissSuccess) }) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Close,
-                                    contentDescription = stringResource(id = R.string.register_success_close),
-                                    tint = Color(0xFF2D6A4F),
-                                )
-                            }
-                        }
-                    }
-                }
-                if (state.isSuccess) {
-                    Spacer(modifier = Modifier.height(spacing.medium))
-                }
-                AnimatedVisibility(visible = state.errorMessage != null) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(
-                                width = 1.dp,
-                                color = Color(0xFFF5C2C7),
-                                shape = RoundedCornerShape(16.dp),
-                            )
-                            .background(
-                                color = Color(0xFFFDE8E8),
-                                shape = RoundedCornerShape(16.dp),
-                            )
-                            .padding(12.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.ErrorOutline,
-                                contentDescription = null,
-                                tint = Color(0xFFB3261E),
-                                modifier = Modifier.size(24.dp),
-                            )
-                            Text(
-                                text = state.errorMessage ?: "",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF8C1D18),
-                                modifier = Modifier.weight(1f),
-                            )
-                            IconButton(onClick = { onEvent(RegisterEvent.DismissError) }) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Close,
-                                    contentDescription = stringResource(id = R.string.register_success_close),
-                                    tint = Color(0xFFB3261E),
-                                )
-                            }
-                        }
-                    }
-                }
-                if (state.errorMessage != null) {
-                    Spacer(modifier = Modifier.height(spacing.medium))
-                }
-                    val logoRes = if (LocalColorTokens.current.isDark) {
-                        R.drawable.logo_comprartir_nobg
-                    } else {
-                        R.drawable.logo_comprartir
-                    }
-                    Image(
-                        painter = painterResource(id = logoRes),
-                    contentDescription = stringResource(id = R.string.app_name),
-                    modifier = Modifier.size(100.dp),
+                RegisterBrandingPanel(
+                    modifier = Modifier
+                        .weight(0.9f)
+                        .fillMaxHeight(),
                 )
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(spacing.small),
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.register_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.textPrimary,
-                        textAlign = TextAlign.Center,
-                    )
-                    Text(
-                        text = stringResource(id = R.string.register_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.textMuted,
-                        textAlign = TextAlign.Center,
-                    )
-                }
+                RegisterFormCard(
+                    state = state,
+                    onEvent = onEvent,
+                    onNavigateToLogin = onNavigateToLogin,
+                    modifier = Modifier
+                        .weight(1.1f)
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.Start,
+                    showBrandingHeader = false,
+                    isWideLayout = true,
+                )
+            }
+        } else {
+            RegisterFormCard(
+                state = state,
+                onEvent = onEvent,
+                onNavigateToLogin = onNavigateToLogin,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 420.dp),
+                contentAlignment = Alignment.CenterHorizontally,
+                showBrandingHeader = true,
+                isWideLayout = false,
+            )
+        }
+    }
+}
 
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(spacing.medium),
-                ) {
+@Composable
+private fun RegisterFormCard(
+    state: RegisterUiState,
+    onEvent: (RegisterEvent) -> Unit,
+    onNavigateToLogin: () -> Unit,
+    modifier: Modifier,
+    contentAlignment: Alignment.Horizontal,
+    showBrandingHeader: Boolean,
+    isWideLayout: Boolean,
+) {
+    val spacing = LocalSpacing.current
+    val focusManager = LocalFocusManager.current
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.borderDefault),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceCard),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = spacing.large, vertical = spacing.extraLarge),
+            horizontalAlignment = contentAlignment,
+            verticalArrangement = Arrangement.spacedBy(spacing.large),
+        ) {
+            AnimatedVisibility(visible = state.isSuccess) {
+                InfoBanner(
+                    icon = Icons.Outlined.CheckCircle,
+                    containerColor = Color(0xFFEAF6EA),
+                    borderColor = Color(0xFFB7E4C7),
+                    iconTint = Color(0xFF2D6A4F),
+                    textColor = Color(0xFF1B4332),
+                    message = stringResource(id = R.string.register_success_message),
+                    onDismiss = { onEvent(RegisterEvent.DismissSuccess) },
+                )
+            }
+            AnimatedVisibility(visible = state.errorMessage != null) {
+                InfoBanner(
+                    icon = Icons.Outlined.ErrorOutline,
+                    containerColor = Color(0xFFFDE8E8),
+                    borderColor = Color(0xFFF5C2C7),
+                    iconTint = Color(0xFFB3261E),
+                    textColor = Color(0xFF8C1D18),
+                    message = state.errorMessage.orEmpty(),
+                    onDismiss = { onEvent(RegisterEvent.DismissError) },
+                )
+            }
+            if (showBrandingHeader) {
+                RegisterBrandingContent(
+                    horizontalAlignment = contentAlignment,
+                    textAlign = if (contentAlignment == Alignment.CenterHorizontally) TextAlign.Center else TextAlign.Start,
+                )
+            }
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(spacing.medium),
+                horizontalAlignment = contentAlignment,
+            ) {
+                if (isWideLayout) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(spacing.small),
+                    ) {
+                        RegisterTextField(
+                            value = state.name,
+                            onValueChange = { onEvent(RegisterEvent.NameChanged(it)) },
+                            label = stringResource(id = R.string.label_name),
+                            placeholder = stringResource(id = R.string.hint_name),
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Person,
+                                    contentDescription = stringResource(id = R.string.label_name),
+                                    tint = MaterialTheme.colorScheme.textMuted,
+                                )
+                            },
+                            isError = state.nameError != null,
+                            errorText = state.nameError,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Next,
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Next) },
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
+                        RegisterTextField(
+                            value = state.lastName,
+                            onValueChange = { onEvent(RegisterEvent.LastNameChanged(it)) },
+                            label = stringResource(id = R.string.label_last_name),
+                            placeholder = stringResource(id = R.string.hint_last_name),
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Person,
+                                    contentDescription = stringResource(id = R.string.label_last_name),
+                                    tint = MaterialTheme.colorScheme.textMuted,
+                                )
+                            },
+                            isError = state.lastNameError != null,
+                            errorText = state.lastNameError,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Next,
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Next) },
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                } else {
                     RegisterTextField(
                         value = state.name,
                         onValueChange = { onEvent(RegisterEvent.NameChanged(it)) },
@@ -308,146 +326,270 @@ fun RegisterScreen(
                             onNext = { focusManager.moveFocus(FocusDirection.Next) },
                         ),
                     )
-                    RegisterTextField(
-                        value = state.email,
-                        onValueChange = { onEvent(RegisterEvent.EmailChanged(it)) },
-                        label = stringResource(id = R.string.label_email),
-                        placeholder = null,
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Email,
-                                contentDescription = stringResource(id = R.string.label_email),
-                                tint = MaterialTheme.colorScheme.textMuted,
-                            )
-                        },
-                        isError = state.emailError != null,
-                        errorText = state.emailError,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next,
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Next) },
-                        ),
-                    )
-                    RegisterTextField(
-                        value = state.password,
-                        onValueChange = { onEvent(RegisterEvent.PasswordChanged(it)) },
-                        label = stringResource(id = R.string.label_password),
-                        placeholder = null,
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Lock,
-                                contentDescription = stringResource(id = R.string.label_password),
-                                tint = MaterialTheme.colorScheme.textMuted,
-                            )
-                        },
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                    contentDescription = stringResource(id = R.string.login_toggle_password_visibility),
-                                    tint = MaterialTheme.colorScheme.textMuted,
-                                )
-                            }
-                        },
-                        isError = state.passwordError != null,
-                        errorText = state.passwordError,
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Next,
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Next) },
-                        ),
-                    )
-                    RegisterTextField(
-                        value = state.confirmPassword,
-                        onValueChange = { onEvent(RegisterEvent.ConfirmPasswordChanged(it)) },
-                        label = stringResource(id = R.string.label_confirm_password),
-                        placeholder = stringResource(id = R.string.hint_confirm_password),
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Outlined.Lock,
-                                contentDescription = stringResource(id = R.string.label_confirm_password),
-                                tint = MaterialTheme.colorScheme.textMuted,
-                            )
-                        },
-                        trailingIcon = {
-                            IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
-                                Icon(
-                                    imageVector = if (confirmPasswordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                                    contentDescription = stringResource(id = R.string.login_toggle_password_visibility),
-                                    tint = MaterialTheme.colorScheme.textMuted,
-                                )
-                            }
-                        },
-                        isError = state.confirmPasswordError != null,
-                        errorText = state.confirmPasswordError,
-                        visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done,
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                focusManager.clearFocus()
-                                if (state.isSubmitEnabled) {
-                                    onEvent(RegisterEvent.Submit)
-                                }
-                            },
-                        ),
-                    )
                 }
-
-                Button(
-                    onClick = { onEvent(RegisterEvent.Submit) },
-                    enabled = state.isSubmitEnabled && !state.isLoading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(999.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4DA851),
-                        disabledContainerColor = Color(0xFF8CC28D),
+                RegisterTextField(
+                    value = state.email,
+                    onValueChange = { onEvent(RegisterEvent.EmailChanged(it)) },
+                    label = stringResource(id = R.string.label_email),
+                    placeholder = null,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Email,
+                            contentDescription = stringResource(id = R.string.label_email),
+                            tint = MaterialTheme.colorScheme.textMuted,
+                        )
+                    },
+                    isError = state.emailError != null,
+                    errorText = state.emailError,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next,
                     ),
-                ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp,
-                            color = Color.White,
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) },
+                    ),
+                )
+                RegisterTextField(
+                    value = state.password,
+                    onValueChange = { onEvent(RegisterEvent.PasswordChanged(it)) },
+                    label = stringResource(id = R.string.label_password),
+                    placeholder = null,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Lock,
+                            contentDescription = stringResource(id = R.string.label_password),
+                            tint = MaterialTheme.colorScheme.textMuted,
                         )
-                    } else {
-                        Text(
-                            text = stringResource(id = R.string.register_button),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.textMuted,
+                            )
+                        }
+                    },
+                    isError = state.passwordError != null,
+                    errorText = state.passwordError,
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Next,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) },
+                    ),
+                )
+                RegisterTextField(
+                    value = state.confirmPassword,
+                    onValueChange = { onEvent(RegisterEvent.ConfirmPasswordChanged(it)) },
+                    label = stringResource(id = R.string.label_confirm_password),
+                    placeholder = null,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Outlined.Lock,
+                            contentDescription = stringResource(id = R.string.label_confirm_password),
+                            tint = MaterialTheme.colorScheme.textMuted,
                         )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.register_already_have_account),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.textMuted,
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(id = R.string.register_login_link),
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                            Icon(
+                                imageVector = if (confirmPasswordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.textMuted,
+                            )
+                        }
+                    },
+                    isError = state.confirmPasswordError != null,
+                    errorText = state.confirmPasswordError,
+                    visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            onEvent(RegisterEvent.Submit)
+                        },
+                    ),
+                )
+            }
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                onClick = { onEvent(RegisterEvent.Submit) },
+                enabled = !state.isLoading,
+                shape = RoundedCornerShape(999.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFA5D8A5),
+                    contentColor = MaterialTheme.colorScheme.textPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.textMuted.copy(alpha = 0.2f),
+                    disabledContentColor = MaterialTheme.colorScheme.textMuted,
+                ),
+            ) {
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
                         color = MaterialTheme.colorScheme.brand,
-                        modifier = Modifier
-                            .clickable(onClick = onNavigateToLogin)
-                            .semantics { role = Role.Button },
+                    )
+                } else {
+                    Text(
+                        text = stringResource(id = R.string.register_button),
+                        style = MaterialTheme.typography.labelLarge,
                     )
                 }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(id = R.string.register_already_have_account),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.textMuted,
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = stringResource(id = R.string.register_login_link),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.brand,
+                    modifier = Modifier
+                        .clickable(onClick = onNavigateToLogin)
+                        .semantics { role = Role.Button },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RegisterBrandingContent(
+    horizontalAlignment: Alignment.Horizontal,
+    textAlign: TextAlign,
+) {
+    val spacing = LocalSpacing.current
+    val logoRes = if (LocalColorTokens.current.isDark) {
+        R.drawable.logo_comprartir_nobg
+    } else {
+        R.drawable.logo_comprartir
+    }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = horizontalAlignment,
+        verticalArrangement = Arrangement.spacedBy(spacing.small),
+    ) {
+        Image(
+            painter = painterResource(id = logoRes),
+            contentDescription = stringResource(id = R.string.app_name),
+            modifier = Modifier.size(100.dp),
+        )
+        Text(
+            text = stringResource(id = R.string.register_title),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.textPrimary,
+            textAlign = textAlign,
+        )
+        Text(
+            text = stringResource(id = R.string.register_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.textMuted,
+            textAlign = textAlign,
+        )
+    }
+}
+
+@Composable
+private fun RegisterBrandingPanel(
+    modifier: Modifier = Modifier,
+) {
+    val spacing = LocalSpacing.current
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.borderDefault),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = spacing.extraLarge, vertical = spacing.extraLarge),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.Start,
+        ) {
+            RegisterBrandingContent(
+                horizontalAlignment = Alignment.Start,
+                textAlign = TextAlign.Start,
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(spacing.small),
+            ) {
+                Text(
+                    text = stringResource(id = R.string.login_subtitle),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.textMuted,
+                )
+                Text(
+                    text = stringResource(id = R.string.register_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.textPrimary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoBanner(
+    icon: ImageVector,
+    containerColor: Color,
+    borderColor: Color,
+    iconTint: Color,
+    textColor: Color,
+    message: String,
+    onDismiss: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(16.dp),
+            )
+            .background(containerColor, shape = RoundedCornerShape(16.dp))
+            .padding(12.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(24.dp),
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = textColor,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onDismiss) {
+                Icon(
+                    imageVector = Icons.Outlined.Close,
+                    contentDescription = stringResource(id = R.string.register_success_close),
+                    tint = iconTint,
+                )
             }
         }
     }
@@ -459,30 +601,26 @@ private fun RegisterTextField(
     onValueChange: (String) -> Unit,
     label: String,
     placeholder: String?,
-    leadingIcon: @Composable (() -> Unit),
-    trailingIcon: (@Composable (() -> Unit))? = null,
+    leadingIcon: @Composable (() -> Unit)? = null,
+    trailingIcon: @Composable (() -> Unit)? = null,
     isError: Boolean,
     errorText: String?,
     keyboardOptions: KeyboardOptions,
     keyboardActions: KeyboardActions,
     visualTransformation: VisualTransformation = VisualTransformation.None,
+    modifier: Modifier = Modifier.fillMaxWidth(),
 ) {
     val spacing = LocalSpacing.current
-    val placeholderText = placeholder ?: label
     Column(
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(spacing.tiny),
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.textMuted,
-        )
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            placeholder = { Text(text = placeholderText) },
+            placeholder = { placeholder?.let { Text(text = it) } },
             leadingIcon = leadingIcon,
             trailingIcon = trailingIcon,
             isError = isError,

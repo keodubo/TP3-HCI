@@ -4,27 +4,20 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.weight
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationRail
-import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.comprartir.mobile.core.navigation.AppDestination
 import com.comprartir.mobile.core.navigation.ComprartirAppState
-import com.comprartir.mobile.R
-import com.comprartir.mobile.core.ui.BottomNavItem
-import com.comprartir.mobile.core.ui.ComprartirBottomNavBar
-import com.comprartir.mobile.core.ui.primaryNavigationItems
-import com.comprartir.mobile.core.navigation.isDestinationSelected
 
+@Suppress("UnusedParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResponsiveAppScaffold(
@@ -34,10 +27,6 @@ fun ResponsiveAppScaffold(
     floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
-    val navigationItems = remember(appState.featureFlags) {
-        primaryNavigationItems(appState.featureFlags)
-    }
-
     val navBackStackEntry by appState.navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val authRoutes = remember {
@@ -55,48 +44,39 @@ fun ResponsiveAppScaffold(
         }
     }
 
-    val useNavigationRail = appState.windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded || isLandscape
+    val isTablet = rememberIsTablet(appState.windowSizeClass)
 
-    when {
-        useNavigationRail && showNavigation -> {
-            Row(modifier = Modifier.fillMaxSize()) {
-                NavigationRail(modifier = Modifier.fillMaxHeight()) {
-                    navigationItems.forEach { item ->
-                        NavigationRailItem(
-                            selected = isDestinationSelected(currentRoute, item.destination),
-                            onClick = { onNavigate(item.destination) },
-                            icon = { Icon(item.icon, contentDescription = stringResource(id = item.labelRes)) },
-                            label = { Text(stringResource(id = item.labelRes)) },
-                        )
-                    }
-                }
-                Scaffold(
-                    topBar = topBar,
-                    floatingActionButton = floatingActionButton,
-                    content = { padding ->
-                        content(padding)
-                    },
-                )
-            }
-        }
-
-        else -> {
+    if (isTablet && showNavigation) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            ComprartirNavigationRail(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .widthIn(min = 88.dp, max = 96.dp),
+                items = appState.navigationItems,
+                currentRoute = currentRoute,
+                onNavigate = onNavigate,
+            )
             Scaffold(
+                modifier = Modifier.weight(1f),
                 topBar = topBar,
-                bottomBar = {
-                    if (showNavigation) {
-                        ComprartirBottomNavBar(
-                            items = navigationItems,
-                            currentRoute = currentRoute,
-                            onNavigate = onNavigate,
-                        )
-                    }
-                },
                 floatingActionButton = floatingActionButton,
-                content = { padding ->
-                    content(padding)
-                },
+                content = content,
             )
         }
+    } else {
+        Scaffold(
+            topBar = topBar,
+            bottomBar = {
+                if (showNavigation) {
+                    ComprartirBottomNavBar(
+                        items = appState.navigationItems,
+                        currentRoute = currentRoute,
+                        onNavigate = onNavigate,
+                    )
+                }
+            },
+            floatingActionButton = floatingActionButton,
+            content = content,
+        )
     }
 }

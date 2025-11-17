@@ -23,6 +23,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -82,6 +86,7 @@ import com.comprartir.mobile.core.designsystem.darkNavy
 import com.comprartir.mobile.core.designsystem.searchFilterPill
 import com.comprartir.mobile.core.designsystem.surfaceCard
 import com.comprartir.mobile.core.designsystem.textMuted
+import com.comprartir.mobile.core.ui.rememberIsLandscape
 import com.comprartir.mobile.core.navigation.AppDestination
 import com.comprartir.mobile.core.navigation.NavigationIntent
 import com.comprartir.mobile.feature.lists.ui.components.CreateListDialog
@@ -208,144 +213,46 @@ fun ListsScreen(
     onRefresh: () -> Unit,
     onClearError: () -> Unit,
 ) {
-    val spacing = LocalSpacing.current
-    val canComplete = state.pantryOptions.isNotEmpty()
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(contentPadding),
-    ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = spacing.large,
-                end = spacing.large,
-                top = spacing.medium,
-                bottom = 80.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(spacing.small),
-        ) {
-            // Recurring Lists Section
-            if (state.showRecurringSection) {
-                item {
-                    RecurringListsSection(
-                        lists = state.recurringLists,
-                        onListSelected = onListSelected,
-                        onCreateList = onShowCreateDialog,
-                    )
-                }
-                item {
-                    Spacer(modifier = Modifier.height(spacing.medium))
-                }
-            }
-
-            // Search and Filter Bar
-            item {
-                SearchAndFilterBar(
-                    searchQuery = state.searchQuery,
-                    onSearchQueryChange = onSearchQueryChange,
-                    onFilterClick = onToggleFilters,
-                )
-            }
-
-            // Filter Panel
-            item {
-                FilterPanel(
-                    isExpanded = state.isFiltersExpanded,
-                    sortOption = state.sortOption,
-                    sortDirection = state.sortDirection,
-                    listType = state.listType,
-                    onSortOptionChange = onSortOptionChange,
-                    onSortDirectionChange = onSortDirectionChange,
-                    onListTypeChange = onListTypeChange,
-                    onClearFilters = onClearFilters,
-                )
-            }
-
-            // Loading State
-            if (state.isLoading && state.lists.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(spacing.large),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-            }
-
-            // Error State
-            if (state.errorMessage != null && state.lists.isEmpty()) {
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(spacing.large),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(spacing.small)
-                    ) {
-                        Text(
-                            text = state.errorMessage,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Button(onClick = {
-                            onClearError()
-                            onRefresh()
-                        }) {
-                            Text(text = stringResource(id = R.string.common_retry))
-                        }
-                    }
-                }
-            }
-
-            // Empty State
-            if (!state.isLoading && state.errorMessage == null && state.lists.isEmpty()) {
-                item {
-                    EmptyStateMessage(
-                        title = stringResource(id = R.string.lists_empty_title),
-                        subtitle = stringResource(id = R.string.lists_empty_subtitle),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = spacing.large),
-                    )
-                }
-            }
-
-            // Shopping Lists
-            items(state.lists, key = { it.id }) { list ->
-                ShoppingListCard(
-                    list = list,
-                    onListClick = { onListSelected(list.id) },
-                    onEditClick = { onShowEditDialog(list) },
-                    onDeleteClick = { onShowDeleteDialog(list) },
-                    onShareClick = { onShareList(list.id) },
-                    onCompleteClick = { onShowCompleteDialog(list) },
-                    canComplete = canComplete,
-                )
-            }
-        }
-
-        AddFab(
-            onClick = onShowCreateDialog,
-            contentDescription = stringResource(id = R.string.lists_empty_action),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(
-                    end = 4.dp,  // Minimal padding to extend beyond the cards column
-                    bottom = spacing.xxl,
-                )
-                .size(64.dp),
+    val isLandscape = rememberIsLandscape()
+    if (isLandscape) {
+        ListsScreenLandscape(
+            state = state,
+            snackbarHostState = snackbarHostState,
+            contentPadding = contentPadding,
+            onShowCreateDialog = onShowCreateDialog,
+            onSearchQueryChange = onSearchQueryChange,
+            onToggleFilters = onToggleFilters,
+            onSortOptionChange = onSortOptionChange,
+            onSortDirectionChange = onSortDirectionChange,
+            onListTypeChange = onListTypeChange,
+            onClearFilters = onClearFilters,
+            onShowEditDialog = onShowEditDialog,
+            onShowDeleteDialog = onShowDeleteDialog,
+            onShareList = onShareList,
+            onShowCompleteDialog = onShowCompleteDialog,
+            onListSelected = onListSelected,
+            onRefresh = onRefresh,
+            onClearError = onClearError,
         )
-
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(horizontal = spacing.large)
-                .padding(bottom = spacing.large),
+    } else {
+        ListsScreenPortrait(
+            state = state,
+            snackbarHostState = snackbarHostState,
+            contentPadding = contentPadding,
+            onShowCreateDialog = onShowCreateDialog,
+            onSearchQueryChange = onSearchQueryChange,
+            onToggleFilters = onToggleFilters,
+            onSortOptionChange = onSortOptionChange,
+            onSortDirectionChange = onSortDirectionChange,
+            onListTypeChange = onListTypeChange,
+            onClearFilters = onClearFilters,
+            onShowEditDialog = onShowEditDialog,
+            onShowDeleteDialog = onShowDeleteDialog,
+            onShareList = onShareList,
+            onShowCompleteDialog = onShowCompleteDialog,
+            onListSelected = onListSelected,
+            onRefresh = onRefresh,
+            onClearError = onClearError,
         )
     }
 
@@ -395,6 +302,297 @@ fun ListsScreen(
         onConfirm = { onConfirmCompleteList(true) },
         onCompleteWithoutPantry = { onConfirmCompleteList(false) },
     )
+}
+
+@Composable
+private fun ListsScreenPortrait(
+    state: ListsUiState,
+    snackbarHostState: SnackbarHostState,
+    contentPadding: PaddingValues,
+    onShowCreateDialog: () -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onToggleFilters: () -> Unit,
+    onSortOptionChange: (SortOption) -> Unit,
+    onSortDirectionChange: (SortDirection) -> Unit,
+    onListTypeChange: (ListTypeFilter) -> Unit,
+    onClearFilters: () -> Unit,
+    onShowEditDialog: (ShoppingList) -> Unit,
+    onShowDeleteDialog: (ShoppingList) -> Unit,
+    onShareList: (String) -> Unit,
+    onShowCompleteDialog: (ShoppingList) -> Unit,
+    onListSelected: (String) -> Unit,
+    onRefresh: () -> Unit,
+    onClearError: () -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    val canComplete = state.pantryOptions.isNotEmpty()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding),
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = spacing.large,
+                end = spacing.large,
+                top = spacing.medium,
+                bottom = 80.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(spacing.small),
+        ) {
+            if (state.showRecurringSection) {
+                item {
+                    RecurringListsSection(
+                        lists = state.recurringLists,
+                        onListSelected = onListSelected,
+                        onCreateList = onShowCreateDialog,
+                    )
+                }
+                item {
+                    Spacer(modifier = Modifier.height(spacing.medium))
+                }
+            }
+            item {
+                SearchAndFilterBar(
+                    searchQuery = state.searchQuery,
+                    onSearchQueryChange = onSearchQueryChange,
+                    onFilterClick = onToggleFilters,
+                )
+            }
+            item {
+                FilterPanel(
+                    isExpanded = state.isFiltersExpanded,
+                    sortOption = state.sortOption,
+                    sortDirection = state.sortDirection,
+                    listType = state.listType,
+                    onSortOptionChange = onSortOptionChange,
+                    onSortDirectionChange = onSortDirectionChange,
+                    onListTypeChange = onListTypeChange,
+                    onClearFilters = onClearFilters,
+                )
+            }
+            if (state.isLoading && state.lists.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(spacing.large),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+            if (state.errorMessage != null && state.lists.isEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(spacing.large),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(spacing.small),
+                    ) {
+                        Text(
+                            text = state.errorMessage,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Button(onClick = {
+                            onClearError()
+                            onRefresh()
+                        }) {
+                            Text(text = stringResource(id = R.string.common_retry))
+                        }
+                    }
+                }
+            }
+            if (!state.isLoading && state.errorMessage == null && state.lists.isEmpty()) {
+                item {
+                    EmptyStateMessage(
+                        title = stringResource(id = R.string.lists_empty_title),
+                        subtitle = stringResource(id = R.string.lists_empty_subtitle),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = spacing.large),
+                    )
+                }
+            }
+            items(state.lists, key = { it.id }) { list ->
+                ShoppingListCard(
+                    list = list,
+                    onListClick = { onListSelected(list.id) },
+                    onEditClick = { onShowEditDialog(list) },
+                    onDeleteClick = { onShowDeleteDialog(list) },
+                    onShareClick = { onShareList(list.id) },
+                    onCompleteClick = { onShowCompleteDialog(list) },
+                    canComplete = canComplete,
+                )
+            }
+        }
+
+        AddFab(
+            onClick = onShowCreateDialog,
+            contentDescription = stringResource(id = R.string.lists_empty_action),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 4.dp, bottom = spacing.xxl)
+                .size(64.dp),
+        )
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = spacing.large)
+                .padding(bottom = spacing.large),
+        )
+    }
+}
+
+@Composable
+private fun ListsScreenLandscape(
+    state: ListsUiState,
+    snackbarHostState: SnackbarHostState,
+    contentPadding: PaddingValues,
+    onShowCreateDialog: () -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onToggleFilters: () -> Unit,
+    onSortOptionChange: (SortOption) -> Unit,
+    onSortDirectionChange: (SortDirection) -> Unit,
+    onListTypeChange: (ListTypeFilter) -> Unit,
+    onClearFilters: () -> Unit,
+    onShowEditDialog: (ShoppingList) -> Unit,
+    onShowDeleteDialog: (ShoppingList) -> Unit,
+    onShareList: (String) -> Unit,
+    onShowCompleteDialog: (ShoppingList) -> Unit,
+    onListSelected: (String) -> Unit,
+    onRefresh: () -> Unit,
+    onClearError: () -> Unit,
+) {
+    val spacing = LocalSpacing.current
+    val canComplete = state.pantryOptions.isNotEmpty()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding),
+    ) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = spacing.large,
+                end = spacing.large,
+                top = spacing.medium,
+                bottom = spacing.xxl,
+            ),
+            horizontalArrangement = Arrangement.spacedBy(spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+        ) {
+            if (state.showRecurringSection) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    RecurringListsSection(
+                        lists = state.recurringLists,
+                        onListSelected = onListSelected,
+                        onCreateList = onShowCreateDialog,
+                    )
+                }
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                SearchAndFilterBar(
+                    searchQuery = state.searchQuery,
+                    onSearchQueryChange = onSearchQueryChange,
+                    onFilterClick = onToggleFilters,
+                )
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                FilterPanel(
+                    isExpanded = state.isFiltersExpanded,
+                    sortOption = state.sortOption,
+                    sortDirection = state.sortDirection,
+                    listType = state.listType,
+                    onSortOptionChange = onSortOptionChange,
+                    onSortDirectionChange = onSortDirectionChange,
+                    onListTypeChange = onListTypeChange,
+                    onClearFilters = onClearFilters,
+                )
+            }
+            if (state.isLoading && state.lists.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(spacing.large),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
+            if (state.errorMessage != null && state.lists.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(spacing.large),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(spacing.small),
+                    ) {
+                        Text(
+                            text = state.errorMessage,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Button(onClick = {
+                            onClearError()
+                            onRefresh()
+                        }) {
+                            Text(text = stringResource(id = R.string.common_retry))
+                        }
+                    }
+                }
+            }
+            if (!state.isLoading && state.errorMessage == null && state.lists.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    EmptyStateMessage(
+                        title = stringResource(id = R.string.lists_empty_title),
+                        subtitle = stringResource(id = R.string.lists_empty_subtitle),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = spacing.large),
+                    )
+                }
+            }
+            items(state.lists, key = { it.id }) { list ->
+                ShoppingListCard(
+                    list = list,
+                    onListClick = { onListSelected(list.id) },
+                    onEditClick = { onShowEditDialog(list) },
+                    onDeleteClick = { onShowDeleteDialog(list) },
+                    onShareClick = { onShareList(list.id) },
+                    onCompleteClick = { onShowCompleteDialog(list) },
+                    canComplete = canComplete,
+                )
+            }
+        }
+
+        AddFab(
+            onClick = onShowCreateDialog,
+            contentDescription = stringResource(id = R.string.lists_empty_action),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = spacing.large, bottom = spacing.large)
+                .size(64.dp),
+        )
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = spacing.large)
+                .padding(bottom = spacing.large),
+        )
+    }
 }
 
 @Composable
