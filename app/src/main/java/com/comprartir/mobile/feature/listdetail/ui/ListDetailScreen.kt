@@ -39,6 +39,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -88,6 +89,7 @@ import com.comprartir.mobile.core.designsystem.LocalSpacing
 import com.comprartir.mobile.core.designsystem.borderDefault
 import com.comprartir.mobile.core.designsystem.brand
 import com.comprartir.mobile.core.designsystem.brandTint
+import com.comprartir.mobile.core.designsystem.darkNavy
 import com.comprartir.mobile.core.designsystem.surfaceCard
 import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.core.designsystem.theme.ColorTokens
@@ -179,6 +181,7 @@ fun ListDetailScreen(
                     onEvent = onEvent,
                     onCopyShareLink = onCopyShareLink,
                     onManageShare = onManageShare,
+                    onOpenShareManagement = onOpenShareManagement,
                     modifier = Modifier
                         .weight(sidebarWeight)
                         .fillMaxHeight(),
@@ -205,6 +208,7 @@ fun ListDetailScreen(
                     ListDetailMainCard(
                         state = state,
                         onEvent = onEvent,
+                        onOpenShareManagement = onOpenShareManagement,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = spacing.small),
@@ -407,6 +411,7 @@ private fun ListDetailTopBar(
 private fun ListDetailMainCard(
     state: ListDetailUiState,
     onEvent: (ListDetailEvent) -> Unit,
+    onOpenShareManagement: (String, String) -> Unit,
     modifier: Modifier = Modifier,
     showItemsList: Boolean = true,
 ) {
@@ -423,14 +428,17 @@ private fun ListDetailMainCard(
                 .padding(spacing.large),
             verticalArrangement = Arrangement.spacedBy(spacing.medium),
         ) {
-            state.subtitle.takeIf { it.isNotBlank() }?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.textMuted,
-                )
-            }
-            ListDetailProgress(progress = state.progressFraction, completed = state.completedItems, total = state.totalItems)
+            ListDetailProgress(
+                progress = state.progressFraction, 
+                completed = state.completedItems, 
+                total = state.totalItems,
+                isExpanded = state.filtersExpanded,
+                onToggleFilters = { onEvent(ListDetailEvent.ToggleFilters) },
+                onEdit = { onEvent(ListDetailEvent.ShowEditDialog) },
+                onMarkAllCompleted = { onEvent(ListDetailEvent.MarkAllCompleted) },
+                onShare = { onOpenShareManagement(state.listId, state.name) },
+                onDelete = { onEvent(ListDetailEvent.ShowDeleteDialog) }
+            )
             ListDetailFilterCard(
                 isExpanded = state.filtersExpanded,
                 hideCompleted = state.hideCompleted,
@@ -469,6 +477,7 @@ private fun ListDetailSidebar(
     onEvent: (ListDetailEvent) -> Unit,
     onCopyShareLink: () -> Unit,
     onManageShare: () -> Unit,
+    onOpenShareManagement: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
@@ -480,6 +489,7 @@ private fun ListDetailSidebar(
         ListDetailMainCard(
             state = state,
             onEvent = onEvent,
+            onOpenShareManagement = onOpenShareManagement,
             modifier = Modifier.fillMaxWidth(),
             showItemsList = false,
         )
@@ -552,18 +562,109 @@ private fun ListDetailProgress(
     progress: Float,
     completed: Int,
     total: Int,
+    isExpanded: Boolean,
+    onToggleFilters: () -> Unit,
+    onEdit: () -> Unit,
+    onMarkAllCompleted: () -> Unit,
+    onShare: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     val animatedProgress by animateFloatAsState(targetValue = progress, label = "list-progress")
+    var showMenu by remember { mutableStateOf(false) }
+    val spacing = LocalSpacing.current
+    
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        LinearProgressIndicator(
-            progress = animatedProgress,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(10.dp)
-                .clip(ComprartirPillShape),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.brandTint,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing.small),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            LinearProgressIndicator(
+                progress = animatedProgress,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(10.dp)
+                    .clip(ComprartirPillShape),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.brandTint,
+            )
+            Box {
+                IconButton(
+                    onClick = { showMenu = true },
+                    modifier = Modifier.size(24.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.MoreVert,
+                        contentDescription = stringResource(id = R.string.cd_more_options),
+                        tint = MaterialTheme.colorScheme.darkNavy,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
+                    modifier = Modifier.background(Color.White),
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(id = R.string.lists_edit)) },
+                        onClick = {
+                            showMenu = false
+                            onEdit()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Edit,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.darkNavy
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(id = R.string.list_mark_all_completed)) },
+                        onClick = {
+                            showMenu = false
+                            onMarkAllCompleted()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.darkNavy
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(id = R.string.lists_share)) },
+                        onClick = {
+                            showMenu = false
+                            onShare()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Share,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.darkNavy
+                            )
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(id = R.string.lists_delete)) },
+                        onClick = {
+                            showMenu = false
+                            onDelete()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    )
+                }
+            }
+        }
         Text(
             text = stringResource(id = R.string.lists_progress_label, completed, total),
             style = MaterialTheme.typography.bodySmall,
@@ -583,38 +684,17 @@ private fun ListDetailFilterCard(
     onCategorySelected: (String?) -> Unit,
 ) {
     val spacing = LocalSpacing.current
-    Card(
-        colors = CardDefaults.cardColors(containerColor = ColorTokens.PurpleDeep),
-        shape = RoundedCornerShape(24.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(spacing.large),
-            verticalArrangement = Arrangement.spacedBy(spacing.medium),
+    AnimatedVisibility(visible = isExpanded, enter = fadeIn(), exit = fadeOut()) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = ColorTokens.PurpleDeep),
+            shape = RoundedCornerShape(24.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(spacing.large),
+                verticalArrangement = Arrangement.spacedBy(spacing.medium),
             ) {
-                Text(
-                    text = stringResource(id = R.string.list_detail_filters_label),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
-                )
-                TextButton(onClick = onToggleFilters) {
-                    Text(
-                        text = if (isExpanded) stringResource(id = R.string.lists_filters_hide) else stringResource(id = R.string.lists_filters_show),
-                        color = Color.White,
-                    )
-                }
-            }
-            AnimatedVisibility(visible = isExpanded, enter = fadeIn(), exit = fadeOut()) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(spacing.medium),
-                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -651,7 +731,6 @@ private fun ListDetailFilterCard(
                         containerColor = ColorTokens.PurpleDeep,
                         textColor = Color.White,
                     )
-                }
             }
         }
     }
