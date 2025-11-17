@@ -50,7 +50,7 @@ fun ResponsiveAppScaffold(
             ComprartirNavigationRail(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .widthIn(min = 88.dp, max = 96.dp),
+                    .widthIn(min = 104.dp, max = 120.dp),
                 items = appState.navigationItems,
                 currentRoute = currentRoute,
                 onNavigate = onNavigate,

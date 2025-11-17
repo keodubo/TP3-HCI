@@ -36,12 +36,13 @@ fun ComprartirNavigationRail(
     items: List<BottomNavItem>,
     currentRoute: String?,
     onNavigate: (AppDestination) -> Unit,
-    modifier: Modifier = Modifier.width(92.dp),
+    modifier: Modifier = Modifier.width(112.dp),
 ) {
     val spacing = LocalSpacing.current
     Surface(
         modifier = modifier
             .fillMaxHeight()
+            .padding(top = spacing.medium, bottom = spacing.medium)
             .navigationBarsPadding(),
         shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp),
         color = ColorTokens.NavSurface,
@@ -51,7 +52,7 @@ fun ComprartirNavigationRail(
             modifier = Modifier
                 .fillMaxHeight()
                 .padding(
-                    top = spacing.large,
+                    top = spacing.xxl,
                     bottom = spacing.large,
                     start = spacing.small,
                     end = spacing.small,
