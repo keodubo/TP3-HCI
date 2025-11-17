@@ -1,5 +1,6 @@
 package com.comprartir.mobile.feature.home.ui
 
+import android.text.format.DateUtils
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -79,6 +80,7 @@ import com.comprartir.mobile.feature.home.model.RecentListUi
 import com.comprartir.mobile.feature.home.model.SharedListUi
 import com.comprartir.mobile.core.ui.rememberIsLandscape
 import com.comprartir.mobile.core.ui.rememberIsTablet
+import java.time.Instant
 
 @Composable
 fun HomeScreen(
@@ -466,7 +468,6 @@ private fun RecentListCard(
                 contentAlignment = Alignment.BottomStart,
             ) {
                 StatusChip(
-                    text = item.status,
                     statusType = item.statusType,
                 )
             }
@@ -479,6 +480,20 @@ private fun SharedListRow(
     item: SharedListUi,
     onClick: () -> Unit,
 ) {
+    val ownerLabel = if (item.ownerId.isNotBlank()) {
+        stringResource(id = R.string.home_shared_owner_placeholder, item.ownerId.takeLast(6))
+    } else {
+        stringResource(id = R.string.home_shared_owner_unknown)
+    }
+    val lastUpdatedText = stringResource(
+        id = R.string.common_last_updated,
+        DateUtils.getRelativeTimeSpanString(
+            item.updatedAt.toEpochMilli(),
+            Instant.now().toEpochMilli(),
+            DateUtils.MINUTE_IN_MILLIS,
+            DateUtils.FORMAT_ABBREV_RELATIVE,
+        ).toString(),
+    )
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -502,7 +517,7 @@ private fun SharedListRow(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Person,
-                    contentDescription = stringResource(id = R.string.home_shared_avatar_cd, item.ownerName),
+                    contentDescription = stringResource(id = R.string.home_shared_avatar_cd, ownerLabel),
                     tint = MaterialTheme.colorScheme.brand,
                 )
             }
@@ -517,7 +532,7 @@ private fun SharedListRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = item.lastUpdated,
+                    text = lastUpdatedText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.textMuted,
                 )
@@ -650,11 +665,16 @@ private fun ItemCountPill(
 
 @Composable
 private fun StatusChip(
-    text: String,
     statusType: ListStatusType,
 ) {
     val tokens = LocalColorTokens.current
     val isDark = tokens.isDark
+    val text = when (statusType) {
+        ListStatusType.COMPLETE -> stringResource(id = R.string.list_status_complete)
+        ListStatusType.IN_PROGRESS -> stringResource(id = R.string.list_status_in_progress)
+        ListStatusType.PENDING -> stringResource(id = R.string.list_status_pending)
+        ListStatusType.EMPTY -> stringResource(id = R.string.list_status_empty)
+    }
     val (background, contentColor) = when (statusType) {
         ListStatusType.COMPLETE -> {
             val bg = if (isDark) {

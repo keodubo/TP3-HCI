@@ -1,12 +1,13 @@
 package com.comprartir.mobile.feature.home.model
 
+import java.time.Instant
+
 data class RecentListUi(
     val id: String,
     val name: String,
-    val date: String,
+    val updatedAt: Instant,
     val itemCount: Int,
     val completedItemCount: Int,
-    val status: String,
     val statusType: ListStatusType,
     val isShared: Boolean,
 )
