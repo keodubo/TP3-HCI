@@ -6,13 +6,14 @@ import com.comprartir.mobile.core.data.mapper.toEntity
 import com.comprartir.mobile.core.database.dao.PantryDao
 import com.comprartir.mobile.core.database.entity.PantryItemEntity
 import com.comprartir.mobile.core.network.ComprartirApi
+import com.comprartir.mobile.core.network.PantryDto
+import com.comprartir.mobile.core.network.PantryItemDto
 import com.comprartir.mobile.core.network.PantryItemUpsertRequest
 import com.comprartir.mobile.core.network.PantryUpsertRequest
 import com.comprartir.mobile.core.network.ProductRef
 import com.comprartir.mobile.core.network.SharePantryRequest
-import com.comprartir.mobile.core.network.fetchAllPages
 import com.comprartir.mobile.core.network.UserSummaryDto
-import com.comprartir.mobile.core.network.PantryDto
+import com.comprartir.mobile.core.network.fetchAllPages
 import com.comprartir.mobile.lists.data.ListItem
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 
 data class PantryItem(
     val id: String,
@@ -106,12 +108,27 @@ class DefaultPantryRepository @Inject constructor(
                         quantity = item.quantity,
                         unit = item.unit,
                     )
-                    val response = api.addPantryItem(pantryId, payload)
-                    val itemWithPantryId = response.copy(pantryId = response.pantryId ?: pantryId)
-                    pantryDao.upsert(itemWithPantryId.toEntity())
+                    val response = try {
+                        api.addPantryItem(pantryId, payload)
+                    } catch (http: HttpException) {
+                        if (http.code() == 409) {
+                            val existing = findExistingItem(pantryId, item.productId)
+                            if (existing != null) {
+                                val updatedQuantity = existing.quantity + item.quantity
+                                val updatePayload = payload.copy(quantity = updatedQuantity)
+                                api.updatePantryItem(pantryId, existing.id, updatePayload)
+                            } else {
+                                throw http
+                            }
+                        } else {
+                            throw http
+                        }
+                    }
+                    val normalizedResponse = response.withFallbacks(pantryId = pantryId, nameFallback = item.name)
+                    pantryDao.upsert(normalizedResponse.toEntity())
                     successCount++
                 }.onFailure { throwable ->
-                    if (throwable is retrofit2.HttpException) {
+                    if (throwable is HttpException) {
                         val errorBody = throwable.response()?.errorBody()?.string()
                         Log.e(TAG, "Failed to add ${item.name} - HTTP ${throwable.code()}: $errorBody", throwable)
                     } else {
@@ -165,12 +182,28 @@ class DefaultPantryRepository @Inject constructor(
                 expirationDate = item.expiresAt,
             )
             val pantryId = item.pantryId ?: defaultPantryId()
-            val response = if (item.id.isBlank()) {
-                api.addPantryItem(pantryId, payload)
-            } else {
-                api.updatePantryItem(pantryId, item.id, payload)
+            val response = try {
+                if (item.id.isBlank()) {
+                    api.addPantryItem(pantryId, payload)
+                } else {
+                    api.updatePantryItem(pantryId, item.id, payload)
+                }
+            } catch (http: HttpException) {
+                if (http.code() == 409 && item.id.isBlank()) {
+                    val existing = findExistingItem(pantryId, productId)
+                    if (existing != null) {
+                        val updatedQuantity = existing.quantity + item.quantity
+                        val updatePayload = payload.copy(quantity = updatedQuantity)
+                        api.updatePantryItem(pantryId, existing.id, updatePayload)
+                    } else {
+                        throw http
+                    }
+                } else {
+                    throw http
+                }
             }
-            pantryDao.upsert(response.toEntity())
+            val normalizedResponse = response.withFallbacks(pantryId = pantryId, nameFallback = item.name)
+            pantryDao.upsert(normalizedResponse.toEntity())
         }
     }
 
@@ -217,6 +250,7 @@ class DefaultPantryRepository @Inject constructor(
     private suspend fun refreshPantryInternal() {
         try {
             val currentUserId = authRepository.currentUser.firstOrNull()?.id.orEmpty()
+            val existingItems = pantryDao.getAll().associateBy { it.id }
             
             val pantries = fetchAllPages { page, perPage ->
                 api.getPantries(page = page, perPage = perPage)
@@ -236,9 +270,11 @@ class DefaultPantryRepository @Inject constructor(
                     val items = fetchAllPages { page, perPage ->
                         api.getPantryItems(pantryId = pantry.id, page = page, perPage = perPage)
                     }
-                    
-                    val itemsWithPantryId = items.map { it.copy(pantryId = it.pantryId ?: pantry.id) }
-                    pantryDao.upsertAll(itemsWithPantryId.map { it.toEntity() })
+                    val entities = items.map { dto ->
+                        val fallbackName = existingItems[dto.id]?.productName
+                        dto.withFallbacks(pantryId = pantry.id, nameFallback = fallbackName).toEntity()
+                    }
+                    pantryDao.upsertAll(entities)
                 } catch (throwable: Throwable) {
                     Log.e(TAG, "Failed to refresh items for pantry ${pantry.id}", throwable)
                 }
@@ -261,6 +297,12 @@ class DefaultPantryRepository @Inject constructor(
         return id
     }
 
+    private fun PantryItemDto.withFallbacks(pantryId: String, nameFallback: String?): PantryItemDto =
+        copy(
+            pantryId = this.pantryId ?: pantryId,
+            productName = this.productName ?: nameFallback,
+        )
+
     private fun PantryItemEntity.toDomainModel(): PantryItem = PantryItem(
         id = id,
         productId = productId,
@@ -278,6 +320,18 @@ class DefaultPantryRepository @Inject constructor(
     companion object {
         private const val TAG = "PantryRepository"
         private const val TEMP_PANTRY_ID = "default"
+    }
+
+    private suspend fun findExistingItem(pantryId: String, productId: String): PantryItemEntity? {
+        pantryDao.findByPantryAndProduct(pantryId, productId)?.let { return it }
+        val remoteMatch = fetchAllPages { page, perPage ->
+            api.getPantryItems(pantryId = pantryId, page = page, perPage = perPage)
+        }.firstOrNull { it.productId == productId }
+        val normalized = remoteMatch?.withFallbacks(pantryId = pantryId, nameFallback = null)?.toEntity()
+        if (normalized != null) {
+            pantryDao.upsert(normalized)
+        }
+        return normalized
     }
 
     private fun PantryDto.toSummary(currentUserId: String): PantrySummary =

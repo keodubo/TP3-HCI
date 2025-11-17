@@ -113,8 +113,8 @@ fun PantryDetailRoute(
         onSaveItem = viewModel::saveItem,
         onDismissItemDialog = viewModel::dismissItemDialog,
         onDeleteItem = viewModel::deleteItem,
-        onIncreaseQuantity = { /* TODO: Implement */ },
-        onDecreaseQuantity = { /* TODO: Implement */ },
+        onIncreaseQuantity = viewModel::increaseItemQuantity,
+        onDecreaseQuantity = viewModel::decreaseItemQuantity,
     )
 }
 
