@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -470,8 +472,9 @@ private fun ListDetailSidebar(
     modifier: Modifier = Modifier,
 ) {
     val spacing = LocalSpacing.current
+    val scrollState = rememberScrollState()
     Column(
-        modifier = modifier,
+        modifier = modifier.verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(spacing.large),
     ) {
         ListDetailMainCard(

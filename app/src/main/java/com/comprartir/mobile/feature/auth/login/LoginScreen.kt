@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -75,7 +76,6 @@ import com.comprartir.mobile.core.designsystem.borderDefault
 import com.comprartir.mobile.core.designsystem.surfaceCard
 import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.core.designsystem.textPrimary
-import com.comprartir.mobile.core.designsystem.theme.LocalColorTokens
 import com.comprartir.mobile.core.ui.rememberIsLandscape
 import com.comprartir.mobile.core.ui.rememberIsTablet
 import java.util.Locale
@@ -127,6 +127,8 @@ fun LoginScreen(
     }
     val isLandscape = rememberIsLandscape()
     val useWideLayout = isTablet || isLandscape
+    val wideLayoutMaxWidth = if (isTablet) 1100.dp else 980.dp
+    val cardMaxHeight = if (isTablet) 600.dp else 660.dp
     val backgroundHorizontalPadding = if (isTablet) spacing.xxl else 24.dp
     val backgroundVerticalPadding = if (isTablet) spacing.xl else 16.dp
 
@@ -143,15 +145,15 @@ fun LoginScreen(
             val horizontalSpacing = if (isTablet) spacing.xl else spacing.large
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = if (isTablet) 1280.dp else 1100.dp),
+                    .widthIn(max = wideLayoutMaxWidth)
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 LoginBrandingPanel(
                     modifier = Modifier
                         .weight(brandingWeight)
-                        .fillMaxHeight(),
+                        .heightIn(max = cardMaxHeight),
                 )
                 LoginFormCard(
                     state = state,
@@ -166,7 +168,7 @@ fun LoginScreen(
                     isTabletLayout = isTablet,
                     modifier = Modifier
                         .weight(formWeight)
-                        .fillMaxHeight(),
+                        .heightIn(max = cardMaxHeight),
                 )
             }
         } else {
@@ -449,11 +451,7 @@ private fun LoginBrandingContent(
     showSubtitle: Boolean = true,
 ) {
     val spacing = LocalSpacing.current
-    val logoRes = if (LocalColorTokens.current.isDark) {
-        R.drawable.logo_comprartir_nobg
-    } else {
-        R.drawable.logo_comprartir
-    }
+    val logoRes = R.drawable.logo_comprartir_nobg
     Column(
         modifier = modifier,
         horizontalAlignment = horizontalAlignment,
