@@ -161,10 +161,24 @@ class HistoryViewModel @Inject constructor(
 
     fun addListToPantry(pantryId: String) {
         val list = _uiState.value.selectedListForPantry ?: return
+        // Filter only acquired items (items that were actually purchased)
+        val acquiredItems = list.items.filter { it.isAcquired }
+        
+        if (acquiredItems.isEmpty()) {
+            dismissAddToPantryDialog()
+            _uiState.update { 
+                it.copy(
+                    isAddingToPantry = false,
+                    errorMessage = context.getString(R.string.history_error_no_acquired_items)
+                )
+            }
+            return
+        }
+        
         viewModelScope.launch {
             _uiState.update { it.copy(isAddingToPantry = true) }
             runCatching {
-                pantryRepository.addItemsFromList(pantryId, list.items)
+                pantryRepository.addItemsFromList(pantryId, acquiredItems)
             }.onSuccess {
                 dismissAddToPantryDialog()
                 _uiState.update { 
@@ -174,6 +188,7 @@ class HistoryViewModel @Inject constructor(
                     )
                 }
             }.onFailure { throwable ->
+                android.util.Log.e("HistoryViewModel", "Failed to add items to pantry", throwable)
                 _uiState.update { 
                     it.copy(
                         isAddingToPantry = false,

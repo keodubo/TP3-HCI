@@ -28,7 +28,7 @@ import com.comprartir.mobile.core.database.entity.UserEntity
         ListItemEntity::class,
         PantryItemEntity::class,
     ],
-    version = 2,
+    version = 3,
 )
 @TypeConverters(DatabaseTypeConverters::class)
 abstract class ComprartirDatabase : RoomDatabase() {

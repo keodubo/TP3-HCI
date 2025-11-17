@@ -350,6 +350,7 @@
     <string name="history_add_to_pantry_title">Seleccionar una despensa</string>
     <string name="history_add_to_pantry_message">Seleccioná la despensa donde querés agregar los productos de esta lista:</string>
     <string name="history_add_to_pantry_success">Productos agregados a la despensa</string>
+    <string name="history_error_no_acquired_items">No hay productos comprados para agregar</string>
     <string name="history_list_restored">Lista restaurada</string>
     <string name="recurring_lists_title">Listas recurrentes</string>
     <string name="recurring_lists_subtitle">Reutilizá tus listas favoritas para no empezar desde cero.</string>

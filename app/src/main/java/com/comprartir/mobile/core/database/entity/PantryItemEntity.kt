@@ -8,7 +8,7 @@ import java.time.Instant
 @Entity(tableName = "pantry_items")
 data class PantryItemEntity(
     @PrimaryKey val id: String,
-    @ColumnInfo(name = "product_id") val productId: String,
+    @ColumnInfo(name = "product_id") val productId: String?,
     @ColumnInfo(name = "product_name") val productName: String?,
     val quantity: Double = 1.0,
     val unit: String?,

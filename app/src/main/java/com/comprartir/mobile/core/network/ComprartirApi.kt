@@ -584,7 +584,7 @@ data class PantryUpsertRequest(
 @Serializable
 data class PantryItemDto(
     val id: String,
-    @SerialName("product_id") val productId: String,
+    @SerialName("product_id") val productId: String? = null,
     @SerialName("product_name") val productName: String? = null,
     val quantity: Double,
     val unit: String? = null,
@@ -604,7 +604,7 @@ data class PantryItemDto(
 
 @Serializable
 data class PantryItemUpsertRequest(
-    @SerialName("product_id") val productId: String,
+    val product: ProductRef,
     val quantity: Double,
     val unit: String? = null,
     @SerialName("expiration_date")

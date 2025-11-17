@@ -76,6 +76,7 @@ class PantryViewModel @Inject constructor(
     fun onSelectPantry(pantryId: String) {
         _state.update { current ->
             val filtered = filterItems(current.allItems, pantryId)
+            val selectedPantry = current.pantries.find { it.id == pantryId }
             current.copy(
                 selectedPantryId = pantryId,
                 items = filtered,
@@ -391,10 +392,12 @@ class PantryViewModel @Inject constructor(
         }
     }
 
-    private fun filterItems(items: List<PantryItem>, pantryId: String?): List<PantryItem> =
-        pantryId?.let { id ->
-            items.filter { it.pantryId == null || it.pantryId == id }
+    private fun filterItems(items: List<PantryItem>, pantryId: String?): List<PantryItem> {
+        val filtered = pantryId?.let { id ->
+            items.filter { item -> item.pantryId == id }
         } ?: items
+        return filtered
+    }
 }
 
 data class PantryUiState(

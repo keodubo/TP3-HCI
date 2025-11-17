@@ -8,6 +8,7 @@ import com.comprartir.mobile.core.database.entity.PantryItemEntity
 import com.comprartir.mobile.core.network.ComprartirApi
 import com.comprartir.mobile.core.network.PantryItemUpsertRequest
 import com.comprartir.mobile.core.network.PantryUpsertRequest
+import com.comprartir.mobile.core.network.ProductRef
 import com.comprartir.mobile.core.network.SharePantryRequest
 import com.comprartir.mobile.core.network.fetchAllPages
 import com.comprartir.mobile.core.network.UserSummaryDto
@@ -28,7 +29,7 @@ import kotlinx.coroutines.withContext
 
 data class PantryItem(
     val id: String,
-    val productId: String,
+    val productId: String?,
     val name: String,
     val quantity: Double,
     val unit: String?,
@@ -92,30 +93,40 @@ class DefaultPantryRepository @Inject constructor(
     }
 
     override suspend fun addItemsFromList(pantryId: String, items: List<ListItem>) {
-        if (items.isEmpty()) return
+        if (items.isEmpty()) {
+            return
+        }
         withContext(Dispatchers.IO) {
             val errors = mutableListOf<String>()
+            var successCount = 0
             items.forEach { item ->
                 runCatching {
-                    Log.d(TAG, "addItemsFromList: Adding item ${item.name} (productId=${item.productId}) to pantry $pantryId")
                     val payload = PantryItemUpsertRequest(
-                        productId = item.productId,
+                        product = ProductRef(id = item.productId.toInt()),
                         quantity = item.quantity,
                         unit = item.unit,
                     )
                     val response = api.addPantryItem(pantryId, payload)
-                    pantryDao.upsert(response.copy(pantryId = response.pantryId ?: pantryId).toEntity())
-                    Log.d(TAG, "addItemsFromList: Successfully added ${item.name} to pantry")
+                    val itemWithPantryId = response.copy(pantryId = response.pantryId ?: pantryId)
+                    pantryDao.upsert(itemWithPantryId.toEntity())
+                    successCount++
                 }.onFailure { throwable ->
-                    Log.e(TAG, "addItemsFromList: Failed to add ${item.name} to pantry $pantryId", throwable)
+                    if (throwable is retrofit2.HttpException) {
+                        val errorBody = throwable.response()?.errorBody()?.string()
+                        Log.e(TAG, "Failed to add ${item.name} - HTTP ${throwable.code()}: $errorBody", throwable)
+                    } else {
+                        Log.e(TAG, "Failed to add ${item.name} to pantry", throwable)
+                    }
                     errors.add(item.name)
                 }
             }
-            if (errors.isNotEmpty()) {
-                Log.w(TAG, "addItemsFromList: Failed to add ${errors.size} items: ${errors.joinToString()}")
-                // Don't throw, just log the error and continue with successful items
-            }
+            
             refreshPantryInternal()
+            
+            if (errors.isNotEmpty() && successCount == 0) {
+                // All items failed - throw error
+                throw IllegalStateException("No se pudieron agregar los productos a la pantry. Es posible que los productos no existan en el catálogo del backend. Intenta sincronizar los productos primero.")
+            }
         }
     }
 
@@ -142,8 +153,13 @@ class DefaultPantryRepository @Inject constructor(
 
     override suspend fun upsertItem(item: PantryItem) {
         withContext(Dispatchers.IO) {
+            // Items without productId cannot be created/updated
+            val productId = item.productId ?: run {
+                return@withContext
+            }
+            
             val payload = PantryItemUpsertRequest(
-                productId = item.productId,
+                product = ProductRef(id = productId.toInt()),
                 quantity = item.quantity,
                 unit = item.unit,
                 expirationDate = item.expiresAt,
@@ -201,27 +217,34 @@ class DefaultPantryRepository @Inject constructor(
     private suspend fun refreshPantryInternal() {
         try {
             val currentUserId = authRepository.currentUser.firstOrNull()?.id.orEmpty()
+            
             val pantries = fetchAllPages { page, perPage ->
                 api.getPantries(page = page, perPage = perPage)
             }
+            
             pantryDao.clearAll()
+            
             pantriesState.value = pantries.map { it.toSummary(currentUserId) }
+            
             if (pantries.isEmpty()) {
                 return
             }
+            
             cachedPantryId.set(pantries.first().id)
             pantries.forEach { pantry ->
                 try {
                     val items = fetchAllPages { page, perPage ->
                         api.getPantryItems(pantryId = pantry.id, page = page, perPage = perPage)
                     }
-                    pantryDao.upsertAll(items.map { it.copy(pantryId = pantry.id).toEntity() })
+                    
+                    val itemsWithPantryId = items.map { it.copy(pantryId = it.pantryId ?: pantry.id) }
+                    pantryDao.upsertAll(itemsWithPantryId.map { it.toEntity() })
                 } catch (throwable: Throwable) {
-                    Log.w(TAG, "Failed to refresh items for pantry ${pantry.id}", throwable)
+                    Log.e(TAG, "Failed to refresh items for pantry ${pantry.id}", throwable)
                 }
             }
         } catch (throwable: Throwable) {
-            Log.w(TAG, "Failed to refresh pantry", throwable)
+            Log.e(TAG, "Failed to refresh pantry", throwable)
         }
     }
 
@@ -241,7 +264,7 @@ class DefaultPantryRepository @Inject constructor(
     private fun PantryItemEntity.toDomainModel(): PantryItem = PantryItem(
         id = id,
         productId = productId,
-        name = productName ?: productId,
+        name = productName ?: productId ?: id,
         quantity = quantity,
         unit = unit,
         expiresAt = expiresAt,
