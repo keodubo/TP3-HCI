@@ -151,7 +151,7 @@ fun ListDetailScreen(
             bottom = innerPadding.calculateBottomPadding() +
                 contentPadding.calculateBottomPadding() + spacing.large,
         )
-        val useExpandedLayout = isTablet || isLandscape
+        val useExpandedLayout = isLandscape
         val onCopyShareLink = {
             if (state.shareState.link.isNotBlank()) {
                 clipboardManager.setText(AnnotatedString(state.shareState.link))
@@ -922,20 +922,20 @@ private fun AddProductPanel(
                 singleLine = true,
                 placeholder = { Text(text = stringResource(id = R.string.list_detail_add_name)) },
             )
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(spacing.small),
+                verticalArrangement = Arrangement.spacedBy(spacing.small),
             ) {
                 OutlinedTextField(
-                    modifier = Modifier.weight(1f),
                     value = state.quantity,
                     onValueChange = onQuantityChange,
+                    modifier = Modifier.fillMaxWidth(),
                     shape = ComprartirPillShape,
                     singleLine = true,
                     placeholder = { Text(text = stringResource(id = R.string.list_detail_add_quantity)) },
                 )
                 UnitDropdownField(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     selectedUnit = state.unit,
                     onUnitSelected = onUnitChange,
                 )
