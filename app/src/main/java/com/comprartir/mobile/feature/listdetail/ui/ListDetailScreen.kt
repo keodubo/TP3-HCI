@@ -151,7 +151,7 @@ fun ListDetailScreen(
             bottom = innerPadding.calculateBottomPadding() +
                 contentPadding.calculateBottomPadding() + spacing.large,
         )
-        val useExpandedLayout = isLandscape
+        val useExpandedLayout = isTablet && isLandscape
         val onCopyShareLink = {
             if (state.shareState.link.isNotBlank()) {
                 clipboardManager.setText(AnnotatedString(state.shareState.link))
@@ -192,7 +192,7 @@ fun ListDetailScreen(
                     onToggle = { id, completed -> onEvent(ListDetailEvent.ToggleItem(id, completed)) },
                     onDelete = { id -> onEvent(ListDetailEvent.DeleteItem(id)) },
                     onEdit = { id -> onEvent(ListDetailEvent.ShowEditProductDialog(id)) },
-                    itemColumns = if (isTablet) 2 else 1,
+                    itemColumns = 1,
                     modifier = Modifier
                         .weight(itemsWeight)
                         .fillMaxHeight(),

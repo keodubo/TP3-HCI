@@ -66,7 +66,7 @@ fun ComprartirNavigationRail(
                     end = spacing.small,
                 ),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(spacing.medium, Alignment.Top),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium, Alignment.CenterVertically),
         ) {
             items.forEach { item ->
                 val label = stringResource(id = item.labelRes)
