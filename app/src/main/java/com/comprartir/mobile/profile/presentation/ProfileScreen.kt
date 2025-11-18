@@ -294,6 +294,7 @@ private fun ProfileTwoColumnContent(
                 onCancelClick = onCancelClick,
                 onSaveClick = onSaveClick,
                 forceHorizontalLayout = true,
+                showAvatarSection = false,
             )
         }
     }
@@ -312,10 +313,12 @@ private fun ProfileDetailsCard(
     onCancelClick: () -> Unit,
     onSaveClick: () -> Unit,
     forceHorizontalLayout: Boolean = false,
+    showAvatarSection: Boolean = true,
 ) {
     val spacing = LocalSpacing.current
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val isWideScreen = forceHorizontalLayout || maxWidth > 600.dp
+        val shouldShowAvatar = showAvatarSection
         OutlinedCard(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -336,7 +339,7 @@ private fun ProfileDetailsCard(
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,
                 )
-                if (isWideScreen) {
+                if (isWideScreen && shouldShowAvatar) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(spacing.large),
@@ -360,13 +363,29 @@ private fun ProfileDetailsCard(
                             )
                         }
                     }
-                } else {
+                } else if (isWideScreen) {
+                    ProfileFields(
+                        state = state,
+                        onNameChanged = onNameChanged,
+                        onSurnameChanged = onSurnameChanged,
+                        onLanguageChanged = onLanguageChanged,
+                        onThemeChanged = onThemeChanged,
+                    )
+                } else if (shouldShowAvatar) {
                     ProfileAvatarSection(
                         isEditing = state.isEditing,
                         onChangePhotoClick = onChangePhotoClick,
                         onRemoveBackgroundClick = onRemoveBackgroundClick,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    ProfileFields(
+                        state = state,
+                        onNameChanged = onNameChanged,
+                        onSurnameChanged = onSurnameChanged,
+                        onLanguageChanged = onLanguageChanged,
+                        onThemeChanged = onThemeChanged,
+                    )
+                } else {
                     ProfileFields(
                         state = state,
                         onNameChanged = onNameChanged,
