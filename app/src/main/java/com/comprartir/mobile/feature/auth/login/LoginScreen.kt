@@ -419,29 +419,29 @@ private fun LoginBrandingPanel(
                 .fillMaxSize()
                 .padding(horizontal = spacing.extraLarge, vertical = spacing.extraLarge),
             verticalArrangement = Arrangement.SpaceBetween,
-            horizontalAlignment = Alignment.Start,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             LoginBrandingContent(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.Start,
-                textAlign = TextAlign.Start,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                textAlign = TextAlign.Center,
                 showSubtitle = false,
             )
             Column(
                 verticalArrangement = Arrangement.spacedBy(spacing.small),
-                horizontalAlignment = Alignment.Start,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = stringResource(id = R.string.login_subtitle),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.textMuted,
-                    textAlign = TextAlign.Start,
+                    textAlign = TextAlign.Center,
                 )
                 Text(
                     text = stringResource(id = R.string.login_register_prompt),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.textPrimary,
-                    textAlign = TextAlign.Start,
+                    textAlign = TextAlign.Center,
                 )
             }
         }

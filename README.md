@@ -1,71 +1,44 @@
-# Comprartir Mobile (TP3-HCI)
+# Comprartir Mobile – Guía rápida
 
-Jetpack Compose Android app that recreates the Comprartir shopping experience from the existing Vue web project. The project is structured around MVVM, Hilt dependency injection, and Material 3 adaptive design so phones, tablets, portrait, and landscape modes stay consistent with the web brand.
+Este repositorio contiene la versión Android (Jetpack Compose) de Comprartir. El objetivo de este README es explicar únicamente cómo compilarla, ejecutarla, registrar usuarios y conectar la API junto con el servicio de mailing basado en Ethereal.
 
-## Architecture & Stack
-- Kotlin, Jetpack Compose, Material 3, Navigation Compose, and window-size classes for responsive UI
-- MVVM with ViewModel + StateFlow, Room persistence, and repositories that hydrate from Retrofit + DataStore-backed auth tokens
-- Dagger Hilt for dependency injection, wiring database DAOs, network components, and feature repositories
-- Product flavors (`phone`, `tablet`) and orientation-aware layouts via `ResponsiveAppScaffold`
-- Feature toggles (`FeatureFlags`) prepared for optional RF12–RF15 and RNF7–RNF9 integrations
-- `core/network` bundles the Retrofit API, Kotlinx Serialization models, paging helpers, and an OkHttp interceptor that maps the stored JWT into `Authorization` headers
+## 1. Cómo compilar
+1. Instala Android Studio Giraffe (o superior) con el SDK 34.
+2. Clona el repositorio y abre una terminal en la raíz.
+3. Ejecuta `./gradlew assemblePhoneDebug assembleTabletDebug` para generar los APKs de desarrollo.  
+   - Si solo necesitas un sabor específico, usa `./gradlew assemblePhoneDebug` o `./gradlew assembleTabletDebug`.
 
-## Design System Highlights
-- Palette mirrors the Vue app tokens: neutrals (`#F4F6F8` surfaces, `#E5E7EB` borders, `#0F172A` text), brand greens (`#4DA851` primary, `#3E8E47` pressed, `#E9F7F0` tint)
-- Typography now uses the bundled HK/Hanken Grotesk font weights (400/500/600/700) under `app/src/main/res/font`
-- Shapes follow rounded guidelines (10dp small radius, 16dp cards, 24dp dialogs) with pill-shaped buttons, chips, and inputs
-- Spacing/gutter tokens match the web layout (16–40dp gutters, 1360dp max content width) and responsive scaffold centers content inside those bounds
-- Elevated surfaces map web shadows to Compose elevation tokens (shadow1 ≈ 2dp, shadow2 ≈ 8dp)
-- `ComprartirOutlinedTextField` enforces 44dp height, 16dp horizontal padding, pill corners, brand-green focus halo, and placeholder colors
+## 2. Cómo ejecutar
+1. Lanza Android Studio y abre el proyecto.
+2. Sincroniza Gradle (`Sync Project with Gradle Files`).
+3. Selecciona el sabor que quieras probar (`phoneDebug` o `tabletDebug`).
+4. Conecta un dispositivo/emulador y pulsa **Run ▶**.  
+   También puedes usar la terminal: `./gradlew installPhoneDebug` para instalar directamente en el dispositivo conectado.
 
-## Module & Package Layout
-```
-app/
-  core/        # design system, DI, navigation, datastore, room
-  auth/        # RF1–RF4 account flows
-  profile/     # RF5 profile management
-  products/    # RF6 + RF10 product catalogue & categorisation
-  lists/       # RF7–RF11 shopping list management and sharing
-  pantry/      # RF15 scaffolding & RNF hooks
-  shared/      # dashboard, settings, components, state helpers
-```
+## 3. Cómo registrar usuarios
+1. Inicia la app y presiona **Register** en la pantalla de inicio de sesión.
+2. Completa nombre, correo y contraseña siguiendo las validaciones mostradas.
+3. Tras confirmar, revisa el correo de verificación (ver sección Ethereal) y sigue el enlace para activar la cuenta.
+4. Una vez verificada, vuelve a la app e inicia sesión con las nuevas credenciales.
 
-- RF1 Register, RF2 Verify, RF3 Update Password, RF4 Sign-in/out screens backed by the Retrofit auth service + Room cache
-- RF5 Profile editing backed by network persistence and DataStore user preferences
-- RF6 Product catalogue with live search, Room caching, and network synchronisation
-- RF7 Lists dashboard with create/share scaffolding, list detail view, and acquisition toggles backed by list/list-item repositories
-- RF8/9/11 List detail + acquired toggles and acquisition screen stubs
-- RF10 Categorise products screen connected to repository/category flows
-- RF12–RF15 optional routes surfaced as toggled TODO placeholders
-- RNF1 Locale-aware strings (`values/` + `values-es/`) and automatic device locale
-- RNF2 Adaptive top app bar with contextual actions and RNF7–RNF9 stubs
-- RNF3 Personalisation controls (theme, language, notifications)
-- RNF4/RNF5 Responsive navigation (bottom bar vs rail) based on window size/orientation
-- RNF6 Minimum SDK 29, target SDK 34
+## 4. Cómo conectar la API
+1. Define la URL base del backend en `local.properties` u `./.env.android`:
+   ```
+   comprartir.apiBaseUrl=https://tu-servidor/api
+   ```
+2. Si no se define, la app usa `http://10.0.2.2:8080/api` (localhost para el emulador).
+3. El módulo `NetworkModule` lee este valor y lo expone vía `BuildConfig.COMPRARTIR_API_BASE_URL`, así que no es necesario modificar código adicional.
 
-## Configuration
-The app reads runtime configuration values from Gradle properties so each developer can point to a local or remote backend:
+## 5. Cómo configurar Ethereal para el mailing
+1. Crea una cuenta de pruebas en [https://ethereal.email](https://ethereal.email) y copia el usuario/contraseña SMTP generados.
+2. En el backend, añade las credenciales al archivo `.env` o variables de entorno esperadas (por ejemplo):
+   ```
+   MAIL_HOST=smtp.ethereal.email
+   MAIL_PORT=587
+   MAIL_USER=tu-usuario@ethereal.email
+   MAIL_PASS=tu-contraseña
+   ```
+3. Reinicia el backend y verifica que el endpoint de registro envíe correos utilizando Ethereal.
+4. Durante las pruebas, abre el panel web de Ethereal y consulta la bandeja “Messages” para revisar los enlaces de verificación enviados por la app.
 
-- **Base URL** – set `comprartir.apiBaseUrl` in `local.properties`, `gradle.properties`, or `.env.android` (see below). If no value is provided the default `http://10.0.2.2:8080/api` is used (emulator-localhost).
-- **Optional .env** – copy `.env.android.example` to `.env.android` to keep credential-free overrides out of version control.
-- Both product flavors expose the value through `BuildConfig.COMPRARTIR_API_BASE_URL` and the Hilt `NetworkModule` applies it to Retrofit.
-
-## Build & Run
-1. Ensure Android Studio / command-line SDK 34 tooling is installed.
-2. Generate the Gradle wrapper distribution (already bundled) and sync: `./gradlew tasks`.
-3. To build debug APKs: `./gradlew assemblePhoneDebug assembleTabletDebug`.
-4. To build release APKs use the helper task: `./gradlew assembleReleaseApk` or `./scripts/assemble_release.sh`.
-
-> `build/` outputs are ignored via `.gitignore` and should remain excluded from any ZIP submissions.
-
-## Backend Troubleshooting
-- If `npm run api` reports `EADDRINUSE` for port 8080, run `bash scripts/stop_port_8080.sh` to list and terminate any lingering backend instances.
-- Add `--force` to skip the confirmation prompt when you are certain the processes belong to Comprartir.
-- Remember to stop the backend with `Ctrl+C` when you no longer need it, so the port stays free for the next run.
-
-## Next Steps / TODO Highlights
-1. Integrate shopping-list sharing flows (RF8/RF11) once the backend endpoints support invitations & acceptance.
-2. Hook pantry CRUD UI to the new repository mutations (add/edit/delete) and expose bulk actions.
-3. Introduce purchase history screens (RF13) using the `PurchaseDto` surface and Room cache.
-4. Wire barcode scanning, voice commands, and photo capture into `IntegrationPlaceholders` for RNF7–RNF9.
-5. Add instrumentation/unit tests once feature logic stabilises, especially for repository error handling and DataStore token management.
+Con estos pasos puedes compilar, ejecutar y vincular el flujo de registro completo con el backend y el servicio de correos de prueba.
