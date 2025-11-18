@@ -78,7 +78,7 @@ fun ComprartirTopBar(
             Row(
                 modifier = Modifier
                     .statusBarsPadding()
-                    .padding(horizontal = spacing.large, vertical = spacing.medium),
+                    .padding(start = spacing.large, end = 24.dp, top = spacing.medium, bottom = spacing.medium),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(spacing.medium),
             ) {

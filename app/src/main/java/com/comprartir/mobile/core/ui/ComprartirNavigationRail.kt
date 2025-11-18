@@ -5,14 +5,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -39,15 +43,15 @@ fun ComprartirNavigationRail(
     currentRoute: String?,
     onNavigate: (AppDestination) -> Unit,
     modifier: Modifier = Modifier.width(112.dp),
+    isLandscapePhone: Boolean = false,
 ) {
     val spacing = LocalSpacing.current
     val scrollState = rememberScrollState()
+    // En landscape (tanto phone como tablet), no mostrar texto
+    val showLabels = false
     Surface(
-        modifier = modifier
-            .fillMaxHeight()
-            .padding(top = spacing.medium, bottom = spacing.medium)
-            .navigationBarsPadding(),
-        shape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp),
+        modifier = modifier.fillMaxHeight(),
+        shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp),
         color = ColorTokens.NavSurface,
         shadowElevation = 12.dp,
     ) {
@@ -71,6 +75,7 @@ fun ComprartirNavigationRail(
                     label = label,
                     icon = item.icon,
                     selected = selected,
+                    showLabel = showLabels,
                     onClick = { onNavigate(item.destination) },
                 )
             }
@@ -83,6 +88,7 @@ private fun NavigationRailItem(
     label: String,
     icon: ImageVector,
     selected: Boolean,
+    showLabel: Boolean = true,
     onClick: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
@@ -91,15 +97,22 @@ private fun NavigationRailItem(
     val border = if (selected) null else BorderStroke(1.dp, ColorTokens.NavInactiveBorder)
     Surface(
         modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 72.dp)
+            .then(
+                if (showLabel) {
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 72.dp)
+                } else {
+                    Modifier.size(48.dp)
+                }
+            )
             .semantics { role = Role.Button }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onClick,
             ),
-        shape = RoundedCornerShape(24.dp),
+        shape = if (showLabel) RoundedCornerShape(24.dp) else CircleShape,
         color = background,
         contentColor = contentColor,
         border = border,
@@ -108,12 +121,19 @@ private fun NavigationRailItem(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = spacing.small,
-                    vertical = spacing.medium,
+                .then(
+                    if (showLabel) {
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = spacing.small,
+                                vertical = spacing.medium,
+                            )
+                    } else {
+                        Modifier.padding(0.dp)
+                    }
                 ),
-            verticalArrangement = Arrangement.spacedBy(spacing.xs),
+            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
@@ -121,11 +141,14 @@ private fun NavigationRailItem(
                 contentDescription = label,
                 tint = contentColor,
             )
-            Text(
-                text = label,
-                color = contentColor,
-                textAlign = TextAlign.Center,
-            )
+            if (showLabel) {
+                Spacer(modifier = Modifier.height(spacing.xs))
+                Text(
+                    text = label,
+                    color = contentColor,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }
