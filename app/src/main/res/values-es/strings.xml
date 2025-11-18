@@ -333,6 +333,10 @@
     <string name="pantry_type_personal">Personales</string>
     <string name="pantry_clear_filters">Limpiar filtros</string>
     <string name="pantry_filters_toggle_cd">Mostrar u ocultar filtros de despensa</string>
+    <string name="pantry_filters_label">Filtros</string>
+    <string name="pantry_filters_title">Filtros</string>
+    <string name="pantry_filters_coming_soon">Opciones de filtros próximamente</string>
+    <string name="pantry_items_title">Productos</string>
     <string name="pantry_item_count">%1$d productos</string>
     <string name="common_back">Volver</string>
     <string name="common_last_updated">Actualizada %1$s</string>

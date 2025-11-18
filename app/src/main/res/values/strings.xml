@@ -145,6 +145,10 @@
     <string name="pantry_type_personal">Personal</string>
     <string name="pantry_clear_filters">Clear filters</string>
     <string name="pantry_filters_toggle_cd">Toggle pantry filters</string>
+    <string name="pantry_filters_label">Filters</string>
+    <string name="pantry_filters_title">Filters</string>
+    <string name="pantry_filters_coming_soon">Filter options coming soon</string>
+    <string name="pantry_items_title">Products</string>
     <string name="pantry_item_count">%1$d items</string>
     <string name="dashboard_heading">Comprartir Dashboard</string>
     <string name="dashboard_lists">Shopping lists</string>

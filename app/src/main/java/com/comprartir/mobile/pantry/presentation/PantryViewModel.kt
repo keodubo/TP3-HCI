@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.comprartir.mobile.R
 import com.comprartir.mobile.core.util.FeatureFlags
-import com.comprartir.mobile.pantry.data.PantryItem
+import com.comprartir.mobile.lists.data.ListItem
 import com.comprartir.mobile.pantry.data.PantryRepository
 import com.comprartir.mobile.pantry.data.PantrySummary
 import com.comprartir.mobile.feature.lists.model.SortDirection
@@ -53,14 +53,15 @@ class PantryViewModel @Inject constructor(
             combine(
                 repository.observePantries(),
                 repository.observePantry(),
-            ) { pantries, items ->
-                pantries to items
-            }.collect { (pantries, items) ->
+                _state,
+            ) { pantries, items, currentState ->
+                Triple(pantries, items, currentState.searchQuery)
+            }.collect { (pantries, items, searchQuery) ->
                 _state.update { current ->
                     val selectedId = current.selectedPantryId?.takeIf { id ->
                         pantries.any { it.id == id }
                     } ?: pantries.firstOrNull()?.id
-                    val filteredItems = filterItems(items, selectedId)
+                    val filteredItems = filterItems(items, selectedId, searchQuery)
                     current.copy(
                         pantries = pantries,
                         selectedPantryId = selectedId,
@@ -75,7 +76,7 @@ class PantryViewModel @Inject constructor(
 
     fun onSelectPantry(pantryId: String) {
         _state.update { current ->
-            val filtered = filterItems(current.allItems, pantryId)
+            val filtered = filterItems(current.allItems, pantryId, current.searchQuery)
             val selectedPantry = current.pantries.find { it.id == pantryId }
             current.copy(
                 selectedPantryId = pantryId,
@@ -174,7 +175,6 @@ class PantryViewModel @Inject constructor(
                     name = item?.name.orEmpty(),
                     quantity = item?.quantity?.let { qty -> if (qty % 1.0 == 0.0) qty.toInt().toString() else qty.toString() }.orEmpty(),
                     unit = item?.unit.orEmpty(),
-                    expirationDate = item?.expiresAt?.let { instant -> dateFormatter.format(instant.atZone(ZoneId.systemDefault()).toLocalDate()) }.orEmpty(),
                     isEditing = item != null,
                 ),
             )
@@ -197,10 +197,6 @@ class PantryViewModel @Inject constructor(
         _state.update { it.copy(itemDialog = it.itemDialog.copy(unit = value)) }
     }
 
-    fun onItemExpirationChanged(value: String) {
-        _state.update { it.copy(itemDialog = it.itemDialog.copy(expirationDate = value, errorMessageRes = null)) }
-    }
-
     fun saveItem() {
         val dialog = _state.value.itemDialog
         val pantryId = _state.value.selectedPantryId
@@ -219,18 +215,17 @@ class PantryViewModel @Inject constructor(
             _state.update { it.copy(itemDialog = dialog.copy(isSubmitting = true, errorMessageRes = null)) }
             runCatching {
                 val productId = resolveProductId(dialog)
-                val expiration = parseExpiration(dialog.expirationDate)
-                val item = PantryItem(
+                val item = ListItem(
                     id = dialog.itemId.orEmpty(),
                     productId = productId,
                     name = name,
                     quantity = quantity,
                     unit = dialog.unit.trim().ifBlank { null },
-                    expiresAt = expiration,
-                    pantryId = pantryId,
+                    isAcquired = false, // En pantry no usamos isAcquired
                     categoryId = null,
-                    location = null,
-                    createdAt = Instant.now(),
+                    pantryId = pantryId,
+                    notes = null,
+                    addedAt = Instant.now(),
                     updatedAt = Instant.now(),
                 )
                 repository.upsertItem(item)
@@ -415,19 +410,24 @@ class PantryViewModel @Inject constructor(
         }
     }
 
-    private fun filterItems(items: List<PantryItem>, pantryId: String?): List<PantryItem> {
+    private fun filterItems(items: List<ListItem>, pantryId: String?, searchQuery: String = ""): List<ListItem> {
         val filtered = pantryId?.let { id ->
             items.filter { item -> item.pantryId == id }
         } ?: items
-        return filtered
+        
+        if (searchQuery.isBlank()) return filtered
+        
+        return filtered.filter { item ->
+            item.name.contains(searchQuery, ignoreCase = true)
+        }
     }
 }
 
 data class PantryUiState(
     val pantries: List<PantrySummary> = emptyList(),
     val selectedPantryId: String? = null,
-    val allItems: List<PantryItem> = emptyList(),
-    val items: List<PantryItem> = emptyList(),
+    val allItems: List<ListItem> = emptyList(),
+    val items: List<ListItem> = emptyList(),
     val searchQuery: String = "",
     val isFiltersExpanded: Boolean = false,
     val sortOption: PantrySortOption = PantrySortOption.RECENT,
@@ -459,7 +459,6 @@ data class PantryItemDialogState(
     val name: String = "",
     val quantity: String = "",
     val unit: String = "",
-    val expirationDate: String = "",
     val isSubmitting: Boolean = false,
     val isEditing: Boolean = false,
     @StringRes val errorMessageRes: Int? = null,

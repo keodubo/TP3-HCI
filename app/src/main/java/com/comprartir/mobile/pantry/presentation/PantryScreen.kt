@@ -83,7 +83,7 @@ import com.comprartir.mobile.core.designsystem.textMuted
 import com.comprartir.mobile.feature.lists.model.SortDirection
 import com.comprartir.mobile.core.navigation.NavigationIntent
 import com.comprartir.mobile.shared.components.AddFab
-import com.comprartir.mobile.pantry.data.PantryItem
+import com.comprartir.mobile.lists.data.ListItem
 import com.comprartir.mobile.pantry.data.PantrySummary
 import com.comprartir.mobile.core.ui.rememberIsLandscape
 import com.comprartir.mobile.core.ui.rememberIsTablet
@@ -938,17 +938,11 @@ private fun <T> FilterDropdown(
 
 @Composable
 private fun PantryItemCard(
-    item: PantryItem,
+    item: ListItem,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val spacing = LocalSpacing.current
-    val expirationLabel = remember(item.expiresAt) {
-        item.expiresAt?.let { expiration ->
-            val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.getDefault())
-            formatter.format(expiration.atZone(ZoneId.systemDefault()).toLocalDate())
-        }
-    }
     Card {
         Column(
             modifier = Modifier
@@ -978,12 +972,6 @@ private fun PantryItemCard(
                         Icon(imageVector = Icons.Outlined.Delete, contentDescription = stringResource(id = R.string.pantry_delete_item))
                     }
                 }
-            }
-            if (expirationLabel != null) {
-                Text(
-                    text = stringResource(id = R.string.pantry_item_expires, expirationLabel),
-                    style = MaterialTheme.typography.bodySmall,
-                )
             }
         }
     }
@@ -1049,73 +1037,6 @@ private fun PantryDialog(
                         Text(text = stringResource(id = R.string.pantry_delete_pantry))
                     }
                 }
-            }
-        },
-    )
-}
-
-@Composable
-private fun PantryItemDialog(
-    state: PantryItemDialogState,
-    onNameChange: (String) -> Unit,
-    onQuantityChange: (String) -> Unit,
-    onUnitChange: (String) -> Unit,
-    onExpirationChange: (String) -> Unit,
-    onDismiss: () -> Unit,
-    onSave: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = { if (!state.isSubmitting) onDismiss() },
-        containerColor = Color.White,
-        confirmButton = {
-            Button(onClick = onSave, enabled = !state.isSubmitting) {
-                Text(text = stringResource(id = R.string.dialog_save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { if (!state.isSubmitting) onDismiss() }) {
-                Text(text = stringResource(id = R.string.dialog_cancel))
-            }
-        },
-        title = {
-            Text(
-                text = if (state.isEditing) stringResource(id = R.string.pantry_edit_item) else stringResource(id = R.string.pantry_add_item),
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(LocalSpacing.current.small)) {
-                OutlinedTextField(
-                    value = state.name,
-                    onValueChange = onNameChange,
-                    enabled = !state.isEditing && !state.isSubmitting,
-                    singleLine = true,
-                    placeholder = { Text(text = stringResource(id = R.string.pantry_item_name_label)) },
-                    isError = state.errorMessageRes != null,
-                    supportingText = state.errorMessageRes?.let { resId ->
-                        { Text(text = stringResource(id = resId), color = MaterialTheme.colorScheme.error) }
-                    },
-                )
-                OutlinedTextField(
-                    value = state.quantity,
-                    onValueChange = onQuantityChange,
-                    enabled = !state.isSubmitting,
-                    singleLine = true,
-                    placeholder = { Text(text = stringResource(id = R.string.pantry_item_quantity_label)) },
-                )
-                OutlinedTextField(
-                    value = state.unit,
-                    onValueChange = onUnitChange,
-                    enabled = !state.isSubmitting,
-                    singleLine = true,
-                    placeholder = { Text(text = stringResource(id = R.string.pantry_item_unit_label)) },
-                )
-                OutlinedTextField(
-                    value = state.expirationDate,
-                    onValueChange = onExpirationChange,
-                    enabled = !state.isSubmitting,
-                    singleLine = true,
-                    placeholder = { Text(text = stringResource(id = R.string.pantry_item_expiration_label)) },
-                )
             }
         },
     )

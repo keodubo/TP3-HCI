@@ -29,19 +29,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 
-data class PantryItem(
-    val id: String,
-    val productId: String?,
-    val name: String,
-    val quantity: Double,
-    val unit: String?,
-    val expiresAt: Instant?,
-    val pantryId: String?,
-    val categoryId: String?,
-    val location: String?,
-    val createdAt: Instant,
-    val updatedAt: Instant,
-)
+// No necesitamos PantryItem separado - usamos ListItem que ya tiene toda la estructura correcta
 
 data class PantrySummary(
     val id: String,
@@ -60,13 +48,13 @@ data class SharedPantryUser(
 
 interface PantryRepository {
     fun observePantries(): Flow<List<PantrySummary>>
-    fun observePantry(): Flow<List<PantryItem>>
+    fun observePantry(): Flow<List<ListItem>>
     suspend fun refresh()
     suspend fun addItemsFromList(pantryId: String, items: List<ListItem>)
     suspend fun createPantry(name: String, description: String?)
     suspend fun updatePantry(pantryId: String, name: String, description: String?)
     suspend fun deletePantry(pantryId: String)
-    suspend fun upsertItem(item: PantryItem)
+    suspend fun upsertItem(item: ListItem)
     suspend fun deleteItem(itemId: String)
     suspend fun sharePantry(pantryId: String, email: String)
     suspend fun getSharedUsers(pantryId: String): List<SharedPantryUser>
@@ -86,7 +74,7 @@ class DefaultPantryRepository @Inject constructor(
 
     override fun observePantries(): Flow<List<PantrySummary>> = pantriesState
 
-    override fun observePantry(): Flow<List<PantryItem>> = pantryDao.observePantry()
+    override fun observePantry(): Flow<List<ListItem>> = pantryDao.observePantry()
         .map { entities -> entities.map { it.toDomainModel() } }
         .onStart { ensureSynced() }
 
@@ -168,18 +156,16 @@ class DefaultPantryRepository @Inject constructor(
         }
     }
 
-    override suspend fun upsertItem(item: PantryItem) {
+    override suspend fun upsertItem(item: ListItem) {
         withContext(Dispatchers.IO) {
             // Items without productId cannot be created/updated
-            val productId = item.productId ?: run {
-                return@withContext
-            }
+            val productId = item.productId
             
             val payload = PantryItemUpsertRequest(
                 product = ProductRef(id = productId.toInt()),
                 quantity = item.quantity,
                 unit = item.unit,
-                expirationDate = item.expiresAt,
+                expirationDate = null, // No usamos fecha de expiración
             )
             val pantryId = item.pantryId ?: defaultPantryId()
             val response = try {
@@ -303,17 +289,17 @@ class DefaultPantryRepository @Inject constructor(
             productName = this.productName ?: nameFallback,
         )
 
-    private fun PantryItemEntity.toDomainModel(): PantryItem = PantryItem(
+    private fun PantryItemEntity.toDomainModel(): ListItem = ListItem(
         id = id,
-        productId = productId,
+        productId = productId ?: id,
         name = productName ?: productId ?: id,
         quantity = quantity,
         unit = unit,
-        expiresAt = expiresAt,
-        pantryId = pantryId,
+        isAcquired = false, // En pantry no usamos isAcquired, siempre false
         categoryId = categoryId,
-        location = location,
-        createdAt = createdAt,
+        pantryId = pantryId,
+        notes = null,
+        addedAt = createdAt,
         updatedAt = updatedAt,
     )
 
