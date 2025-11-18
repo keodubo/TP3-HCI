@@ -159,9 +159,6 @@ fun HomeScreen(
                     onSharedListClick = onSharedListClick,
                 )
             }
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                ActivitySection(items = state.recentActivity)
-            }
         }
 
         if (state.isLoading) {

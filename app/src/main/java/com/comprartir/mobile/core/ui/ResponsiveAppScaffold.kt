@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -44,22 +45,24 @@ fun ResponsiveAppScaffold(
     }
 
     val isTablet = rememberIsTablet(appState.windowSizeClass)
+    val showNavigationRail = (isTablet || isLandscape) && showNavigation
 
-    if (isTablet && showNavigation) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            ComprartirNavigationRail(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .widthIn(min = 104.dp, max = 120.dp),
-                items = appState.navigationItems,
-                currentRoute = currentRoute,
-                onNavigate = onNavigate,
-            )
+    if (showNavigationRail) {
+        Row(modifier = Modifier.fillMaxSize().padding(end = 40.dp)) {
             Scaffold(
                 modifier = Modifier.weight(1f),
                 topBar = topBar,
                 floatingActionButton = floatingActionButton,
                 content = content,
+            )
+            ComprartirNavigationRail(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .widthIn(min = 80.dp, max = 100.dp),
+                items = appState.navigationItems,
+                currentRoute = currentRoute,
+                onNavigate = onNavigate,
+                isLandscapePhone = isLandscape && !isTablet,
             )
         }
     } else {
