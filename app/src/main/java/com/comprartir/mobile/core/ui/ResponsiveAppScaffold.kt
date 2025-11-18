@@ -62,7 +62,6 @@ fun ResponsiveAppScaffold(
                 items = appState.navigationItems,
                 currentRoute = currentRoute,
                 onNavigate = onNavigate,
-                isLandscapePhone = isLandscape && !isTablet,
             )
         }
     } else {

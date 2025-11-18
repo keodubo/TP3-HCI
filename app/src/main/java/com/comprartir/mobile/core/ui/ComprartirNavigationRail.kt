@@ -43,7 +43,6 @@ fun ComprartirNavigationRail(
     currentRoute: String?,
     onNavigate: (AppDestination) -> Unit,
     modifier: Modifier = Modifier.width(112.dp),
-    isLandscapePhone: Boolean = false,
 ) {
     val spacing = LocalSpacing.current
     val scrollState = rememberScrollState()
@@ -60,7 +59,7 @@ fun ComprartirNavigationRail(
                 .fillMaxHeight()
                 .verticalScroll(scrollState)
                 .padding(
-                    top = spacing.xxl,
+                    top = spacing.large,
                     bottom = spacing.large,
                     start = spacing.small,
                     end = spacing.small,
