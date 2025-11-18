@@ -130,7 +130,7 @@ fun ProfileScreen(
 ) {
     val spacing = LocalSpacing.current
     val isLandscape = rememberIsLandscape()
-    val useTwoColumnLayout = isTabletLayout || isLandscape
+    val useTwoColumnLayout = isTabletLayout && isLandscape
     
     Box(
         modifier = Modifier

@@ -222,7 +222,8 @@ fun ListsScreen(
 ) {
     val isLandscape = rememberIsLandscape()
     val gridColumns = when {
-        isTablet -> 4
+        isTablet && isLandscape -> 3
+        isTablet -> 2
         isLandscape -> 2
         else -> 1
     }
@@ -1070,92 +1071,74 @@ private fun ShoppingListCard(
                     modifier = Modifier.weight(1f),
                 )
                 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    // Item counter pill
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = MaterialTheme.colorScheme.darkNavy,
+                // Three dots menu
+                Box {
+                    IconButton(
+                        onClick = { showMenu = true },
+                        modifier = Modifier.size(24.dp),
                     ) {
-                        Text(
-                            text = "$completedItems/$totalItems",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = stringResource(id = R.string.lists_menu),
+                            tint = MaterialTheme.colorScheme.darkNavy,
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                     
-                    // Three dots menu
-                    Box {
-                        IconButton(
-                            onClick = { showMenu = true },
-                            modifier = Modifier.size(24.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = stringResource(id = R.string.lists_menu),
-                                tint = MaterialTheme.colorScheme.darkNavy,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                        
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            modifier = Modifier.background(Color.White),
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(id = R.string.lists_edit)) },
-                                onClick = {
-                                    showMenu = false
-                                    onEditClick()
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Edit, contentDescription = null)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(id = R.string.lists_share)) },
-                                onClick = {
-                                    showMenu = false
-                                    onShareClick()
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Share, contentDescription = null)
-                                }
-                            )
-                            if (canComplete && list.items.isNotEmpty()) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(id = R.string.lists_mark_complete)) },
-                                    onClick = {
-                                        showMenu = false
-                                        onCompleteClick()
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Outlined.CheckCircle, contentDescription = null)
-                                    }
-                                )
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier.background(Color.White),
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(id = R.string.lists_edit)) },
+                            onClick = {
+                                showMenu = false
+                                onEditClick()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Edit, contentDescription = null)
                             }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(id = R.string.lists_share)) },
+                            onClick = {
+                                showMenu = false
+                                onShareClick()
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Share, contentDescription = null)
+                            }
+                        )
+                        if (canComplete && list.items.isNotEmpty()) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(id = R.string.lists_delete)) },
+                                text = { Text(stringResource(id = R.string.lists_mark_complete)) },
                                 onClick = {
                                     showMenu = false
-                                    onDeleteClick()
+                                    onCompleteClick()
                                 },
                                 leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Delete,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error,
-                                    )
-                                },
-                                colors = MenuDefaults.itemColors(
-                                    textColor = MaterialTheme.colorScheme.error,
-                                )
+                                    Icon(Icons.Outlined.CheckCircle, contentDescription = null)
+                                }
                             )
                         }
+                        DropdownMenuItem(
+                            text = { Text(stringResource(id = R.string.lists_delete)) },
+                            onClick = {
+                                showMenu = false
+                                onDeleteClick()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                )
+                            },
+                            colors = MenuDefaults.itemColors(
+                                textColor = MaterialTheme.colorScheme.error,
+                            )
+                        )
                     }
                 }
             }
@@ -1169,33 +1152,56 @@ private fun ShoppingListCard(
                 modifier = Modifier.padding(vertical = 12.dp),
             )
             
-            // Footer with status
-            Box(
+            val (statusText, statusContainerColor, statusContentColor) = when {
+                totalItems == 0 -> Triple(
+                    stringResource(id = R.string.list_status_empty),
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                completedItems == totalItems -> Triple(
+                    stringResource(id = R.string.list_status_complete),
+                    MaterialTheme.colorScheme.primaryContainer,
+                    MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                else -> Triple(
+                    stringResource(id = R.string.list_status_pending),
+                    MaterialTheme.colorScheme.secondaryContainer,
+                    MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+            }
+            
+            // Footer with status and counter grouped
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.BottomStart,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = when {
-                        totalItems == 0 -> MaterialTheme.colorScheme.surfaceVariant
-                        completedItems == totalItems -> MaterialTheme.colorScheme.primaryContainer
-                        else -> MaterialTheme.colorScheme.secondaryContainer
-                    },
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(spacing.small),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = when {
-                            totalItems == 0 -> stringResource(id = R.string.list_status_empty)
-                            completedItems == totalItems -> stringResource(id = R.string.list_status_complete)
-                            else -> stringResource(id = R.string.list_status_pending)
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = when {
-                            totalItems == 0 -> MaterialTheme.colorScheme.onSurfaceVariant
-                            completedItems == totalItems -> MaterialTheme.colorScheme.onPrimaryContainer
-                            else -> MaterialTheme.colorScheme.onSecondaryContainer
-                        },
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = statusContainerColor,
+                    ) {
+                        Text(
+                            text = statusText,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = statusContentColor,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = MaterialTheme.colorScheme.darkNavy,
+                    ) {
+                        Text(
+                            text = "$completedItems/$totalItems",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        )
+                    }
                 }
             }
         }
