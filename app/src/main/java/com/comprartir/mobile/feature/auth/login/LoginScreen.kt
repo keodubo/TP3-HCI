@@ -7,17 +7,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -146,14 +147,17 @@ fun LoginScreen(
             Row(
                 modifier = Modifier
                     .widthIn(max = wideLayoutMaxWidth)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max)
+                    .heightIn(max = cardMaxHeight),
                 horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 LoginBrandingPanel(
                     modifier = Modifier
                         .weight(brandingWeight)
-                        .heightIn(max = cardMaxHeight),
+                        .heightIn(max = cardMaxHeight)
+                        .fillMaxHeight(),
                 )
                 LoginFormCard(
                     state = state,
@@ -168,7 +172,8 @@ fun LoginScreen(
                     isTabletLayout = isTablet,
                     modifier = Modifier
                         .weight(formWeight)
-                        .heightIn(max = cardMaxHeight),
+                        .heightIn(max = cardMaxHeight)
+                        .fillMaxHeight(),
                 )
             }
         } else {
